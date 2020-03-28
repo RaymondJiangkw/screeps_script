@@ -21,23 +21,29 @@ const referenceModule = {
                 "4":0
             },
             storageAmount:{
-                "0":100000,
-                "1":80000,
-                "2":50000,
-                "3":30000,
+                "0":30000,
+                "1":15000,
+                "2":10000,
+                "3":5000,
                 "4":0
             }
         },
         repair:{
             assessRatio:{
-                "structure":1,
-                "core":1
+                average:{
+                    "structure":0.5,
+                    "core":0.5
+                },
+                min:{
+                    "structure":1,
+                    "core":1
+                }
             },
             bearableHitLevel:"1",
             hitRatio:{
                 "0":0.8,
                 "1":0.7,
-                "2":0.5,
+                "2":0.6,
                 "3":0
             },
             downgradeFactor:{
@@ -101,18 +107,26 @@ const referenceModule = {
         work:{
             tower:{
                 leastWarEnergyRatio:0.5,
+            },
+            creep:{
+                containerWaitingBearableTimeInterval:15,
+            },
+            build:{
+                helpBuildControllerLevel:2
             }
         }
     },
     spawn:{
         num:{
-            "worker":1, //include upgrader
+            "harvester":1,
+            "builder":1,
+            "upgrader":1
         },
-        worker:{work:2,carry:3,move:4},
+        worker:{work:2,carry:3,move:6},
         upgrader:{work:5,carry:1,move:2},
         transferer:{work:4,carry:1,move:2},
         miner:{work:5,carry:2,move:6},
-        repairer:{work:3,carry:2,move:4},
+        repairer:{work:3,carry:4,move:6},
         pickuper:{tough:1,carry:5,move:6},
         attacker:{tough:1,attack:5,move:8},
         claimer:{claim:1,move:5},
@@ -173,7 +187,7 @@ const referenceModule = {
                 call:"repairJob"
             },
             "2":{
-                standard:"Game.spawns['Origin'].memory.assess.access.stateLevel.economy[roomName]>=3",
+                standard:"Game.spawns['Origin'].memory.assess.access.stateLevel.economy[roomName]>=2",
                 call:"economyJob"
             },
             "3":{
@@ -186,30 +200,30 @@ const referenceModule = {
             builder:"12-13-1-0-4-20-2-12-13",
             transferer:"13-11-13",
             upgrader:"16-12-13-2-16-12-13",
-            repairer:"12-13-5-4-0-1-2-12-13",
-            miner:"14-11-Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers>0?14:3-14",
-            pickuper:"18-7-3-8",
+            repairer:"12-13-4-5-0-1-2-12-13",
+            miner:"14-Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers>0?14:3-14",
+            pickuper:"18-7-3-0-8",
             tower:"6-5-19-5",
             attacker:"9",
             claimer:"21"
         },
         economyJob:{
             harvester:"15-12-13-0-4-3-1-2-15-12-13",
-            builder:"12-15-13-0-4-1-2-12-15-13",
+            builder:"12-13-0-1-4-2-12-15-13",
             repairer:"12-13-0-4-5-1-2-12-13",
             pickuper:"15-0-18-7-3-8-15",
             tower:"6-5",
         },
         repairJob:{
-            harvester:"12-13-4-0-3-1-2-12-13",
-            builder:"12-13-4-1-0-2-12-13",
+            harvester:"12-13-0-4-3-1-2-12-13",
+            builder:"12-13-1-0-4-2-12-13",
             repairer:"12-13-4-5-0-1-2-12-13",
-            pickuper:"15-4-18-7-3-8-15",
+            pickuper:"18-15-creep.store.getUsedCapacity(RESOURCE_ENERGY)>0?4:3-18-7-3-8-15",
             tower:"6-5",
         },
         warJob:{
             harvester:"15-12-13-4-0-3-1-2-15-12-13",
-            builder:"12-15-13-4-1-0-2-12-15-13",
+            builder:"12-13-4-1-0-2-12-15-13",
             repairer:"12-13-4-0-5-1-2-12-13",
             pickuper:"15-4-18-7-3-8-15",
             tower:"6",

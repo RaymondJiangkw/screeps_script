@@ -5,11 +5,10 @@ const helpFunc = require('func')
 // Claimer: role:"claimer", targetRoom:"", home: ""
 const roleSpawn = {
     countCoreCreepsSpawn:function(roomName){
-        const numHarvesters = Game.spawns['Origin'].memory.assess.access.creeps[roomName].harvesters;
-        const numBuilders = Game.spawns['Origin'].memory.assess.access.creeps[roomName].builders;
-        const numUpgraders = Game.spawns['Origin'].memory.assess.access.creeps[roomName].upgraders;
-        const propriateNum = reference.spawn.num['worker']
-        return [propriateNum - numHarvesters,propriateNum - numBuilders,propriateNum - numUpgraders]
+        const numHarvesters = Game.spawns['Origin'].memory.assess.access.creeps[roomName].harvesters
+        const numUpgraders = Game.spawns['Origin'].memory.assess.access.creeps[roomName].upgraders
+        const numBuilders = Game.spawns['Origin'].memory.assess.access.creeps[roomName].builders
+        return [reference.spawn.num['harvester'] - numHarvesters,reference.spawn.num['upgrader'] - numUpgraders,reference.spawn.num['builder'] - numBuilders]
     },
     isRepairer:function(roomName){
         // Return whether need to spawn and if need, the factor to times
@@ -24,10 +23,10 @@ const roleSpawn = {
                 return [false,0]
                 break
             case 1:
-                return [true,0.25]
+                return [true,0.5]
                 break
             case 2:
-                return [true,0.7]
+                return [true,0.8]
                 break
             case 3:
                 return [true,1]
@@ -41,10 +40,13 @@ const roleSpawn = {
         return Game.spawns['Origin'].memory.assess.access.is.containers[roomName].cached.resources
     },
     isMiner:function(roomName){
-        return Game.spawns['Origin'].memory.assess.access.is.containers[roomName].cached.minerals
+        return Game.spawns['Origin'].memory.assess.access.is.containers[roomName].cached.minerals && 
+               Game.spawns['Origin'].memory.init.access.extractors[roomName].length > 0 && 
+               Game.getObjectById(Game.spawns['Origin'].memory.init.access.minerals[roomName][0]).mineralAmount > 0 // Only dealing with the case of single mineral 
     },
     isPickUper:function(roomName){
-        return Game.spawns['Origin'].memory.assess.access.stateLevel.economy[roomName] <= 1.5 && Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers === 0
+        return Game.spawns['Origin'].memory.assess.access.stateLevel.economy[roomName] <= 1.5 && Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers === 0 &&
+               Game.rooms[roomName].controller.level >= 4
     },
     spawnCreep:function(spawn,maximumEnergy,role,spawnSet,isSpawning,additionalDis = {}){
         // console.log("head",isSpawning,role)
@@ -61,7 +63,7 @@ const roleSpawn = {
                     components.push(bodypart)
                 }
             }
-            const newName = role + Game.time;
+            const newName = role + "_" + spawn.room.name + "_" + Game.time;
             let memoryDis = {role:role,building:false,charge:false,home:spawn.room.name}
             // console.log(role,maximumTotalCost,components)
             memoryDis = Object.assign(memoryDis,additionalDis)
@@ -88,20 +90,20 @@ const roleSpawn = {
             spawn.memory.lastSpawnTime = Game.time
         }
         // Dealing with harvester
-        if (neededCoreCreeps[0]){
+        if (neededCoreCreeps[0] > 0){
             feedback = this.spawnCreep(spawn,perAllocate,"harvester",reference.spawn.worker,flag)
             remainingEnergy -= feedback[0]
             flag = feedback[1]
         }
-        // Dealing with builder
-        if (neededCoreCreeps[1]){
-            feedback = this.spawnCreep(spawn,perAllocate,"builder",reference.spawn.worker,flag)
+        // Dealing with upgrader
+        if (neededCoreCreeps[1] > 0){
+            feedback = this.spawnCreep(spawn,perAllocate,"upgrader",reference.spawn.upgrader,flag)
             remainingEnergy -= feedback[0]
             flag = feedback[1]
         }
-        // Dealing with upgrader
-        if (neededCoreCreeps[2]){
-            feedback = this.spawnCreep(spawn,perAllocate,"upgrader",reference.spawn.upgrader,flag)
+        // Dealing with builder
+        if (neededCoreCreeps[2] > 0){
+            feedback = this.spawnCreep(spawn,perAllocate,"builder",reference.spawn.worker,flag)
             remainingEnergy -= feedback[0]
             flag = feedback[1]
         }
@@ -117,10 +119,10 @@ const roleSpawn = {
                 resourceId => Game.spawns['Origin'].memory.resourceOccupied[roomName][resourceId] === false
             )
             const totalTransfererNum = neededResources.length
-            if (totalTransfererNum > 0) {
+            if (totalTransfererNum > 0 && neededResources[0] != undefined) {
                 const transfererPerAllocate = remainingEnergy / totalTransfererNum
                 feedback = this.spawnCreep(spawn,transfererPerAllocate,"transferer",reference.spawn.transferer,flag,{resourceId:neededResources[0]})
-                flag = feedback[1]
+                flag = feedback[1] 
                 if (feedback[1] === OK) {
                     Game.spawns['Origin'].memory.resourceOccupied[roomName][neededResources[0]] = true
                     remainingEnergy -= feedback[0]

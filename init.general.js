@@ -121,12 +121,13 @@ const groupFunction = function(roomName){
     links.emitTo[roomName] = {}
     links.emitFrom[roomName]['resources'] = _.filter(initModule.links[roomName],(link_id)=>{
         for (let i = 0; i < initModule.resources[roomName].length;i++){
-            if (helpFunc.adjacent(link_id,initModule.resources[roomName][i])){
+            if (helpFunc.m_adjacent(link_id,initModule.resources[roomName][i],3) === true){
                 return true
             }
         }
         return false
     })
+    links.emitFrom[roomName]['resources'].sort((linkIdA,linkIdB)=>Game.getObjectById(linkIdB).store.getUsedCapacity(RESOURCE_ENERGY)-Game.getObjectById(linkIdA).store.getUsedCapacity(RESOURCE_ENERGY))
     links.emitFrom[roomName]['minerals'] = [] // Links cannot transfer minerals now
     /*links.emitFrom[roomName]['minerals'] = _.filter(initModule.links[roomName],(link_id)=>{
         for (let i = 0; i < initModule.minerals[roomName].length;i++){

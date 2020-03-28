@@ -58,6 +58,12 @@ const helpFunc = {
         sum = this.accumulateArray(_array)
         return sum / _array.length
     },
+    minArray:function(_array){
+        return Math.min.apply(Math,_array)
+    },
+    maxArray:function(_array){
+        return Math.max.apply(Math,_array)
+    },
     countProperties:function(_object){
         let result = 0
         for(let property in _object) {
@@ -103,7 +109,7 @@ const helpFunc = {
         }
         return newObject
     },
-    getCreepTasks:function(taskStr,roomName){
+    getCreepTasks:function(creep,taskStr,roomName){
         let TaskArr = taskStr.split('-')
         for (let i = 0; i < TaskArr.length; ++i) {
             if (TaskArr[i].indexOf("?")!==-1){
