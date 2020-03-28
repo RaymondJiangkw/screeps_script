@@ -12,6 +12,7 @@ module.exports.loop = function () {
     Game.spawns['Origin'].memory.init.access = initModule.access
     Game.spawns['Origin'].memory.init.groupedContainers = initModule.groupedContainers
     Game.spawns['Origin'].memory.init.groupedLinks = initModule.groupedLinks
+    Game.spawns['Origin'].memory.init.groupedLabs = initModule.groupedLabs
     Game.spawns['Origin'].memory.init.infoResources = initModule.infoResources
     Game.spawns['Origin'].memory.init.infoMarket = initModule.infoMarket
     Game.spawns['Origin'].memory.init.resourceCached = initModule.resourceCached

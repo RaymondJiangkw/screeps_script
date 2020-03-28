@@ -67,6 +67,10 @@ const assessModule = {
             ramparts:,
             mainStructures:,
         }
+        usableLabs:{
+            `mineralType`: // with some minerals in it and full energy, sorted by amount
+            vacant: // with no minerals in it, thus able to perform reaction
+        } 
         */
     }
 }
@@ -255,6 +259,16 @@ const initAssess = function() {
         })
         assessModule.is.neededStrengthen[roomName] = assessModule.structures[roomName]["neededRepair"]["walls"].length > 0 ||
                                                      assessModule.structures[roomName]["neededRepair"]["ramparts"].length > 0
+        assessModule.structures[roomName]["usableLabs"] = {}
+        assessModule.structures[roomName]["usableLabs"]["vacant"] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === undefined)
+        for (let i = 0; i < Game.spawns['Origin'].memory.groupedLabs.storedMineralTypes[roomName].length;i++){
+            const __mineralType = Game.spawns['Origin'].memory.groupedLabs.storedMineralTypes[roomName][i]
+            assessModule.structures[roomName]["usableLabs"][__mineralType] = (_.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === __mineralType)).sort((labIdA,labIdB)=>{
+                const labA = Game.getObjectById(labIdA)
+                const labB = Game.getObjectById(labIdB)
+                return labB.store.getUsedCapacity(__mineralType) - labA.store.getUsedCapacity(__mineralType)
+            })
+        }
     }
 }
 module.exports = {

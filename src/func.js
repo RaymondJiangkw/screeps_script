@@ -34,6 +34,13 @@ const helpFunc = {
         let y_diff = this.abs(_object_1.pos.y - _object_2.pos.y)
         return x_diff + y_diff
     },
+    square_pos:function(_object_1_id,_object_2_id){
+        const _object_1 = Game.getObjectById(_object_1_id)
+        const _object_2 = Game.getObjectById(_object_2_id)
+        let x_diff = this.abs(_object_1.pos.x - _object_2.pos.x)
+        let y_diff = this.abs(_object_1.pos.y - _object_2.pos.y)
+        return [x_diff,y_diff]
+    },
     adjacent:function(_object_1_id,_object_2_id){
         if (this.pos(_object_1_id,_object_2_id) <= 2) {
             return true
@@ -45,6 +52,10 @@ const helpFunc = {
             return true
         }
         return false
+    },
+    square_adjacent:function(_object_1_id,_object_2_id,distance = 2){
+        const _posResult = square_pos(_object_1_id,_object_2_id)
+        return _posResult[0] <= distance && _posResult[1] <= distance
     },
     accumulateArray:function(_array){
         let result = 0

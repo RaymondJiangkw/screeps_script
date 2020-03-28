@@ -70,6 +70,21 @@ let resources = {
     },
     storage:{}
 }
+let mineralsnCompounds = {
+    /*
+    `Type`:{storage:,terminal:,lab:}
+    */
+}
+let labs = {
+    core:{
+        /*
+            adjacentRelationship: [lab1Id][lab2Id] => array of both adjacent labs
+            length: in case of new Labs added
+            // Recheck only when the reactionCenter is not ajacent to the other
+        */
+    },
+    storedMineralTypes:{}
+}
 let isCached = {
     resources:{}, // resources -> container_id
     minerals:{}, // minerals -> container_id
@@ -159,6 +174,44 @@ const groupFunction = function(roomName){
         }
         return false
     })
+    // Memory Cost and Save Time
+    if (labs.core.hasOwnProperty(roomName) === false || labs.core[roomName].length !== initModule.access.labs[roomName].length){
+        labs.core[roomName] = {
+            adjacentRelationship:{},
+            length:initModule.access.labs[roomName].length
+        }
+        let remainingLabs = [].concat(initModule.access.labs[roomName])
+        let _adjacentLabs = {}
+        for (let i = 0; i < initModule.access.labs[roomName].length;i++){
+            _adjacentLabs[initModule.access.labs[roomName][i]] = []
+        }
+        for (let i = 0; i < initModule.access.labs[roomName].length;i++){
+            for (let j = i + 1; j < initModule.access.labs[roomName].length;j++){
+                if (helpFunc.square_adjacent(initModule.access.labs[roomName][i],initModule.access.labs[roomName][j]) === true){
+                    _adjacentLabs[initModule.access.labs[roomName][i]].push(initModule.access.labs[roomName][j])
+                    _adjacentLabs[initModule.access.labs[roomName][j]].push(initModule.access.labs[roomName][i])
+                }
+            }
+        }
+        for (let i = 0; i < initModule.access.labs[roomName].length;i++){
+            labs.core[roomName].adjacentRelationship[initModule.access.labs[roomName][i]] = {}
+            for (let j = 0; j <initModule.access.labs[roomName].length;j++){
+                if (i !== j){
+                    labs.core[roomName].adjacentRelationship[initModule.access.labs[roomName][i]][initModule.access.labs[roomName][j]] = _.filter(_adjacentLabs[initModule.access.labs[roomName][i]],(labId)=>{
+                        return labId in _adjacentLabs[initModule.access.labs[roomName][j]]
+                    })
+                }
+            }
+        }
+    }
+    labs.storedMineralTypes[roomName] = []
+    for (let i = 0; i < initModule.access.labs[roomName].length;i++){
+        let __mineralType = Game.getObjectById(initModule.access.labs[roomName][i]).mineralType
+        if (__mineralType !== undefined && 
+            labs.storedMineralTypes[roomName].indexOf(__mineralType) === -1){
+            labs.storedMineralTypes.push(__mineralType)
+        }
+    }
 }
 const getInfo = function(roomName) {
     resources.available[roomName] = {}
@@ -192,6 +245,7 @@ const getMarketInfo = function(roomName) {
 
 }
 const initFunction = function() {
+    // Considering the case of only-need-one-time initializing
     const controlledRooms = Object.values(Game.rooms).filter(room => room.controller.my)
     for (let i = 0; i < controlledRooms.length; i++){
         const roomName = controlledRooms[i].name
@@ -229,6 +283,7 @@ module.exports = {
     access: initModule,
     groupedContainers: containers,
     groupedLinks: links,
+    groupedLabs: labs,
     infoResources:resources,
     infoMarket:getMarketInfo,
     resourceCached:isCached

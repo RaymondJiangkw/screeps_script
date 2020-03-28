@@ -229,6 +229,71 @@ const referenceModule = {
             tower:"6",
         }
     },
+    market:{
+        general:{
+            space:{
+                inventory:0.5,
+                transaction:0.5
+            }
+        },
+        buy:{
+
+        },
+        sell:{
+
+        },
+        inventory:{ // Ratio
+            energy:1,
+        }
+    },
+    production:{
+        lab:{
+            minOnceProduction:100,
+            allowedCompounds:{ // Correspond to body part
+
+            },
+            basicIngredients:[RESOURCE_OXYGEN,RESOURCE_HYDROGEN,RESOURCE_UTRIUM,RESOURCE_KEANIUM,RESOURCE_LEMERGIUM,RESOURCE_ZYNTHIUM,RESOURCE_CATALYST],
+            formula:{
+                "OH":["H","O"],
+                "ZK":["Z","K"],
+                "UL":["U","L"],
+                "G":["ZK","UL"],
+                "UH":["U","H"],
+                "UO":["U","O"],
+                "KH":["K","H"],
+                "KO":["K","O"],
+                "LH":["L","H"],
+                "LO":["L","O"],
+                "ZH":["Z","H"],
+                "ZO":["Z","O"],
+                "GH":["G","H"],
+                "GO":["G","O"],
+                "UH2O":["UH","OH"],
+                "UHO2":["UO","OH"],
+                "KH2O":["KH","OH"],
+                "KHO2":["KO","OH"],
+                "LH2O":["LH","OH"],
+                "LHO2":["LO","OH"],
+                "ZH2O":["ZH","OH"],
+                "ZHO2":["ZO","OH"],
+                "GH2O":["GH","OH"],
+                "GHO2":["GO","OH"],
+                "XUH2O":["UH2O","X"],
+                "XUHO2":["UHO2","X"],
+                "XKH2O":["KH2O","X"],
+                "XKHO2":["KHO2","X"],
+                "XLH2O":["LH2O","X"],
+                "XLHO2":["LHO2","X"],
+                "XZH2O":["ZH2O","X"],
+                "XZHO2":["ZHO2","X"],
+                "XGH2O":["GH2O","X"],
+                "XGHO2":["GHO2","X"]
+            }
+        },
+        factory:{
+
+        }
+    },
     constants:{
         resourceList:[
             RESOURCE_HYDROGEN,
