@@ -74,6 +74,7 @@ const initAssess = function() {
     const controlledRooms = Object.values(Game.rooms).filter(room => room.controller.my)
     for (let i = 0; i < controlledRooms.length; i++){
         const roomName = controlledRooms[i].name
+        console.log("   === ",roomName,"Assessment Log ","===")
         // Assess the state level
         // War
         assessModule.stateLevel.war[roomName] = helpFunc.getRank(Game.spawns['Origin'].memory.init.access.enemies[roomName].length,reference.assess.war.assessAmount)
@@ -96,10 +97,23 @@ const initAssess = function() {
         _coreStructure = _coreStructure.concat(Game.spawns['Origin'].memory.init.access.links[roomName])
         _coreStructure = _coreStructure.concat(Game.spawns['Origin'].memory.init.access.extensions[roomName])
         _coreStructure = _coreStructure.concat(Game.spawns['Origin'].memory.init.access.extractors[roomName])
-        const commonStructureRank = helpFunc.getRank(helpFunc.meanArray(_commonStructure.map(helpFunc.getHitRatio)),reference.assess.repair.hitRatio)
-        const coreStructureRank = helpFunc.getRank(helpFunc.meanArray(_coreStructure.map(helpFunc.getHitRatio)),reference.assess.repair.defendnCoreRatio)
-        assessModule.stateLevel.repair[roomName] = reference.assess.repair.assessRatio['structure'] * commonStructureRank + reference.assess.repair.assessRatio['core'] * coreStructureRank
+        const _commonStructureHitRatio = _commonStructure.map(helpFunc.getHitRatio)
+        const _coreStructureHitRatio = _coreStructure.map(helpFunc.getHitRatio)
+        const _meanHitRatioCommon = helpFunc.meanArray(_commonStructureHitRatio)
+        const _meanHitRatioCore = helpFunc.meanArray(_coreStructureHitRatio)
+        const _minHitRatioCommon = helpFunc.minArray(_commonStructureHitRatio)
+        const _minHitRatioCore = helpFunc.minArray(_coreStructureHitRatio)
+        console.log("       Common Structure [Average] Hits Ratio:",_meanHitRatioCommon," Core:",_meanHitRatioCore," [Min] Common:",_minHitRatioCommon,"Core:",_minHitRatioCore)
+        const commonStructureRank = helpFunc.getRank(_meanHitRatioCommon,reference.assess.repair.hitRatio)
+        const coreStructureRank = helpFunc.getRank(_meanHitRatioCore,reference.assess.repair.defendnCoreRatio)
+        const minCommonStructureRank = helpFunc.getRank(_minHitRatioCommon,reference.assess.repair.hitRatio)
+        const minCoreStructureRank = helpFunc.getRank(_minHitRatioCore,reference.assess.repair.defendnCoreRatio)
+        assessModule.stateLevel.repair[roomName] = reference.assess.repair.assessRatio['average']['structure'] * commonStructureRank + reference.assess.repair.assessRatio['average']['core'] * coreStructureRank +
+                                                   reference.assess.repair.assessRatio['min']['structure'] * minCommonStructureRank + reference.assess.repair.assessRatio['min']['core'] * minCoreStructureRank
         assessModule.stateLevel.repair[roomName] = assessModule.stateLevel.repair[roomName] * reference.assess.repair.downgradeFactor[Math.ceil(assessModule.stateLevel.economy[roomName]).toString()]
+        
+        console.log("       Economy Level:",assessModule.stateLevel.economy[roomName]," Repair:",assessModule.stateLevel.repair[roomName]," War:",assessModule.stateLevel.war[roomName])
+        
         // is
         assessModule.is.containers[roomName] = {
             cached:{
@@ -114,7 +128,7 @@ const initAssess = function() {
         if (helpFunc.isHave(Game.spawns['Origin'].memory.init.groupedContainers.cachedMinerals[roomName])){
             assessModule.is.containers[roomName].cached.minerals = true
         }
-        if (helpFunc.isHave(Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName])){
+        if (helpFunc.isHave(Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName].all)){
             assessModule.is.containers[roomName].backUp = true
         }
         assessModule.is.storages[roomName] = {}
