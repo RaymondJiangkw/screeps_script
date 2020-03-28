@@ -270,11 +270,7 @@ const roleJob = {
         const roomName = creep.room.name
         let feedBack = JobERR
 
-        const targetDroppedResources = (creep.room.find(FIND_DROPPED_RESOURCES,{
-            filter:(resource)=>{
-                return resource.resourceType !== RESOURCE_ENERGY
-            }
-        })).sort((resourceA,resourceB)=>resourceB.amount - resourceA.amount)
+        const targetDroppedResources = (creep.room.find(FIND_DROPPED_RESOURCES)).sort((resourceA,resourceB)=>resourceB.amount - resourceA.amount)
         const targetTombStones = _.filter(creep.room.find(FIND_TOMBSTONES),(tombStone)=>tombStone.store.getUsedCapacity()!==0).sort((tombStoneA,tombStoneB)=>{
             return tombStoneB.store.getUsedCapacity() - tombStoneA.store.getUsedCapacity()
         })
