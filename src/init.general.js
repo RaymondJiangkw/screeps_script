@@ -67,7 +67,7 @@ let resources = {
 }
 let mineralsnCompounds = {
     /*
-    `Type`:{storage:,terminal:,lab:}
+    `Type`:{storage:,terminal:,lab:,all:}
     */
 }
 let labs = {
@@ -200,11 +200,22 @@ const groupFunction = function(roomName){
         }
     }
     labs.storedMineralTypes[roomName] = []
+    mineralsnCompounds[roomName] = {}
     for (let i = 0; i < initModule.access.labs[roomName].length;i++){
         let __mineralType = Game.getObjectById(initModule.access.labs[roomName][i]).mineralType
-        if (__mineralType !== undefined && 
-            labs.storedMineralTypes[roomName].indexOf(__mineralType) === -1){
-            labs.storedMineralTypes.push(__mineralType)
+        if (__mineralType !== undefined){
+            if (!mineralsnCompounds.hasOwnProperty(__mineralType)){
+                mineralsnCompounds[roomName][__mineralType] = {
+                    storage:0,
+                    terminal:0,
+                    lab:0,
+                    all:0
+                }
+            }
+            if (labs.storedMineralTypes[roomName].indexOf(__mineralType) === -1){
+                labs.storedMineralTypes.push(__mineralType)
+            }
+            mineralsnCompounds[roomName][__mineralType].lab += Game.getObjectById(initModule.access.labs[roomName][i]).store.getUsedCapacity(__mineralType)
         }
     }
 }
@@ -235,6 +246,28 @@ const getInfo = function(roomName) {
         resources.backUp[roomName].fullCapacity += Game.getObjectById(containers.backUp[roomName].all[i]).store.getCapacity(RESOURCE_ENERGY)
     }
     resources.backUp[roomName].ratio = resources.backUp[roomName].available / resources.backUp[roomName].fullCapacity
+    // Dealing with mineralsnCompounds
+    // mineralsnCompounds[roomName] = {} initialize at groupFunction()
+    for (let i = 0; i < reference.constants.resourceList.length;i++){
+        const productType = reference.constants.resourceList[i]
+        if (!mineralsnCompounds.hasOwnProperty(productType)){
+            mineralsnCompounds[roomName][productType] = {
+                storage:0,
+                terminal:0,
+                lab:0,
+                all:0
+            }
+        }
+        if (initModule.storages[roomName].length > 0){
+            mineralsnCompounds[roomName][productType]['storage'] = Game.getObjectById(initModule.storages[roomName][0]).store.getUsedCapacity(productType)
+        }
+        if (initModule.terminals[roomName].length > 0){
+            mineralsnCompounds[roomName][productType]['terminal'] = Game.getObjectById(initModule.terminals[roomName][0]).store.getUsedCapacity(productType)
+        }
+        mineralsnCompounds[roomName][productType]['all'] = mineralsnCompounds[roomName][productType]['storage'] +
+                                                           mineralsnCompounds[roomName][productType]['terminal'] +
+                                                           mineralsnCompounds[roomName][productType]['lab']
+    }
 }
 const getMarketInfo = function(roomName) {
 
@@ -284,6 +317,7 @@ module.exports = {
     groupedLinks: links,
     groupedLabs: labs,
     infoResources:resources,
+    infoCompounds:mineralsnCompounds,
     infoMarket:getMarketInfo,
     resourceCached:isCached
 }

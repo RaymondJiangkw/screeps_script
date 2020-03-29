@@ -68,9 +68,15 @@ const assessModule = {
             mainStructures:,
         }
         usableLabs:{
-            `mineralType`: // with some minerals in it and full energy, sorted by amount
-            vacant: // with no minerals in it, thus able to perform reaction
+            `mineralType`: // with some minerals in it, sorted by amount, upscend
+            vacant: // with no minerals in it, thus able to perform reaction, ordered by cooldown
         } 
+        */
+    },
+    minerals:{
+        /*
+        neededProduce:[] // ordered, mean that the latter is relied on the former
+        neededTransfer:[] // non-ordered, mean that need to transfer compounds from storage / terminal to labs
         */
     }
 }
@@ -260,14 +266,53 @@ const initAssess = function() {
         assessModule.is.neededStrengthen[roomName] = assessModule.structures[roomName]["neededRepair"]["walls"].length > 0 ||
                                                      assessModule.structures[roomName]["neededRepair"]["ramparts"].length > 0
         assessModule.structures[roomName]["usableLabs"] = {}
-        assessModule.structures[roomName]["usableLabs"]["vacant"] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === undefined)
+        assessModule.structures[roomName]["usableLabs"]["vacant"] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === undefined).sort((labIdA,labIdB)=>{
+            const labA = Game.getObjectById(labIdA)
+            const labB = Game.getObjectById(labIdB)
+            return labA.cooldown - labB.cooldown
+        })
         for (let i = 0; i < Game.spawns['Origin'].memory.groupedLabs.storedMineralTypes[roomName].length;i++){
             const __mineralType = Game.spawns['Origin'].memory.groupedLabs.storedMineralTypes[roomName][i]
             assessModule.structures[roomName]["usableLabs"][__mineralType] = (_.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === __mineralType)).sort((labIdA,labIdB)=>{
                 const labA = Game.getObjectById(labIdA)
                 const labB = Game.getObjectById(labIdB)
-                return labB.store.getUsedCapacity(__mineralType) - labA.store.getUsedCapacity(__mineralType)
+                return labA.store.getUsedCapacity(__mineralType) - labB.store.getUsedCapacity(__mineralType)
             })
+        }
+
+        // Dealing with the minerals Only consider when the economy is quite good
+        assessModule.minerals[roomName] = {neededTransfer:[],neededProduce:[]}
+        if (assessModule.stateLevel.economy[roomName] <= reference.production.lab.requiredEconomyLevel){
+            const roomLevel = (Game.rooms[roomName].controller.level).toString()
+            let _mineralList = []
+            let resultList = []
+            for (let _role in reference.production.lab.allowedCompounds.roomLevel){
+                for (let _compound in reference.production.lab.allowedCompounds.roomLevel._role){
+                    const requiredAmount = reference.production.lab.allowedCompounds.roomLevel._role._compound
+                    if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].all < requiredAmount){
+                        _mineralList.push([_compound,requiredAmount])
+                    }
+                }
+            }
+            let ptr = 0
+            while (ptr < _mineralList.length){ // Broadth-First Search
+                const currentAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].all
+                const labAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].lab
+                const _type = _mineralList[ptr][0]
+                const _amount = _mineralList[ptr][1]
+                if (currentAmount < _amount){ // Out One
+                    resultList.push([_type,_amount - currentAmount])
+                    if (reference.production.lab.basicIngredients.indexOf(_type) === -1){ // Out 2
+                        for (let j = 0; j < reference.production.lab.formula[_type].length;j++){
+                            _mineralList.push([reference.production.lab.formula[_type][j],_amount - currentAmount])
+                        }
+                    }
+                }else if (labAmount < _amount){
+                    assessModule.minerals[roomName].neededTransfer.push([_type,_amount - labAmount])
+                }
+                ptr++
+            }
+            assessModule.minerals[roomName].neededProduce = resultList.reverse()
         }
     }
 }
