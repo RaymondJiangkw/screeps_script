@@ -286,9 +286,9 @@ const initAssess = function() {
             const roomLevel = (Game.rooms[roomName].controller.level).toString()
             let _mineralList = []
             let resultList = []
-            for (let _role in reference.production.lab.allowedCompounds.roomLevel){
-                for (let _compound in reference.production.lab.allowedCompounds.roomLevel._role){
-                    const requiredAmount = reference.production.lab.allowedCompounds.roomLevel._role._compound
+            for (let _role in reference.production.lab.allowedCompounds[roomLevel]){
+                for (let _compound in reference.production.lab.allowedCompounds[roomLevel][_role]){
+                    const requiredAmount = reference.production.lab.allowedCompounds[roomLevel][_role][_compound]
                     if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].all < requiredAmount){
                         _mineralList.push([_compound,requiredAmount])
                     }
@@ -296,10 +296,10 @@ const initAssess = function() {
             }
             let ptr = 0
             while (ptr < _mineralList.length){ // Broadth-First Search
-                const currentAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].all
-                const labAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].lab
                 const _type = _mineralList[ptr][0]
                 const _amount = _mineralList[ptr][1]
+                const currentAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].all
+                const labAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].lab
                 if (currentAmount < _amount){ // Out One
                     resultList.push([_type,_amount - currentAmount])
                     if (reference.production.lab.basicIngredients.indexOf(_type) === -1){ // Out 2
