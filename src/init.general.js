@@ -1,4 +1,5 @@
 const helpFunc = require('func')
+const reference = require('reference')
 let initModule = {
     resources:{},
     minerals:{},
@@ -170,30 +171,30 @@ const groupFunction = function(roomName){
         return false
     })
     // Memory Cost and Save Time
-    if (labs.core.hasOwnProperty(roomName) === false || labs.core[roomName].length !== initModule.access.labs[roomName].length){
+    if (labs.core.hasOwnProperty(roomName) === false || labs.core[roomName].length !== initModule.labs[roomName].length){
         labs.core[roomName] = {
             adjacentRelationship:{},
-            length:initModule.access.labs[roomName].length
+            length:initModule.labs[roomName].length
         }
-        let remainingLabs = [].concat(initModule.access.labs[roomName])
+        let remainingLabs = [].concat(initModule.labs[roomName])
         let _adjacentLabs = {}
-        for (let i = 0; i < initModule.access.labs[roomName].length;i++){
-            _adjacentLabs[initModule.access.labs[roomName][i]] = []
+        for (let i = 0; i < initModule.labs[roomName].length;i++){
+            _adjacentLabs[initModule.labs[roomName][i]] = []
         }
-        for (let i = 0; i < initModule.access.labs[roomName].length;i++){
-            for (let j = i + 1; j < initModule.access.labs[roomName].length;j++){
-                if (helpFunc.square_adjacent(initModule.access.labs[roomName][i],initModule.access.labs[roomName][j]) === true){
-                    _adjacentLabs[initModule.access.labs[roomName][i]].push(initModule.access.labs[roomName][j])
-                    _adjacentLabs[initModule.access.labs[roomName][j]].push(initModule.access.labs[roomName][i])
+        for (let i = 0; i < initModule.labs[roomName].length;i++){
+            for (let j = i + 1; j < initModule.labs[roomName].length;j++){
+                if (helpFunc.square_adjacent(initModule.labs[roomName][i],initModule.labs[roomName][j]) === true){
+                    _adjacentLabs[initModule.labs[roomName][i]].push(initModule.labs[roomName][j])
+                    _adjacentLabs[initModule.labs[roomName][j]].push(initModule.labs[roomName][i])
                 }
             }
         }
-        for (let i = 0; i < initModule.access.labs[roomName].length;i++){
-            labs.core[roomName].adjacentRelationship[initModule.access.labs[roomName][i]] = {}
-            for (let j = 0; j <initModule.access.labs[roomName].length;j++){
+        for (let i = 0; i < initModule.labs[roomName].length;i++){
+            labs.core[roomName].adjacentRelationship[initModule.labs[roomName][i]] = {}
+            for (let j = 0; j <initModule.labs[roomName].length;j++){
                 if (i !== j){
-                    labs.core[roomName].adjacentRelationship[initModule.access.labs[roomName][i]][initModule.access.labs[roomName][j]] = _.filter(_adjacentLabs[initModule.access.labs[roomName][i]],(labId)=>{
-                        return labId in _adjacentLabs[initModule.access.labs[roomName][j]]
+                    labs.core[roomName].adjacentRelationship[initModule.labs[roomName][i]][initModule.labs[roomName][j]] = _.filter(_adjacentLabs[initModule.labs[roomName][i]],(labId)=>{
+                        return labId in _adjacentLabs[initModule.labs[roomName][j]]
                     })
                 }
             }
@@ -201,8 +202,8 @@ const groupFunction = function(roomName){
     }
     labs.storedMineralTypes[roomName] = []
     mineralsnCompounds[roomName] = {}
-    for (let i = 0; i < initModule.access.labs[roomName].length;i++){
-        let __mineralType = Game.getObjectById(initModule.access.labs[roomName][i]).mineralType
+    for (let i = 0; i < initModule.labs[roomName].length;i++){
+        let __mineralType = Game.getObjectById(initModule.labs[roomName][i]).mineralType
         if (__mineralType !== undefined){
             if (!mineralsnCompounds.hasOwnProperty(__mineralType)){
                 mineralsnCompounds[roomName][__mineralType] = {
@@ -213,9 +214,9 @@ const groupFunction = function(roomName){
                 }
             }
             if (labs.storedMineralTypes[roomName].indexOf(__mineralType) === -1){
-                labs.storedMineralTypes.push(__mineralType)
+                labs.storedMineralTypes[roomName].push(__mineralType)
             }
-            mineralsnCompounds[roomName][__mineralType].lab += Game.getObjectById(initModule.access.labs[roomName][i]).store.getUsedCapacity(__mineralType)
+            mineralsnCompounds[roomName][__mineralType].lab += Game.getObjectById(initModule.labs[roomName][i]).store.getUsedCapacity(__mineralType)
         }
     }
 }

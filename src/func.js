@@ -54,7 +54,7 @@ const helpFunc = {
         return false
     },
     square_adjacent:function(_object_1_id,_object_2_id,distance = 2){
-        const _posResult = square_pos(_object_1_id,_object_2_id)
+        const _posResult = this.square_pos(_object_1_id,_object_2_id)
         return _posResult[0] <= distance && _posResult[1] <= distance
     },
     accumulateArray:function(_array){

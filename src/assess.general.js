@@ -271,8 +271,8 @@ const initAssess = function() {
             const labB = Game.getObjectById(labIdB)
             return labA.cooldown - labB.cooldown
         })
-        for (let i = 0; i < Game.spawns['Origin'].memory.groupedLabs.storedMineralTypes[roomName].length;i++){
-            const __mineralType = Game.spawns['Origin'].memory.groupedLabs.storedMineralTypes[roomName][i]
+        for (let i = 0; i < Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].length;i++){
+            const __mineralType = Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName][i]
             assessModule.structures[roomName]["usableLabs"][__mineralType] = (_.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === __mineralType)).sort((labIdA,labIdB)=>{
                 const labA = Game.getObjectById(labIdA)
                 const labB = Game.getObjectById(labIdB)
