@@ -51,7 +51,8 @@ const referenceModule = {
                 "1":1.0,
                 "2":0.8,
                 "3":0.6,
-                "4":0.4
+                "4":0.4,
+                "5":0.2
             },
             defendnCoreRatio:{
                 "0":1,
@@ -122,7 +123,7 @@ const referenceModule = {
             "builder":1,
             "upgrader":1
         },
-        worker:{work:2,carry:3,move:5},
+        worker:{work:2,carry:3,move:4},
         upgrader:{work:5,carry:1,move:2},
         transferer:{work:4,carry:1,move:2},
         miner:{work:5,carry:2,move:6},
@@ -215,9 +216,9 @@ const referenceModule = {
             tower:"6-5",
         },
         repairJob:{
-            harvester:"12-13-0-4-3-1-2-12-13",
-            builder:"12-13-1-0-4-2-12-13",
-            repairer:"12-13-4-5-0-1-2-12-13",
+            harvester:"12-13-0-4-5-3-1-2-12-13",
+            builder:"12-13-1-0-4-5-2-12-13",
+            repairer:"15-12-13-4-5-0-1-2-12-13",
             pickuper:"18-15-creep.store.getUsedCapacity(RESOURCE_ENERGY)>0?4:3-18-7-3-8-15",
             tower:"6-5",
         },

@@ -17,14 +17,13 @@ const _getRepairObject=function(roomName,absolute = false){ // Dealing with the 
         chosenStructure = repairObject["roads"][0]
     }
     if (chosenStructure === undefined && absolute === true){
-        let allNeededStructures = _.filter(Game.spawns['Origin'].memory.init.access.all[roomName]["neededRepair"],(structure_id)=>{
-            const _structure = Game.getObjectById(structure_id)
-            return _structure.structureType !== STRUCTURE_WALL && _structure.structureType !== STRUCTURE_RAMPART
-        })
-        allNeededStructures.sort((structureA,structureB)=>{
-            return helpFunc.getHitRatio(structureA.id) - helpFunc.getHitRatio(structureB.id)
+        let allNeededStructures = _.filter(Game.rooms[roomName].find(FIND_STRUCTURES),(structure)=>{
+            return structure.structureType !== STRUCTURE_WALL && structure.structureType !== STRUCTURE_RAMPART && structure.hits < structure.hitsMax
         })
         if (allNeededStructures.length > 0){
+            allNeededStructures.sort((structureA,structureB)=>{
+                return helpFunc.getHitRatio(structureA.id) - helpFunc.getHitRatio(structureB.id)
+            })
             chosenStructure = allNeededStructures[0].id
         }else{
             if (Game.spawns['Origin'].memory.assess.access.structures[roomName]["neededRepair"]["ramparts"].length > 0){
@@ -207,9 +206,10 @@ const roleJob = {
             object.memory.building = false
             object.memory.repairTarget = undefined
         }
-        if ( (( (object.memory && object.memory.building) ||
-               (object.structureType && object.structureType === STRUCTURE_TOWER && _isTowerEnergyEnough(object.id)) ) &&
-              Game.spawns['Origin'].memory.assess.access.is.neededRepair[roomName] === true) || absolute === true) {
+        const _neededRepair = Game.spawns['Origin'].memory.assess.access.is.neededRepair[roomName]
+        if ( (object.memory && object.memory.building && (_neededRepair === true || object.memory.role === "repairer")) ||
+             (object.structureType && _neededRepair===true && _isTowerEnergyEnough(object.id)) ||
+              absolute === true) {
                 feedBack = JobOK
         }
         if (feedBack === JobOK){
@@ -220,11 +220,15 @@ const roleJob = {
                 helpFunc.getHitRatio(object.memory.repairTarget) === 1){
                     object.memory.repairTarget = _getRepairObject(roomName,true)
                 }
-                const repairTargetObject = Game.getObjectById(object.memory.repairTarget)
-                if (object.repair(repairTargetObject) === ERR_NOT_IN_RANGE){
-                    object.moveTo(repairTargetObject)
+                if (object.memory.repairTarget === undefined){
+                    feedBack = JobERR
                 }else{
-
+                    const repairTargetObject = Game.getObjectById(object.memory.repairTarget)
+                    if (object.repair(repairTargetObject) === ERR_NOT_IN_RANGE){
+                        object.moveTo(repairTargetObject)
+                    }else{
+    
+                    }
                 }
             }else if (object.structureType === STRUCTURE_TOWER && _isTowerEnergyEnough(object.id) === true) {
                 // For Tower, only repair structures which can't be beared
@@ -557,21 +561,23 @@ const roleJob = {
             creep.memory.building = true
         }
         if (((Game.spawns['Origin'].memory.assess.access.is.containers[roomName].backUp === true ||
-             Game.spawns['Origin'].memory.assess.access.is.storages[roomName].exists === true) &&
+             Game.spawns['Origin'].memory.assess.access.is.storages[roomName].exists === true ||
+             Game.spawns['Origin'].memory.assess.access.is.terminals[roomName] === true) &&
             !creep.memory.building) || absolute === true){
                 feedBack = JobOK
         }
         if (feedBack === JobOK){
             let targetWithdrawl = undefined
             const potentialBackUpContainer = helpFunc.storeFilternSort(Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName].all)
-            if (Game.spawns['Origin'].memory.assess.access.is.containers[roomName].backUp === true && potentialBackUpContainer.length > 0){
+            if (Game.spawns['Origin'].memory.assess.access.is.terminals[roomName] === true && Game.getObjectById(Game.spawns['Origin'].memory.init.access.terminals[roomName][0]).store.getUsedCapacity(RESOURCE_ENERGY) > 0){
+                targetWithdrawl = Game.spawns['Origin'].memory.init.access.terminals[roomName][0]
+                targetWithdrawl = Game.getObjectById(targetWithdrawl)
+            }else if (Game.spawns['Origin'].memory.assess.access.is.containers[roomName].backUp === true && potentialBackUpContainer.length > 0){
                 targetWithdrawl = potentialBackUpContainer[0]
                 targetWithdrawl = Game.getObjectById(targetWithdrawl)
-            }else if (Game.spawns['Origin'].memory.assess.access.is.storages[roomName].exists === true){
-                if (Game.getObjectById(Game.spawns['Origin'].memory.init.access.storages[roomName][0]).store.getUsedCapacity(RESOURCE_ENERGY) > 0){
-                    targetWithdrawl = Game.spawns['Origin'].memory.init.access.storages[roomName][0]
-                    targetWithdrawl = Game.getObjectById(targetWithdrawl)
-                }
+            }else if (Game.spawns['Origin'].memory.assess.access.is.storages[roomName].exists === true && Game.getObjectById(Game.spawns['Origin'].memory.init.access.storages[roomName][0]).store.getUsedCapacity(RESOURCE_ENERGY) > 0){
+                targetWithdrawl = Game.spawns['Origin'].memory.init.access.storages[roomName][0]
+                targetWithdrawl = Game.getObjectById(targetWithdrawl)
             }
             if (targetWithdrawl === undefined) {
                 feedBack = JobERR

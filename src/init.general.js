@@ -22,12 +22,7 @@ let initModule = {
     roads:{},
     extractors:{},
     walls:{},
-    ramparts:{},
-    all:{
-        /*
-        neededRepair:
-        */
-    }
+    ramparts:{}
 }
 let containers = {
     cachedResources:{},
@@ -249,15 +244,18 @@ const initFunction = function() {
     const controlledRooms = Object.values(Game.rooms).filter(room => room.controller.my)
     for (let i = 0; i < controlledRooms.length; i++){
         const roomName = controlledRooms[i].name
+        console.log("Room",roomName," begin to initialize",Game.cpu.getUsed())
         initModule.resources[roomName] = Game.rooms[roomName].find(FIND_SOURCES).map(helpFunc.getId)
         initModule.minerals[roomName] = Game.rooms[roomName].find(FIND_MINERALS).map(helpFunc.getId)
+        initModule.controllers[roomName] = {}
+        initModule.controllers[roomName]["id"] = Game.rooms[roomName].controller.id
+        initModule.controllers[roomName]["level"] = Game.rooms[roomName].controller.level
+        console.log("   Fixed assets init",Game.cpu.getUsed())
         initModule.creeps[roomName] = _.filter(Game.creeps,(creep)=>{
             return creep.memory.home === roomName
         }).map(helpFunc.getId) 
         initModule.enemies[roomName] = Game.rooms[roomName].find(FIND_HOSTILE_CREEPS).map(helpFunc.getId)
-        initModule.controllers[roomName] = {}
-        initModule.controllers[roomName]["id"] = Game.rooms[roomName].controller.id
-        initModule.controllers[roomName]["level"] = Game.rooms[roomName].controller.level
+        console.log("   Creeps init",Game.cpu.getUsed())
         const allStructures = Game.rooms[roomName].find(FIND_STRUCTURES)
         initModule.towers[roomName] = _.filter(allStructures,(structure)=>structure.structureType === STRUCTURE_TOWER).map(helpFunc.getId)
         initModule.labs[roomName] = _.filter(allStructures,(structure)=>structure.structureType=== STRUCTURE_LAB).map(helpFunc.getId)
@@ -272,10 +270,11 @@ const initFunction = function() {
         initModule.extractors[roomName] = _.filter(allStructures,(structure)=>structure.structureType===STRUCTURE_EXTRACTOR).map(helpFunc.getId)
         initModule.walls[roomName] = _.filter(allStructures,(structure)=>structure.structureType === STRUCTURE_WALL).map(helpFunc.getId)
         initModule.ramparts[roomName] = _.filter(allStructures,(structure)=>structure.structureType === STRUCTURE_RAMPART).map(helpFunc.getId)
-        initModule.all[roomName] = {}
-        initModule.all[roomName]["neededRepair"] = _.filter(allStructures,(structure)=>helpFunc.getHitRatio(structure.id) < 1).map(helpFunc.getId)
+        console.log("   Structures init",Game.cpu.getUsed())
         groupFunction(roomName)
+        console.log("   Group Structures init",Game.cpu.getUsed())
         getInfo(roomName)
+        console.log("   Get Info init",Game.cpu.getUsed()) 
     }
 }
 module.exports = {
