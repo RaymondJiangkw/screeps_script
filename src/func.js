@@ -151,9 +151,10 @@ const helpFunc = {
         const creep = Game.getObjectById(creep_id)
         const target = Game.getObjectById(target_id)
         let feedBack = undefined
-        for (let i = 0; i < reference.constants.resourceList.length; i++){
-            feedBack = creep.withdraw(target,reference.constants.resourceList[i])
-            if (feedBack === ERR_NOT_IN_RANGE || feedBack === OK) {
+        const targetStore = Object.keys(target.store)
+        for (let i = 0; i < targetStore.length; i++){
+            feedBack = creep.withdraw(target,targetStore[i])
+            if (feedBack === ERR_NOT_IN_RANGE) {
                 return feedBack
             }
         }
@@ -163,9 +164,10 @@ const helpFunc = {
         const creep = Game.getObjectById(creep_id)
         const target = Game.getObjectById(target_id)
         let feedBack = undefined
-        for (let i = 0; i < reference.constants.resourceList.length; i++){
-            feedBack = creep.transfer(target,reference.constants.resourceList[i])
-            if (feedBack === ERR_NOT_IN_RANGE || feedBack === OK) {
+        const creepStore = Object.keys(creep.store)
+        for (let i = 0; i < creepStore.length; i++){
+            feedBack = creep.transfer(target,creepStore[i])
+            if (feedBack === ERR_NOT_IN_RANGE) {
                 return feedBack
             }
         }

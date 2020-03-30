@@ -233,7 +233,11 @@ const getInfo = function(roomName) {
         resources.available[roomName].available += Game.getObjectById(initModule.spawns[roomName][i]).store.getUsedCapacity(RESOURCE_ENERGY)
         resources.available[roomName].fullCapacity += Game.getObjectById(initModule.spawns[roomName][i]).store.getCapacity(RESOURCE_ENERGY)
     }
-    resources.available[roomName].ratio = resources.available[roomName].available / resources.available[roomName].fullCapacity
+    if (resources.available[roomName].fullCapacity === 0){
+        resources.available[roomName].ratio = 1
+    }else{
+        resources.available[roomName].ratio = resources.available[roomName].available / resources.available[roomName].fullCapacity
+    }
     resources.storage[roomName] = 0
     for (let i = 0; i < initModule.storages[roomName].length;i++){
         resources.storage[roomName] += Game.getObjectById(initModule.storages[roomName][i]).store.getUsedCapacity(RESOURCE_ENERGY);
@@ -246,7 +250,11 @@ const getInfo = function(roomName) {
         resources.backUp[roomName].available += Game.getObjectById(containers.backUp[roomName].all[i]).store.getUsedCapacity(RESOURCE_ENERGY)
         resources.backUp[roomName].fullCapacity += Game.getObjectById(containers.backUp[roomName].all[i]).store.getCapacity(RESOURCE_ENERGY)
     }
-    resources.backUp[roomName].ratio = resources.backUp[roomName].available / resources.backUp[roomName].fullCapacity
+    if (resources.backUp[roomName].fullCapacity === 0){
+        resources.backUp[roomName].ratio = 1
+    }else{
+        resources.backUp[roomName].ratio = resources.backUp[roomName].available / resources.backUp[roomName].fullCapacity
+    }
     // Dealing with mineralsnCompounds
     // mineralsnCompounds[roomName] = {} initialize at groupFunction()
     for (let i = 0; i < reference.constants.resourceList.length;i++){

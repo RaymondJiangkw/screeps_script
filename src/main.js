@@ -3,6 +3,7 @@ const assessModule = require("assess.general")
 const roleSpawn = require('role.spawn')
 const roleLink = require('role.link')
 const roleJob = require('role.job')
+const roleLab = require('role.lab')
 module.exports.loop = function () {
     console.log("")
     console.log("==========","New Loop",Game.time,"==========")
@@ -66,6 +67,12 @@ module.exports.loop = function () {
             roleJob.run(Game.getObjectById(Game.spawns['Origin'].memory.init.access.creeps[roomName][j]))
         }
         console.log("!!! Dealing with the room",roomName,"finished with the cpu:",Game.cpu.getUsed())
+        // Lab
+        // Gather Info requires condition
+        // But since labs produce minerals do not require energy, we should make use of them fully
+        if (Game.spawns['Origin'].memory.assess.access.is.labs[roomName] === true) {
+            roleLab.run(roomName)
+        }
     }
 }
 

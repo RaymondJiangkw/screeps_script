@@ -282,37 +282,38 @@ const initAssess = function() {
 
         // Dealing with the minerals Only consider when the economy is quite good
         assessModule.minerals[roomName] = {neededTransfer:[],neededProduce:[]}
-        if (assessModule.stateLevel.economy[roomName] <= reference.production.lab.requiredEconomyLevel){
-            const roomLevel = (Game.rooms[roomName].controller.level).toString()
-            let _mineralList = []
-            let resultList = []
-            for (let _role in reference.production.lab.allowedCompounds[roomLevel]){
-                for (let _compound in reference.production.lab.allowedCompounds[roomLevel][_role]){
-                    const requiredAmount = reference.production.lab.allowedCompounds[roomLevel][_role][_compound]
-                    if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].all < requiredAmount){
-                        _mineralList.push([_compound,requiredAmount])
-                    }
+        const roomLevel = (Game.rooms[roomName].controller.level).toString()
+        let _mineralList = []
+        let resultList = []
+        for (let _role in reference.production.lab.allowedCompounds[roomLevel]){
+            for (let _compound in reference.production.lab.allowedCompounds[roomLevel][_role]){
+                const requiredAmount = reference.production.lab.allowedCompounds[roomLevel][_role][_compound]
+                if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].all < requiredAmount){
+                    _mineralList.push([_compound,requiredAmount])
                 }
             }
-            let ptr = 0
-            while (ptr < _mineralList.length){ // Broadth-First Search
-                const _type = _mineralList[ptr][0]
-                const _amount = _mineralList[ptr][1]
-                const currentAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].all
-                const labAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].lab
-                if (currentAmount < _amount){ // Out One
-                    resultList.push([_type,_amount - currentAmount])
-                    if (reference.production.lab.basicIngredients.indexOf(_type) === -1){ // Out 2
-                        for (let j = 0; j < reference.production.lab.formula[_type].length;j++){
-                            _mineralList.push([reference.production.lab.formula[_type][j],_amount - currentAmount])
-                        }
+        }
+        let ptr = 0
+        while (ptr < _mineralList.length){ // Broadth-First Search
+            const _type = _mineralList[ptr][0]
+            const _amount = _mineralList[ptr][1]
+            const currentAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].all
+            const labAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].lab
+            if (currentAmount < _amount){ // Out One
+                resultList.push([_type,_amount - currentAmount])
+                if (reference.production.lab.basicIngredients.indexOf(_type) === -1){ // Out 2
+                    for (let j = 0; j < reference.production.lab.formula[_type].length;j++){
+                        _mineralList.push([reference.production.lab.formula[_type][j],_amount - currentAmount])
                     }
-                }else if (labAmount < _amount){
-                    assessModule.minerals[roomName].neededTransfer.push([_type,_amount - labAmount])
                 }
-                ptr++
+            }else if (labAmount < _amount){
+                assessModule.minerals[roomName].neededTransfer.push([_type,_amount - labAmount])
             }
-            assessModule.minerals[roomName].neededProduce = resultList.reverse()
+            ptr++
+        }
+        assessModule.minerals[roomName].neededProduce = resultList.reverse()
+        if (assessModule.structures[roomName]["usableLabs"]["vacant"].length === 0){
+            assessModule.minerals[roomName].neededTransfer = _.filter(assessModule.minerals[roomName].neededTransfer,(arr)=>Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].indexOf(arr[0])!==-1)
         }
     }
 }

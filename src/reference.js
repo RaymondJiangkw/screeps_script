@@ -1,4 +1,7 @@
 const referenceModule = {
+    default:{
+        signController:""
+    },
     assess:{
         economy:{
             assessRatio:{
