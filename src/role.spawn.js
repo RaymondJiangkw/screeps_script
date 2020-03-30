@@ -111,8 +111,12 @@ const roleSpawn = {
         if (this.isTransferer(roomName)){
             if (Game.spawns['Origin'].memory.resourceOccupied.hasOwnProperty(roomName) === false){
                 Game.spawns['Origin'].memory.resourceOccupied[roomName] = {}
+            }
+            if (Object.keys(Game.spawns['Origin'].memory.resourceOccupied[roomName]).length < Object.keys(Game.spawns['Origin'].memory.init.resourceCached.resources[roomName]).length) { 
                 for (let resourceId in Game.spawns['Origin'].memory.init.resourceCached.resources[roomName]){
-                    Game.spawns['Origin'].memory.resourceOccupied[roomName][resourceId] = false
+                    if (Game.spawns['Origin'].memory.resourceOccupied[roomName].hasOwnProperty(resourceId) === false){
+                        Game.spawns['Origin'].memory.resourceOccupied[roomName][resourceId] = false
+                    }
                 }
             }
             const neededResources = Object.keys(Game.spawns['Origin'].memory.resourceOccupied[roomName]).filter(
