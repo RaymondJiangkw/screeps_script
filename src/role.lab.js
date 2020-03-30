@@ -35,8 +35,12 @@ const roleLab = {
                 if (Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].indexOf(_mineral)!==-1){
                     reactionLab = Game.spawns['Origin'].memory.assess.access.structures[roomName].usableLabs[_mineral] // Arr
                     reactionLab = _.filter(reactionLab,(labId)=>Game.getObjectById(labId).cooldown === 0)
-                    reactionLab = reactionLab[0]
-                    if (reactionLab.store.getFreeCapacity(_mineral) <= _amount){
+                    if (reactionLab.length > 0){
+                        reactionLab = reactionLab[0]
+                        if (Game.getObjectById(reactionLab).store.getFreeCapacity(_mineral) <= _amount){
+                            reactionLab = undefined
+                        }
+                    }else{
                         reactionLab = undefined
                     }
                 }
@@ -54,3 +58,4 @@ const roleLab = {
     }
 }
 module.exports = roleLab
+

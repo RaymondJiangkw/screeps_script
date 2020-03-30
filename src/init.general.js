@@ -205,7 +205,7 @@ const groupFunction = function(roomName){
     for (let i = 0; i < initModule.labs[roomName].length;i++){
         let __mineralType = Game.getObjectById(initModule.labs[roomName][i]).mineralType
         if (__mineralType !== undefined){
-            if (!mineralsnCompounds.hasOwnProperty(__mineralType)){
+            if (!mineralsnCompounds[roomName].hasOwnProperty(__mineralType)){
                 mineralsnCompounds[roomName][__mineralType] = {
                     storage:0,
                     terminal:0,
@@ -259,7 +259,7 @@ const getInfo = function(roomName) {
     // mineralsnCompounds[roomName] = {} initialize at groupFunction()
     for (let i = 0; i < reference.constants.resourceList.length;i++){
         const productType = reference.constants.resourceList[i]
-        if (!mineralsnCompounds.hasOwnProperty(productType)){
+        if (!mineralsnCompounds[roomName].hasOwnProperty(productType)){
             mineralsnCompounds[roomName][productType] = {
                 storage:0,
                 terminal:0,

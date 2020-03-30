@@ -193,7 +193,13 @@ const helpFunc = {
       }
       return _defaultResult
     },
-    storeFilternSort:function(_structureIdArr,reversed = false){
+    getCreepBody:function(creep){
+        creep.memory.bodyParts = {move: 0, work: 0, attack: 0, carry: 0, heal: 0, "ranged_attack": 0, tough: 0, claim: 0}
+        for (let i = 0; i < creep.body.length;i++){
+            creep.memory.bodyParts[creep.body[i].type]++
+        }
+    },
+    storeFilternSort:function(_structureIdArr, reversed = false){
       let _tmp = [].concat(_structureIdArr)
       _tmp = _.filter(_tmp,(structure_id)=>{
           if (reversed === false){

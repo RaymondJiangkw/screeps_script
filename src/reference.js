@@ -241,20 +241,21 @@ const referenceModule = {
                 transaction:0.5
             }
         },
-        buy:{
+        buy:{ // inventory
+            reservedEnergy:0.2, // Energy should not be automatically sold in case of buying energy
 
         },
-        sell:{
-
-        },
-        inventory:{ // Ratio
-            energy:1,
+        sell:{ // transaction
+            sellingMineral:0.3,
+            reservedEnergy:0.2
         }
     },
     production:{
         lab:{
             requiredEconomyLevel:0.5,
-            minOnceProduction:100,
+            minOnceProduction:1000,
+            minBoostEnergy:20,
+            minBoostCompound:30,
             allowedCompounds:{ // Controller Level -> Role -> Cached Amount
             /* Basic Ideas
                 Since each room only has limited resources, it's more wise to produce one type, and buy the other.
@@ -326,6 +327,38 @@ const referenceModule = {
                 "XZHO2":["ZHO2","X"],
                 "XGH2O":["GH2O","X"],
                 "XGHO2":["GHO2","X"]
+            },
+            effect:{
+                "UH":"attack",
+                "UO":"work",
+                "KH":"carry",
+                "KO":"ranged_attack",
+                "LH":"work",
+                "LO":"heal",
+                "ZH":"work",
+                "ZO":"move",
+                "GH":"work",
+                "GO":"tough",
+                "UH2O":"attack",
+                "UHO2":"work",
+                "KH2O":"carry",
+                "KHO2":"ranged_attack",
+                "LH2O":"work",
+                "LHO2":"heal",
+                "ZH2O":"work",
+                "ZHO2":"move",
+                "GH2O":"work",
+                "GHO2":"tough",
+                "XUH2O":"attack",
+                "XUHO2":"work",
+                "XKH2O":"carry",
+                "XKHO2":"ranged_attack",
+                "XLH2O":"work",
+                "XLHO2":"heal",
+                "XZH2O":"work",
+                "XZHO2":"move",
+                "XGH2O":"work",
+                "XGHO2":"tough"
             }
         },
         factory:{

@@ -303,11 +303,12 @@ const initAssess = function() {
                 resultList.push([_type,_amount - currentAmount])
                 if (reference.production.lab.basicIngredients.indexOf(_type) === -1){ // Out 2
                     for (let j = 0; j < reference.production.lab.formula[_type].length;j++){
-                        _mineralList.push([reference.production.lab.formula[_type][j],_amount - currentAmount])
+                        _mineralList.push([reference.production.lab.formula[_type][j],(_amount - currentAmount)])
                     }
                 }
-            }else if (labAmount < _amount){
-                assessModule.minerals[roomName].neededTransfer.push([_type,_amount - labAmount])
+            }
+            if (_amount > labAmount && currentAmount > labAmount){
+                assessModule.minerals[roomName].neededTransfer.push([_type,helpFunc.min(currentAmount,_amount) - labAmount])
             }
             ptr++
         }
