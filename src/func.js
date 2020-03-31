@@ -150,15 +150,13 @@ const helpFunc = {
     creepWithdrawAll:function(creep_id,target_id){
         const creep = Game.getObjectById(creep_id)
         const target = Game.getObjectById(target_id)
-        let feedBack = undefined
         const targetStore = Object.keys(target.store)
         for (let i = 0; i < targetStore.length; i++){
-            feedBack = creep.withdraw(target,targetStore[i])
-            if (feedBack === ERR_NOT_IN_RANGE) {
-                return feedBack
+            if (creep.withdraw(target,targetStore[i]) === ERR_NOT_IN_RANGE) {
+                return ERR_NOT_IN_RANGE
             }
         }
-
+        return OK
     },
     creepTransferAll:function(creep_id,target_id){
         const creep = Game.getObjectById(creep_id)

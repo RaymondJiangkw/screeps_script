@@ -1,6 +1,14 @@
 const referenceModule = {
     default:{
-        signController:""
+        signController:"",
+        roomMode:{
+            "normal":{
+                "standard":""
+            },
+            "passive":{
+                "standard":""
+            }
+        }
     },
     assess:{
         economy:{
@@ -165,7 +173,7 @@ const referenceModule = {
             "5":"repair",
             "6":"defendTower",
             "7":"pickUp",
-            "8":"transfer",
+            "8":"claim",
             "9":"attack",
             "10":"heal",
             "11":"chargeLink",
@@ -178,8 +186,10 @@ const referenceModule = {
             "18":"mineralContainerHarvest",
             "19":"strengthenTower",
             "20":"chargeLab",
-            "21":"claim",
-            "22":"compoundTransfer"
+            "21":"compoundLabRetrieve",
+            "22":"compoundLabTransfer",
+            "23":"compoundMarketRetrieve",
+            "24":"compoundMarketTransfer"
         },
         standard:{
             standardNum:4,
@@ -207,31 +217,34 @@ const referenceModule = {
             upgrader:"16-12-13-2-16-12-13",
             repairer:"12-13-5-4-0-1-2-12-13",
             miner:"14-Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers>0?14:3-14",
-            pickuper:"8-18-7-3-0-22",
+            pickuper:"18-7-21-23-24-22-3",
             tower:"6-5-19-5",
             attacker:"9",
-            claimer:"21"
+            claimer:"8",
         },
         economyJob:{
             harvester:"15-12-13-0-4-3-1-2-15-12-13",
             builder:"12-13-0-1-4-2-12-15-13",
             repairer:"12-13-0-4-5-1-2-12-13",
-            pickuper:"8-15-0-18-7-3-15",
+            pickuper:"15-18-7-0-3",
             tower:"6-5",
         },
         repairJob:{
             harvester:"12-13-0-4-5-3-1-2-12-13",
-            builder:"12-13-1-0-4-5-2-12-13",
+            builder:"12-13-4-1-0-5-2-12-13",
             repairer:"15-12-13-4-5-0-1-2-12-13",
-            pickuper:"8-18-15-creep.store.getUsedCapacity(RESOURCE_ENERGY)>0?4:3-18-7-3-15",
+            pickuper:"15-18-7-4-3",
             tower:"6-5",
         },
         warJob:{
             harvester:"15-12-13-4-0-3-1-2-15-12-13",
             builder:"12-13-4-1-0-2-12-15-13",
             repairer:"12-13-4-0-5-1-2-12-13",
-            pickuper:"8-15-4-18-7-3-15",
+            pickuper:"15-18-7-4-3",
             tower:"6",
+        },
+        passiveJob:{
+
         }
     },
     market:{
