@@ -1,3 +1,27 @@
+/*Creep Memory
+home :: spawnHome
+role :: Job
+hasBoosted :: the parts has already been boosted
+neededBoosted :: the all parts should be boosted
+boostDiffArr :: the parts waiting to be boosted
+
+targetRoom :: attacker/claimer target Room
+iftransfering, boolean :: whether begin to transfer the minerals stored in the cachedMineral Container
+harvestContainerTarget :: target of harvesting the container
+chargeTarget :: target of charging the defense
+targetId :: target to attack
+targetResource :: compounds transfer to the lab [Type,RemainingAmount]
+targetRetrieve :: the target to retrieve to transfer to the lab
+targetLab :: the target lab to transfer compound
+
+Storing Behavior will reset all, so be careful
+signals(Guidelines for carrying resources):
+    building, boolean :: whether has carried energy
+    mineralTransfer, boolean :: whether has carried EXTRACTIVE minerals
+    labTransfer, boolean :: whether has carried compounds
+    storing, boolean :: whether has carried dropped out resources
+    hasPickUp :: whether the creep has picked up something
+*/
 const referenceModule = {
     default:{
         signController:"",
@@ -136,7 +160,7 @@ const referenceModule = {
         },
         worker:{work:2,carry:3,move:4},
         upgrader:{work:5,carry:1,move:2},
-        transferer:{work:4,carry:1,move:2},
+        transferer:{work:5,carry:1,move:2},
         miner:{work:5,carry:2,move:6},
         repairer:{work:3,carry:3,move:6},
         pickuper:{tough:1,carry:5,move:6},
@@ -164,6 +188,7 @@ const referenceModule = {
     },
     work:{
         // Always have an argument of absolute executing
+        // S means sending signal
         interpret:{
             "0":"chargeEnergy",
             "1":"build",
@@ -172,24 +197,27 @@ const referenceModule = {
             "4":"chargeDefense",
             "5":"repair",
             "6":"defendTower",
-            "7":"pickUp",
+            "7":"SpickUp",
             "8":"claim",
             "9":"attack",
             "10":"heal",
             "11":"chargeLink",
-            "12":"containerHarvest",
-            "13":"resourceHarvest",
-            "14":"mineralHarvest",
-            "15":"storageHarvest",
-            "16":"linkUpdateHarvest",
-            "17":"linkStorageHarvest",
-            "18":"mineralContainerHarvest",
+            "12":"ScontainerHarvest",
+            "13":"SresourceHarvest",
+            "14":"SmineralHarvest",
+            "15":"SstorageHarvest",
+            "16":"SlinkUpdateHarvest",
+            "17":"SlinkStorageHarvest",
+            "18":"SmineralContainerHarvest",
             "19":"strengthenTower",
             "20":"chargeLab",
-            "21":"compoundLabRetrieve",
+            "21":"ScompoundLabRetrieve",
             "22":"compoundLabTransfer",
-            "23":"compoundMarketRetrieve",
-            "24":"compoundMarketTransfer"
+            "23":"ScompoundMarketRetrieve",
+            "24":"compoundMarketTransfer",
+            "25":"ScompoundFactoryRetrieve",
+            "26":"compoundFactoryTransfer",
+            "27":"chargePower"
         },
         standard:{
             standardNum:4,
@@ -217,7 +245,7 @@ const referenceModule = {
             upgrader:"16-12-13-2-16-12-13",
             repairer:"12-13-5-4-0-1-2-12-13",
             miner:"14-Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers>0?14:3-14",
-            pickuper:"18-7-21-23-24-22-3",
+            pickuper:"18-7-21-25-23-24-26-22-3",
             tower:"6-5-19-5",
             attacker:"9",
             claimer:"8",
@@ -260,7 +288,9 @@ const referenceModule = {
         },
         sell:{ // transaction
             sellingMineral:0.3,
-            reservedEnergy:0.2
+            reservedEnergy:0.2,
+            goods:[RESOURCE_GHODIUM_MELT],
+            roomSellingGoods:["reference.market.sell.goods","[Game.getObjectById(Game.spawns['Origin'].memory.init.access.minerals[roomName][0]).mineralType]"]
         }
     },
     production:{
