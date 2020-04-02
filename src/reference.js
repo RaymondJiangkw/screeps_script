@@ -6,14 +6,25 @@ neededBoosted :: the all parts should be boosted
 boostDiffArr :: the parts waiting to be boosted
 
 targetRoom :: attacker/claimer target Room
+
 iftransfering, boolean :: whether begin to transfer the minerals stored in the cachedMineral Container
+
 harvestContainerTarget :: target of harvesting the container
+
 chargeTarget :: target of charging the defense
+
 targetId :: target to attack
+
 targetResource :: compounds transfer to the lab [Type,RemainingAmount]
 targetRetrieve :: the target to retrieve to transfer to the lab
+
 targetLab :: the target lab to transfer compound
+
+targetLabExhaust :: the target lab to exhaust basic mineral
+labExhuastMineralType :: the mineralType
+
 hasPickUp :: whether the creep has picked up something
+
 hasGoods :: whether the creep has carried goods
 marketTarget :: Array [structureID,Type] :: info about transfering goods to the terminal
 
@@ -22,6 +33,7 @@ signals(Guidelines for carrying resources):
     building, boolean :: whether has carried energy
     mineralTransfer, boolean :: whether has carried EXTRACTIVE minerals
     labTransfer, boolean :: whether has carried compounds
+    labExhaust, boolean :: whether has carried lab's surplus basic minerals
     marketTransfer, boolean :: whether has carried goods
     storing, boolean :: whether has carried dropped out resources
     
@@ -222,7 +234,8 @@ const referenceModule = {
             "24":"compoundMarketTransfer",
             "25":"ScompoundFactoryRetrieve",
             "26":"compoundFactoryTransfer",
-            "27":"chargePower"
+            "27":"chargePower",
+            "28":"SexhuastLab"
         },
         standard:{
             standardNum:4,
@@ -250,7 +263,7 @@ const referenceModule = {
             upgrader:"16-12-13-2-16-12-13",
             repairer:"12-13-5-4-0-1-2-12-13",
             miner:"14-Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers>0?14:3-14",
-            pickuper:"18-7-21-25-23-24-26-22-3",
+            pickuper:"18-7-21-25-23-28-24-26-22-3",
             tower:"6-5-19-5",
             attacker:"9",
             claimer:"8",
@@ -259,21 +272,21 @@ const referenceModule = {
             harvester:"15-12-13-0-4-3-1-2-15-12-13",
             builder:"12-13-0-1-4-2-12-15-13",
             repairer:"12-13-0-4-5-1-2-12-13",
-            pickuper:"15-18-7-0-3",
+            pickuper:"15-18-7-21-25-28-0-26-22-3",
             tower:"6-5",
         },
         repairJob:{
             harvester:"12-13-0-4-5-3-1-2-12-13",
             builder:"12-13-4-1-0-5-2-12-13",
             repairer:"15-12-13-4-5-0-1-2-12-13",
-            pickuper:"15-18-7-4-3",
+            pickuper:"15-18-7-21-25-28-4-26-22-3",
             tower:"6-5",
         },
         warJob:{
             harvester:"15-12-13-4-0-3-1-2-15-12-13",
             builder:"12-13-4-1-0-2-12-15-13",
             repairer:"12-13-4-0-5-1-2-12-13",
-            pickuper:"15-18-7-4-3",
+            pickuper:"15-18-7-21-25-28-4-26-22-3",
             tower:"6",
         },
         passiveJob:{
@@ -287,8 +300,8 @@ const referenceModule = {
                 transaction:0.5
             },
             fullSpace:300000,
-            getInventorySpace:()=>{return this.fullSpace * this.space.inventory},
-            getTransactionSpace:()=>{return this.fullSpace * this.space.transaction}
+            getInventorySpace:function(){return this.fullSpace * this.space.inventory},
+            getTransactionSpace:function(){return this.fullSpace * this.space.transaction}
         },
         buy:{ // inventory
             reservedEnergy:0.2, // Energy should not be automatically sold in case of buying energy
@@ -311,14 +324,13 @@ const referenceModule = {
                 compound:5000
             }
         },
-        getReservedEnergy:()=>{return this.general.getInventorySpace() * this.buy.reservedEnergy},
-        getSellingEnergy:()=>{return this.general.getTransactionSpace() * this.sell.reservedEnergy},
-        getSellingMineral:()=>{return this.general.getTransactionSpace() * this.sell.sellingMineral}
+        getReservedEnergy:function(){return this.general.getInventorySpace() * this.buy.reservedEnergy},
+        getSellingEnergy:function(){return this.general.getTransactionSpace() * this.sell.reservedEnergy},
+        getSellingMineral:function(){return this.general.getTransactionSpace() * this.sell.sellingMineral}
     },
     production:{
         lab:{
             requiredEconomyLevel:0.5,
-            minOnceProduction:1000,
             minBoostEnergy:20,
             minBoostCompound:30,
             allowedCompounds:{ // Controller Level -> Role -> Cached Amount

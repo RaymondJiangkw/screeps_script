@@ -71,6 +71,7 @@ const assessModule = {
         usableLabs:{
             `mineralType`: // with some minerals in it, for every type, there should be only one
             vacant: // with no minerals in it, thus able to perform reaction, ordered by cooldown
+            neededExhaust: // storing duplicate basic minerals lab
         } 
         */
     },
@@ -277,16 +278,20 @@ const initAssess = function() {
             const labB = Game.getObjectById(labIdB)
             return labA.cooldown - labB.cooldown
         })
+        assessModule.structures[roomName]["usableLabs"]["neededExhaust"] = []
         for (let i = 0; i < Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].length;i++){
             const __mineralType = Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName][i]
             assessModule.structures[roomName]["usableLabs"][__mineralType] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === __mineralType)
+            if (helpFunc.inArr(__mineralType,reference.production.lab.basicIngredients) && assessModule.structures[roomName]["usableLabs"][__mineralType].length > 1){
+                assessModule.structures[roomName]["usableLabs"]["neededExhaust"].push(__mineralType)
+            }
         }
-
         // Dealing with the minerals Only consider when the economy is quite good
         if (!Game.spawns['Origin'].memory.assess || 
             !Game.spawns['Origin'].memory.assess.access.minerals[roomName]){
             assessModule.minerals[roomName] = {neededTransfer:[],neededProduce:[]}
         }else{
+            assessModule.minerals[roomName] = {}
             assessModule.minerals[roomName].neededProduce = []
             assessModule.minerals[roomName].neededTransfer = Game.spawns['Origin'].memory.assess.access.minerals[roomName].neededTransfer
         }

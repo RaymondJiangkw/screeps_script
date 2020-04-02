@@ -22,11 +22,7 @@ const roleLab = {
                     if (Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].indexOf(requiredCompounds[j])!==-1){
                         const chosenLabArr = Game.spawns['Origin'].memory.assess.access.structures[roomName].usableLabs[requiredCompounds[j]]
                         // Always choose the most one
-                        if (Game.getObjectById(chosenLabArr[chosenLabArr.length - 1]).store.getUsedCapacity(requiredCompounds[j]) >= reference.production.lab.minOnceProduction){
-                            chosenLabs.push(chosenLabArr[chosenLabArr.length - 1])
-                        }else{
-                            break
-                        }
+                        chosenLabs.push(chosenLabArr[chosenLabArr.length - 1])
                     }else{
                         break
                     }
@@ -58,4 +54,3 @@ const roleLab = {
     }
 }
 module.exports = roleLab
-
