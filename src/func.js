@@ -212,6 +212,9 @@ const helpFunc = {
           return this.getUsedCapacity(structureIdA) - this.getUsedCapacity(structureIdB)
       })
       return _tmp
+    },
+    inArr:function(_content,_arr){
+        return _arr.indexOf(_content) !== -1
     }
 }
 module.exports = helpFunc

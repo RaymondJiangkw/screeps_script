@@ -13,14 +13,18 @@ targetId :: target to attack
 targetResource :: compounds transfer to the lab [Type,RemainingAmount]
 targetRetrieve :: the target to retrieve to transfer to the lab
 targetLab :: the target lab to transfer compound
+hasPickUp :: whether the creep has picked up something
+hasGoods :: whether the creep has carried goods
+marketTarget :: Array [structureID,Type] :: info about transfering goods to the terminal
 
 Storing Behavior will reset all, so be careful
 signals(Guidelines for carrying resources):
     building, boolean :: whether has carried energy
     mineralTransfer, boolean :: whether has carried EXTRACTIVE minerals
     labTransfer, boolean :: whether has carried compounds
+    marketTransfer, boolean :: whether has carried goods
     storing, boolean :: whether has carried dropped out resources
-    hasPickUp :: whether the creep has picked up something
+    
 */
 const referenceModule = {
     default:{
@@ -148,7 +152,8 @@ const referenceModule = {
                 containerWaitingBearableTimeInterval:15,
             },
             build:{
-                helpBuildControllerLevel:2
+                helpBuildControllerLevel:2,
+                helpBuildHomeControllerLevel:6
             }
         }
     },
@@ -210,7 +215,7 @@ const referenceModule = {
             "17":"SlinkStorageHarvest",
             "18":"SmineralContainerHarvest",
             "19":"strengthenTower",
-            "20":"chargeLab",
+            "20":"chargeLabFactory",
             "21":"ScompoundLabRetrieve",
             "22":"compoundLabTransfer",
             "23":"ScompoundMarketRetrieve",
@@ -280,18 +285,35 @@ const referenceModule = {
             space:{
                 inventory:0.5,
                 transaction:0.5
-            }
+            },
+            fullSpace:300000,
+            getInventorySpace:()=>{return this.fullSpace * this.space.inventory},
+            getTransactionSpace:()=>{return this.fullSpace * this.space.transaction}
         },
         buy:{ // inventory
             reservedEnergy:0.2, // Energy should not be automatically sold in case of buying energy
-
         },
         sell:{ // transaction
             sellingMineral:0.3,
             reservedEnergy:0.2,
-            goods:[RESOURCE_GHODIUM_MELT],
-            roomSellingGoods:["reference.market.sell.goods","[Game.getObjectById(Game.spawns['Origin'].memory.init.access.minerals[roomName][0]).mineralType]"]
-        }
+            // These two are ordered, the former one will be sold first, the after ones will be sold 
+            // when and only when the former ones have all been sold to a propriate degree
+            commodities:[RESOURCE_GHODIUM_MELT], // meaning only sell do not reserve
+            compounds:[]
+        },
+        storage:{ // Reserved some amount
+            lab:{
+                compound:90
+            },
+            storage:{
+                beginEconomyLevel:0.5,
+                mineral:10000,
+                compound:5000
+            }
+        },
+        getReservedEnergy:()=>{return this.general.getInventorySpace() * this.buy.reservedEnergy},
+        getSellingEnergy:()=>{return this.general.getTransactionSpace() * this.sell.reservedEnergy},
+        getSellingMineral:()=>{return this.general.getTransactionSpace() * this.sell.sellingMineral}
     },
     production:{
         lab:{
@@ -405,7 +427,12 @@ const referenceModule = {
             }
         },
         factory:{
-
+            stored:{
+                energy:10000,
+                allowedCompound:[]
+            },
+            reaction:{},
+            formula:{}
         }
     },
     constants:{

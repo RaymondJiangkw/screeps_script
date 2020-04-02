@@ -25,6 +25,9 @@ let initModule = {
     walls:{},
     ramparts:{}
 }
+let rooms = {
+    controlled:[]
+}
 let containers = {
     cachedResources:{},
     cachedMinerals:{},
@@ -284,6 +287,7 @@ const getMarketInfo = function(roomName) {
 const initFunction = function() {
     // Considering the case of only-need-one-time initializing
     const controlledRooms = Object.values(Game.rooms).filter(room => room.controller.my)
+    rooms.controlled = controlledRooms
     for (let i = 0; i < controlledRooms.length; i++){
         const roomName = controlledRooms[i].name
         console.log("Room",roomName," begin to initialize",Game.cpu.getUsed())
@@ -328,5 +332,6 @@ module.exports = {
     infoResources:resources,
     infoCompounds:mineralsnCompounds,
     infoMarket:getMarketInfo,
+    infoRooms:rooms,
     resourceCached:isCached
 }

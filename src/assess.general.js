@@ -59,6 +59,7 @@ const assessModule = {
             spawns:,
             extensions:,
             labs:,
+            factory:
         }
         neededRepair:{
             roads:,
@@ -215,8 +216,6 @@ const initAssess = function() {
             neededCharge:{},
             neededRepair:{}
         }
-        
-        
         assessModule.structures[roomName]["neededCharge"]["towers"] = _.filter(neededChargeStructures,(structure_id)=>{
             return Game.getObjectById(structure_id).structureType === STRUCTURE_TOWER && ((helpFunc.getUsedCapacity(structure_id) / helpFunc.getCapacity(structure_id)) <= reference.assess.work.tower.leastWarEnergyRatio)
         })
@@ -230,6 +229,13 @@ const initAssess = function() {
         assessModule.structures[roomName]["neededCharge"]["spawns"] = _.filter(neededChargeStructures,(structure_id)=>Game.getObjectById(structure_id).structureType === STRUCTURE_SPAWN)
         assessModule.structures[roomName]["neededCharge"]["extensions"] = _.filter(neededChargeStructures,(structure_id)=>Game.getObjectById(structure_id).structureType === STRUCTURE_EXTENSION)
         assessModule.structures[roomName]["neededCharge"]["labs"] = _.filter(neededChargeStructures,(structure_id)=>Game.getObjectById(structure_id).structureType === STRUCTURE_LAB)
+        assessModule.structures[roomName]["neededCharge"]["factory"] = []
+        if (assessModule.is.factories[roomName]){
+            const _factory = Game.getObjectById(Game.spawns['Origin'].memory.init.access.factories[roomName][0])
+            if (_factory.store.getUsedCapacity(RESOURCE_ENERGY) <= reference.production.factory.stored.energy){
+                assessModule.structures[roomName]["neededCharge"]["factory"].push(Game.spawns['Origin'].memory.init.access.factories[roomName][0])
+            }
+        }
         assessModule.is.neededCharge[roomName] = assessModule.structures[roomName]["neededCharge"]["spawns"].length > 0 ||
                                                  assessModule.structures[roomName]["neededCharge"]["extensions"].length > 0
         

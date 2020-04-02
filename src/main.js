@@ -17,6 +17,7 @@ module.exports.loop = function () {
     Game.spawns['Origin'].memory.init.infoResources = initModule.infoResources
     Game.spawns['Origin'].memory.init.infoCompounds = initModule.infoCompounds
     Game.spawns['Origin'].memory.init.infoMarket = initModule.infoMarket
+    Game.spawns['Origin'].memory.init.infoRooms = initModule.infoRooms
     Game.spawns['Origin'].memory.init.resourceCached = initModule.resourceCached
     console.log("!!! Prepare the information finished with the cpu:",Game.cpu.getUsed())
     // Init Memory
