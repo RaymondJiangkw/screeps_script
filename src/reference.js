@@ -72,10 +72,10 @@ const referenceModule = {
                 "4":0
             },
             storageAmount:{
-                "0":30000,
-                "1":15000,
-                "2":10000,
-                "3":5000,
+                "0":100000,
+                "1":80000,
+                "2":50000,
+                "3":30000,
                 "4":0
             }
         },
@@ -357,10 +357,13 @@ const referenceModule = {
                         "UO":3000,
                     },
                     "builder":{
-                        "LH":3000,
+                        "LH":1500,
                     },
                     "upgrader":{
                         "GH":3000,
+                    },
+                    "repairer":{
+                        "LH":1500,
                     },
                     "pickuper":{
                         "KH":3000,

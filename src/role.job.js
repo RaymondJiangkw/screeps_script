@@ -92,7 +92,7 @@ const roleJob = {
                 reference.production.lab.minBoostEnergy * creep.memory.bodyParts[reference.production.lab.effect[creep.memory.boostDiffArr[0]]]){
                 let _feedBack = Game.getObjectById(chosenLabId).boostCreep(creep)
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(chosenLabId))
+                    creep.moveTo(Game.getObjectById(chosenLabId),{reusePath: 50})
                 }else if (_feedBack === OK){
                     creep.memory.hasBoosted.push(creep.memory.boostDiffArr[0])
                     creep.memory.boostDiffArr.shift()
@@ -105,7 +105,18 @@ const roleJob = {
         }
         return feedBack
     },
-    chargeEnergyBehavior:function(creep,absolute = false){
+    creepCachedMove:function(creep){
+        if (creep.memory._move){
+            const moveInfo = creep.memory._move
+            const dest = moveInfo.dest
+            if (creep.pos.x !== dest.x || creep.pos.y !== dest.y || creep.room.name !== dest.room){
+                creep.moveTo(new RoomPosition(dest.x,dest.y,dest.room),{noPathFinding: true})
+                return JobOK
+            }
+        }
+        return JobERR
+    },
+    chargeEnergyBehavior:function(creep, absolute = false){
         const roomName = creep.memory.home
         let feedBack = JobERR
         if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0){
@@ -126,7 +137,7 @@ const roleJob = {
             chosenStructure = Game.getObjectById(chosenStructure)
             let _feedBack = creep.transfer(chosenStructure,RESOURCE_ENERGY)
             if (_feedBack === ERR_NOT_IN_RANGE){
-                creep.moveTo(chosenStructure)
+                creep.moveTo(chosenStructure,{reusePath: 50})
             }else if (_feedBack !== OK){
                 feedBack = JobERR 
             }
@@ -153,7 +164,7 @@ const roleJob = {
             }
             let _feedBack = creep.transfer(chosenStructure,RESOURCE_ENERGY)
             if (_feedBack === ERR_NOT_IN_RANGE){
-                creep.moveTo(chosenStructure)
+                creep.moveTo(chosenStructure,{reusePath: 50})
             }else if (_feedBack !== OK){
                 feedBack = JobERR
             }
@@ -185,7 +196,7 @@ const roleJob = {
         }
         if (feedBack === JobOK){
             if (creep.build(constructionSites[0]) === ERR_NOT_IN_RANGE){
-                creep.moveTo(constructionSites[0])
+                creep.moveTo(constructionSites[0],{reusePath: 50})
             }
         }
         return feedBack
@@ -201,7 +212,7 @@ const roleJob = {
         }
         if (feedBack === JobOK){
             if (creep.upgradeController(Game.rooms[roomName].controller) === ERR_NOT_IN_RANGE){
-                creep.moveTo(Game.rooms[roomName].controller)
+                creep.moveTo(Game.rooms[roomName].controller,{reusePath: 50})
             }
         }
         return feedBack
@@ -236,7 +247,7 @@ const roleJob = {
             }
             chosenStructure = Game.getObjectById(chosenStructure)
             if (helpFunc.creepTransferAll(creep.id,chosenStructure.id) === ERR_NOT_IN_RANGE){
-                creep.moveTo(chosenStructure)
+                creep.moveTo(chosenStructure,{reusePath: 50})
             }
         }
         return feedBack
@@ -264,7 +275,7 @@ const roleJob = {
             }
             const _feedBack = creep.transfer(Game.getObjectById(creep.memory.chargeTarget),RESOURCE_ENERGY)
             if (_feedBack === ERR_NOT_IN_RANGE){
-                creep.moveTo(Game.getObjectById(creep.memory.chargeTarget))
+                creep.moveTo(Game.getObjectById(creep.memory.chargeTarget),{reusePath: 50})
             }
         }
         return feedBack
@@ -295,7 +306,7 @@ const roleJob = {
                 }else{
                     const repairTargetObject = Game.getObjectById(object.memory.repairTarget)
                     if (object.repair(repairTargetObject) === ERR_NOT_IN_RANGE){
-                        object.moveTo(repairTargetObject)
+                        object.moveTo(repairTargetObject,{reusePath: 50})
                     }
                 }
             }else if (object.structureType === STRUCTURE_TOWER && _isTowerEnergyEnough(object.id)) {
@@ -359,14 +370,14 @@ const roleJob = {
             if (targetTombStones.length > 0){
                 targetPickUpObject = targetTombStones[0]
                 if (helpFunc.creepWithdrawAll(creep.id,targetPickUpObject.id) === ERR_NOT_IN_RANGE){
-                    creep.moveTo(targetPickUpObject)
+                    creep.moveTo(targetPickUpObject,{reusePath: 50})
                 }else{
                     creep.memory.hasPickUp = true
                 }
             }else if (targetDroppedResources.length > 0){
                 targetPickUpObject = targetDroppedResources[0]
                 if (creep.pickup(targetPickUpObject) === ERR_NOT_IN_RANGE){
-                    creep.moveTo(targetPickUpObject)
+                    creep.moveTo(targetPickUpObject,{reusePath: 50})
                 }else{
                     creep.memory.hasPickUp = true
                 }
@@ -533,7 +544,7 @@ const roleJob = {
                 const resource = Game.getObjectById(creep.memory.resourceId)
                 const cachedContainerId = Game.spawns['Origin'].memory.init.resourceCached["resources"][roomName][creep.memory.resourceId]
                 if (creep.harvest(resource) === ERR_NOT_IN_RANGE || (cachedContainerId && helpFunc.pos(creep.id,cachedContainerId) !== 0)) {
-                    creep.moveTo(Game.getObjectById(cachedContainerId))
+                    creep.moveTo(Game.getObjectById(cachedContainerId),{reusePath: 50})
                 }
             }
         }
@@ -556,11 +567,11 @@ const roleJob = {
                 creep.memory.cachedContainerId = Game.spawns['Origin'].memory.init.resourceCached["minerals"][roomName][creep.memory.mineralId]
             }
             if (creep.memory.cachedContainerId && helpFunc.pos(creep.id,creep.memory.cachedContainerId) !== 0){
-                creep.moveTo(Game.getObjectById(creep.memory.cachedContainerId))
+                creep.moveTo(Game.getObjectById(creep.memory.cachedContainerId),{reusePath: 50})
             }else{
                 let _feedBack = creep.harvest(Game.getObjectById(creep.memory.mineralId))
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(creep.memory.mineralId))
+                    creep.moveTo(Game.getObjectById(creep.memory.mineralId),{reusePath: 50})
                 }else if (_feedBack === ERR_NOT_ENOUGH_RESOURCES){
                     feedBack = JobERR
                 }
@@ -606,7 +617,7 @@ const roleJob = {
                 feedBack = JobERR
             }else{
                 if (creep.withdraw(targetWithdrawl,RESOURCE_ENERGY) === ERR_NOT_IN_RANGE){
-                    creep.moveTo(targetWithdrawl)
+                    creep.moveTo(targetWithdrawl,{reusePath: 50})
                 }
             }
         }
@@ -728,7 +739,7 @@ const roleJob = {
                 }else{
                     let _feedBack = creep.withdraw(targetObject,creep.memory.targetResource[0],retrieveNum)
                     if (_feedBack === ERR_NOT_IN_RANGE){
-                        creep.moveTo(targetObject)
+                        creep.moveTo(targetObject,{reusePath: 50})
                     }else if (_feedBack === OK){
                         creep.memory.targetResource[1] = creep.memory.targetResource[1] - retrieveNum
                     }
@@ -759,7 +770,7 @@ const roleJob = {
             if (creep.memory.targetLab){
                 let _feedBack = creep.transfer(Game.getObjectById(creep.memory.targetLab),creep.memory.targetResource[0])
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(creep.memory.targetLab))
+                    creep.moveTo(Game.getObjectById(creep.memory.targetLab),{reusePath: 50})
                 }else if (_feedBack === OK){
                     creep.memory.targetResource = undefined
                     creep.memory.targetLab = undefined
@@ -853,7 +864,7 @@ const roleJob = {
             if (creep.memory.marketTarget){
                 const _feedBack = creep.withdraw(Game.getObjectById(creep.memory.marketTarget[0]),creep.memory.marketTarget[1])
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(creep.memory.marketTarget[0]))
+                    creep.moveTo(Game.getObjectById(creep.memory.marketTarget[0]),{reusePath: 50})
                 }else if (_feedBack === ERR_NOT_ENOUGH_RESOURCES){
                     creep.memory.marketTarget = undefined
                 }else if (_feedBack === OK){
@@ -883,10 +894,17 @@ const roleJob = {
         if (feedBack === JobOK){
             const _feedBack = creep.transfer(_terminal,creep.memory.marketTarget[1])
             if (_feedBack === ERR_NOT_IN_RANGE){
-                creep.moveTo(_terminal)
+                creep.moveTo(_terminal,{reusePath: 50})
             }else if (_feedBack === OK){
                 creep.memory.hasGoods = false
+                creep.memory.signals.marketTransfer = false
+                creep.memory.marketTarget = undefined
             }else if (_feedBack === ERR_FULL){
+                feedBack = JobERR
+            }else if (_feedBack === ERR_NOT_ENOUGH_RESOURCES){
+                creep.memory.hasGoods = false
+                creep.memory.signals.marketTransfer = false
+                creep.memory.marketTarget = undefined
                 feedBack = JobERR
             }
         }
@@ -932,7 +950,7 @@ const roleJob = {
             if (creep.memory.targetLabExhaust){
                 const _feedBack = creep.withdraw(Game.getObjectById(creep.memory.targetLabExhaust),creep.memory.labExhaustMineralType)
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(creep.memory.targetLabExhaust))
+                    creep.moveTo(Game.getObjectById(creep.memory.targetLabExhaust),{reusePath: 50})
                 }
             }
             if (!creep.memory.targetLabExhaust){
@@ -957,8 +975,9 @@ const roleJob = {
                 object.memory.signals = {}
             }
             // Prepare the boosts
+            let __feedBack = JobERR //this.creepCachedMove(object)
             let _feedBack = this.prepareCreep(object)
-            if (_feedBack === JobOK){
+            if (_feedBack === JobOK || __feedBack === JobOK){
                 return OK
             }
             // Collect basic info
@@ -992,7 +1011,7 @@ const roleJob = {
                 feedBack = taskFunc(object)
             }
             if (feedBack === JobOK) {
-                console.log("           Role:",role,"WorkMode:",_workModeName," ERRTask: ",taskList.slice(0,i)," OKTask:",taskList[i])
+                console.log("           Role:",role,"CPU:",Game.cpu.getUsed(),"WorkMode:",_workModeName," ERRTask: ",taskList.slice(0,i)," OKTask:",taskList[i])
                 break
             }
             //console.log("   After running task",taskList[i],"the CPU usage is",Game.cpu.getUsed())
