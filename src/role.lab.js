@@ -27,6 +27,9 @@ const roleLab = {
                         break
                     }
                 }
+                if (chosenLabs.length < requiredCompounds.length){
+                    break
+                }
                 let reactionLab = undefined
                 if (Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].indexOf(_mineral)!==-1){
                     reactionLab = Game.spawns['Origin'].memory.assess.access.structures[roomName].usableLabs[_mineral] // Arr

@@ -162,6 +162,7 @@ const referenceModule = {
             },
             creep:{
                 containerWaitingBearableTimeInterval:15,
+                harvestTerminalReservedEnergyEconomyLevel:2.5
             },
             build:{
                 helpBuildControllerLevel:2,
@@ -173,7 +174,14 @@ const referenceModule = {
         num:{
             "harvester":1,
             "builder":1,
-            "upgrader":1
+            "upgrader":1,
+            "pickuper":{
+                "4":1,
+                "5":1,
+                "6":1,
+                "7":1,
+                "8":2
+            }
         },
         worker:{work:2,carry:3,move:4},
         upgrader:{work:5,carry:1,move:2},
@@ -256,6 +264,12 @@ const referenceModule = {
                 call:"warJob"
             }
         },
+        passiveJob:{
+
+        },
+        productionJob:{
+            pickuper:"18-7-21-25-23-28-15-24-26-22-20-3"
+        },
         normalJob:{
             harvester:"12-13-0-3-4-1-20-2-12-13",
             builder:"12-13-1-0-4-20-2-12-13",
@@ -272,25 +286,22 @@ const referenceModule = {
             harvester:"15-12-13-0-4-3-1-2-15-12-13",
             builder:"12-13-0-1-4-2-12-15-13",
             repairer:"12-13-0-4-5-1-2-12-13",
-            pickuper:"15-18-7-21-25-28-0-26-22-3",
+            pickuper:"15-18-7-21-25-28-24-26-22-0-3",
             tower:"6-5",
         },
         repairJob:{
             harvester:"12-13-0-4-5-3-1-2-12-13",
             builder:"12-13-4-1-0-5-2-12-13",
             repairer:"15-12-13-4-5-0-1-2-12-13",
-            pickuper:"15-18-7-21-25-28-4-26-22-3",
+            pickuper:"15-18-7-21-25-28-24-26-22-4-3",
             tower:"6-5",
         },
         warJob:{
             harvester:"15-12-13-4-0-3-1-2-15-12-13",
             builder:"12-13-4-1-0-2-12-15-13",
             repairer:"12-13-4-0-5-1-2-12-13",
-            pickuper:"15-18-7-21-25-28-4-26-22-3",
+            pickuper:"15-18-7-21-25-28-24-26-22-4-3",
             tower:"6",
-        },
-        passiveJob:{
-
         }
     },
     market:{
@@ -319,7 +330,7 @@ const referenceModule = {
                 compound:90
             },
             storage:{
-                beginEconomyLevel:0.5,
+                beginEconomyLevel:1,
                 mineral:10000,
                 compound:5000
             }
@@ -349,25 +360,29 @@ const referenceModule = {
                 "6":{},
                 "7":{
                     "miner":{
-                        "UO":100,
+                        "UO":3000,
                     },
                     "repairer":{
-                        "LH":100,
+                        "LH":3000,
                     },
                     "builder":{
-                        "LH":100,
+                        "LH":3000,
                     },
                     "upgrader":{
-                        "GH":1000,
+                        "GH":3000,
                     },
                     "pickuper":{
-                        "KH":100,
+                        "KH":3000,
+                    },
+                    "goods":{
+                        "G":3000
                     }
                 },
                 "8":{
 
                 }
             },
+            allowedStack:["G"],
             basicIngredients:[RESOURCE_OXYGEN,RESOURCE_HYDROGEN,RESOURCE_UTRIUM,RESOURCE_KEANIUM,RESOURCE_LEMERGIUM,RESOURCE_ZYNTHIUM,RESOURCE_CATALYST],
             formula:{
                 "OH":["H","O"],

@@ -45,8 +45,8 @@ const roleSpawn = {
                Game.getObjectById(Game.spawns['Origin'].memory.init.access.minerals[roomName][0]).mineralAmount > 0 // Only dealing with the case of single mineral 
     },
     isPickUper:function(roomName){
-        return Game.spawns['Origin'].memory.assess.access.stateLevel.economy[roomName] <= 1.5 && Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers === 0 &&
-               Game.rooms[roomName].controller.level >= 4
+        return Game.spawns['Origin'].memory.assess.access.stateLevel.economy[roomName] <= 1.5 && Game.rooms[roomName].controller.level >= 4 && 
+        Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers < reference.spawn.num.pickuper[Game.rooms[roomName].controller.level.toString()]
     },
     spawnCreep:function(spawn,maximumEnergy,role,spawnSet,isSpawning,additionalDis = {}){
         // console.log("head",isSpawning,role)
@@ -142,7 +142,7 @@ const roleSpawn = {
 
         }
         // Dealing with miner
-        if (this.isMiner(roomName)){
+        if (this.isMiner(roomName)){ 
             if (Game.spawns['Origin'].memory.mineralOccupied.hasOwnProperty(roomName) === false){
                 Game.spawns['Origin'].memory.mineralOccupied[roomName] = {}
                 for (let i = 0; i < Game.spawns['Origin'].memory.init.access.minerals[roomName].length;i++){

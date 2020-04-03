@@ -217,6 +217,7 @@ const roleJob = {
             if (creep.store.getUsedCapacity() === 0){
                 creep.memory.signals[signal] = false
             }
+            creep.memory.hasGoods = false
         }
         if ((      (Game.spawns['Origin'].memory.assess.access.is.storages[roomName].neededChargeEnergy ||
               Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName].available.length > 0 ||
@@ -297,7 +298,7 @@ const roleJob = {
                         object.moveTo(repairTargetObject)
                     }
                 }
-            }else if (object.structureType === STRUCTURE_TOWER) {
+            }else if (object.structureType === STRUCTURE_TOWER && _isTowerEnergyEnough(object.id)) {
                 // For Tower, only repair structures which can't be beared
                 object.repair(Game.getObjectById(_getRepairObject(roomName)))
             }
@@ -476,7 +477,10 @@ const roleJob = {
         let feedBack = JobERR
         if (!helpFunc.inArr(roomName,Game.spawns['Origin'].memory.init.infoRooms.controlled)) return feedBack
         const availableContainers = helpFunc.storeFilternSort(Game.spawns['Origin'].memory.init.groupedContainers.cachedResources[roomName])
-        if ((creep.store.getFreeCapacity() === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY !== 0)) ||
+        const fullContainers = _.filter(availableContainers,(containerId)=>Game.getObjectById(containerId).store.getUsedCapacity(RESOURCE_ENERGY) >= creep.store.getFreeCapacity()).sort((containerIdA,containerIdB)=>{
+            return helpFunc.pos(creep.id,containerIdA) - helpFunc.pos(creep.id,containerIdB)
+        })
+        if ((creep.store.getFreeCapacity() === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) !== 0) ||
             (availableContainers.length === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) !== 0)){
             creep.memory.signals.building = true
             creep.memory.harvestContainerTarget = undefined
@@ -487,7 +491,11 @@ const roleJob = {
             creep.memory.harvestContainerTarget = undefined
         }
         if (!creep.memory.harvestContainerTarget && availableContainers.length > 0){
-            creep.memory.harvestContainerTarget = availableContainers[0]
+            if (fullContainers.length > 0){
+                creep.memory.harvestContainerTarget = fullContainers[0]
+            }else{
+                creep.memory.harvestContainerTarget = availableContainers[0]
+            }
         }
         if ((!creep.memory.signals.building &&
             creep.memory.harvestContainerTarget &&
@@ -579,7 +587,9 @@ const roleJob = {
         if (feedBack === JobOK){
             let targetWithdrawl = undefined
             const potentialBackUpContainer = helpFunc.storeFilternSort(Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName].all)
-            if (Game.spawns['Origin'].memory.assess.access.is.terminals[roomName] === true && Game.getObjectById(Game.spawns['Origin'].memory.init.access.terminals[roomName][0]).store.getUsedCapacity(RESOURCE_ENERGY) > 0){
+            if (Game.spawns['Origin'].memory.assess.access.is.terminals[roomName] === true &&
+                (Game.getObjectById(Game.spawns['Origin'].memory.init.access.terminals[roomName][0]).store.getUsedCapacity(RESOURCE_ENERGY) > 0 && Game.spawns['Origin'].memory.assess.access.stateLevel.economy[roomName] >= reference.assess.work.creep.harvestTerminalReservedEnergyEconomyLevel ||
+                Game.getObjectById(Game.spawns['Origin'].memory.init.access.terminals[roomName][0]).store.getUsedCapacity(RESOURCE_ENERGY) > reference.market.getReservedEnergy() ) ){
                 targetWithdrawl = Game.spawns['Origin'].memory.init.access.terminals[roomName][0]
                 targetWithdrawl = Game.getObjectById(targetWithdrawl)
             }else if (potentialBackUpContainer.length > 0){
@@ -608,7 +618,8 @@ const roleJob = {
         if (!helpFunc.inArr(roomName,Game.spawns['Origin'].memory.init.infoRooms.controlled)) return feedBack
         let LinksUpdate = helpFunc.storeFilternSort(Game.spawns['Origin'].memory.init.groupedLinks.emitTo[roomName].upgrade)
         if ((creep.store.getFreeCapacity() === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) > 0) ||
-        (LinksUpdate.length === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) > 0)){
+        (Game.spawns['Origin'].memory.assess.access.is.links[roomName].to.upgrade === true && 
+         Game.spawns['Origin'].memory.assess.access.is.links[roomName].from.resources === true && LinksUpdate.length === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) > 0)){
             creep.memory.signals.building = true
         }
         if ((LinksUpdate.length > 0 && !creep.memory.signals.building && creep.store.getFreeCapacity() > 0) || absolute === true){
@@ -628,7 +639,8 @@ const roleJob = {
         if (!helpFunc.inArr(roomName,Game.spawns['Origin'].memory.init.infoRooms.controlled)) return feedBack
         const LinksBackUp = helpFunc.storeFilternSort(Game.spawns['Origin'].memory.init.groupedLinks.emitTo[roomName].backUp)
         if ((creep.store.getFreeCapacity() === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) > 0) ||
-            (LinksBackUp.length === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) > 0)){
+            (Game.spawns['Origin'].memory.assess.access.is.links[roomName].to.backUp === true && 
+            Game.spawns['Origin'].memory.assess.access.is.links[roomName].from.resources === true && LinksBackUp.length === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) > 0)){
             creep.memory.signals.building = true
         }
         if ((LinksBackUp.length > 0 && !creep.memory.signals.building && creep.store.getFreeCapacity() > 0) || absolute === true){
@@ -662,7 +674,7 @@ const roleJob = {
         }
         if ((Game.spawns['Origin'].memory.assess.access.is.containers[roomName].cached.minerals === true &&
         creep.memory.iftransfering && !creep.memory.signals.mineralTransfer &&
-        creep.store.getFreeCapacity() > 0) || absolute === true){
+        creep.store.getFreeCapacity() > 0 && cachedContainer.length > 0) || absolute === true){
             feedBack = JobOK
         }
         if (feedBack === JobOK){
@@ -774,7 +786,6 @@ const roleJob = {
         if (!Game.spawns['Origin'].memory.assess.access.is.storages[roomName].exists) return feedBack
         const _terminal = Game.getObjectById(Game.spawns['Origin'].memory.init.access.terminals[roomName][0])
         if (_terminal.store.getFreeCapacity() === 0) return feedBack
-        
         if (!creep.memory.signals.marketTransfer && creep.memory.hasGoods){ // Considering it's withdraw, only needed to check whether have used capacity
             creep.memory.signals.marketTransfer = true
         }
@@ -863,15 +874,15 @@ const roleJob = {
             creep.memory.signals.marketTransfer = false
             creep.memory.marketTarget = undefined
         }
-        if ((creep.memory.hasGoods && creep.memory.signals.marketTarget) || absolute === true){
+        if ((creep.memory.hasGoods && creep.memory.marketTarget) || absolute === true){
             feedBack = JobOK
         }
         if (feedBack === JobOK){
             const _feedBack = creep.transfer(_terminal,creep.memory.marketTarget[1])
-            if (_feedBack === ERR_NOT_ENOUGH_RESOURCES){
+            if (_feedBack === ERR_NOT_IN_RANGE){
                 creep.moveTo(_terminal)
             }else if (_feedBack === OK){
-                creep.hasGoods = false
+                creep.memory.hasGoods = false
             }else if (_feedBack === ERR_FULL){
                 feedBack = JobERR
             }

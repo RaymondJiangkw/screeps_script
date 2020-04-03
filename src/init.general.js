@@ -174,6 +174,7 @@ const groupFunction = function(roomName){
         return false
     })
     // Memory Cost and Save Time
+    /*
     if (labs.core.hasOwnProperty(roomName) === false || labs.core[roomName].length !== initModule.labs[roomName].length){
         labs.core[roomName] = {
             adjacentRelationship:{},
@@ -202,7 +203,7 @@ const groupFunction = function(roomName){
                 }
             }
         }
-    }
+    }*/
     labs.storedMineralTypes[roomName] = []
     mineralsnCompounds[roomName] = {}
     for (let i = 0; i < initModule.labs[roomName].length;i++){

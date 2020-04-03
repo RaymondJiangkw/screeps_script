@@ -282,12 +282,13 @@ const initAssess = function() {
         for (let i = 0; i < Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].length;i++){
             const __mineralType = Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName][i]
             assessModule.structures[roomName]["usableLabs"][__mineralType] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === __mineralType)
-            if (helpFunc.inArr(__mineralType,reference.production.lab.basicIngredients) && assessModule.structures[roomName]["usableLabs"][__mineralType].length > 1){
+            if (!helpFunc.inArr(__mineralType,reference.production.lab.allowedStack) && assessModule.structures[roomName]["usableLabs"][__mineralType].length > 1){
                 assessModule.structures[roomName]["usableLabs"]["neededExhaust"].push(__mineralType)
             }
         }
         // Dealing with the minerals Only consider when the economy is quite good
         if (!Game.spawns['Origin'].memory.assess || 
+            !Game.spawns['Origin'].memory.assess.access.minerals ||
             !Game.spawns['Origin'].memory.assess.access.minerals[roomName]){
             assessModule.minerals[roomName] = {neededTransfer:[],neededProduce:[]}
         }else{
