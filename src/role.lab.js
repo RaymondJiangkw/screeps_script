@@ -24,11 +24,11 @@ const roleLab = {
                         // Always choose the most one
                         chosenLabs.push(chosenLabArr[chosenLabArr.length - 1])
                     }else{
-                        break
+                        continue
                     }
                 }
                 if (chosenLabs.length < requiredCompounds.length){
-                    break
+                    continue
                 }
                 let reactionLab = undefined
                 if (Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].indexOf(_mineral)!==-1){
@@ -36,14 +36,13 @@ const roleLab = {
                     reactionLab = _.filter(reactionLab,(labId)=>Game.getObjectById(labId).cooldown === 0)
                     if (reactionLab.length > 0){
                         reactionLab = reactionLab[0]
-                        if (Game.getObjectById(reactionLab).store.getFreeCapacity(_mineral) <= _amount){
-                            reactionLab = undefined
-                        }
                     }else{
                         reactionLab = undefined
                     }
                 }
-                if (reactionLab === undefined && Game.spawns['Origin'].memory.assess.access.structures[roomName].usableLabs["vacant"].length > 0){
+                if (reactionLab === undefined && Game.spawns['Origin'].memory.assess.access.structures[roomName].usableLabs["vacant"].length > 0 &&
+                    (!Game.spawns['Origin'].memory.assess.access.structures[roomName].usableLabs[_mineral] ||
+                      helpFunc.inArr(_mineral,reference.production.lab.allowedStack) ) ){
                     reactionLab = Game.spawns['Origin'].memory.assess.access.structures[roomName].usableLabs["vacant"] // Arr
                     reactionLab = _.filter(reactionLab,(labId)=>Game.getObjectById(labId).cooldown === 0)
                     reactionLab = reactionLab[0]

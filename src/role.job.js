@@ -711,7 +711,8 @@ const roleJob = {
         }
         if (feedBack === JobOK){
             if (creep.memory.targetRetrieve === undefined){
-                if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][creep.memory.targetResource[0]].terminal > 0){
+                const mineralType = Game.getObjectById(Game.spawns['Origin'].memory.init.access.minerals[roomName][0]).mineralType
+                if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][creep.memory.targetResource[0]].terminal > 0 && creep.memory.targetResource[0] !== mineralType){
                     creep.memory.targetRetrieve = Game.spawns['Origin'].memory.init.access.terminals[roomName][0]
                 }else if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][creep.memory.targetResource[0]].storage > 0){
                     creep.memory.targetRetrieve = Game.spawns['Origin'].memory.init.access.storages[roomName][0]
@@ -761,9 +762,11 @@ const roleJob = {
                     creep.moveTo(Game.getObjectById(creep.memory.targetLab))
                 }else if (_feedBack === OK){
                     creep.memory.targetResource = undefined
+                    creep.memory.targetLab = undefined
                     // delete Task
                 }else if (_feedBack === ERR_FULL || _feedBack === ERR_INVALID_TARGET){
                     creep.memory.targetResource = undefined
+                    creep.memory.targetLab = undefined
                     feedBack = JobERR
                 }
             }else{
@@ -924,7 +927,7 @@ const roleJob = {
         if (feedBack === JobOK){
             if (!creep.memory.targetLabExhaust){
                 creep.memory.labExhaustMineralType = Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["neededExhaust"][0]
-                creep.memory.targetLabExhaust = Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"][creep.memory.labExhaustMineralType][1]
+                creep.memory.targetLabExhaust = Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"][creep.memory.labExhaustMineralType][0]
             }
             if (creep.memory.targetLabExhaust){
                 const _feedBack = creep.withdraw(Game.getObjectById(creep.memory.targetLabExhaust),creep.memory.labExhaustMineralType)
@@ -989,7 +992,7 @@ const roleJob = {
                 feedBack = taskFunc(object)
             }
             if (feedBack === JobOK) {
-                console.log("Id:",object.id," Role:",role,"WorkMode:",_workModeName," ERRTask: ",taskList.slice(0,i)," OKTask:",taskList[i])
+                console.log("           Role:",role,"WorkMode:",_workModeName," ERRTask: ",taskList.slice(0,i)," OKTask:",taskList[i])
                 break
             }
             //console.log("   After running task",taskList[i],"the CPU usage is",Game.cpu.getUsed())

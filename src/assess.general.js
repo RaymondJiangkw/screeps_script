@@ -77,6 +77,7 @@ const assessModule = {
     },
     minerals:{
         /*
+        usedCompounds:[]
         neededProduce:[] // ordered, mean that the latter is relied on the former
         neededTransfer:[] // non-ordered, mean that need to transfer compounds from storage / terminal to labs
         */
@@ -278,22 +279,15 @@ const initAssess = function() {
             const labB = Game.getObjectById(labIdB)
             return labA.cooldown - labB.cooldown
         })
-        assessModule.structures[roomName]["usableLabs"]["neededExhaust"] = []
-        for (let i = 0; i < Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].length;i++){
-            const __mineralType = Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName][i]
-            assessModule.structures[roomName]["usableLabs"][__mineralType] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === __mineralType)
-            if (!helpFunc.inArr(__mineralType,reference.production.lab.allowedStack) && assessModule.structures[roomName]["usableLabs"][__mineralType].length > 1){
-                assessModule.structures[roomName]["usableLabs"]["neededExhaust"].push(__mineralType)
-            }
-        }
         // Dealing with the minerals Only consider when the economy is quite good
         if (!Game.spawns['Origin'].memory.assess || 
             !Game.spawns['Origin'].memory.assess.access.minerals ||
             !Game.spawns['Origin'].memory.assess.access.minerals[roomName]){
-            assessModule.minerals[roomName] = {neededTransfer:[],neededProduce:[]}
+            assessModule.minerals[roomName] = {neededTransfer:[],neededProduce:[],usedCompounds:[]}
         }else{
             assessModule.minerals[roomName] = {}
             assessModule.minerals[roomName].neededProduce = []
+            assessModule.minerals[roomName].usedCompounds = []
             assessModule.minerals[roomName].neededTransfer = Game.spawns['Origin'].memory.assess.access.minerals[roomName].neededTransfer
         }
         const roomLevel = (Game.rooms[roomName].controller.level).toString()
@@ -309,7 +303,7 @@ const initAssess = function() {
         }
         let ptr = 0
         let whetherRenewTransferList = false
-        if (assessModule.minerals[roomName].neededTransfer === []){
+        if (assessModule.minerals[roomName].neededTransfer.length === 0){
                 whetherRenewTransferList = true
         }
         while (ptr < _mineralList.length){ // Broadth-First Search
@@ -317,6 +311,7 @@ const initAssess = function() {
             const _amount = _mineralList[ptr][1]
             const currentAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].all
             const labAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].lab
+            assessModule.minerals[roomName].usedCompounds.push(_type)
             if (currentAmount < _amount){ // Out One
                 resultList.push([_type,_amount - currentAmount])
                 if (reference.production.lab.basicIngredients.indexOf(_type) === -1){ // Out 2
@@ -336,14 +331,27 @@ const initAssess = function() {
                 // Can Transfer
                 assessModule.minerals[roomName].neededTransfer = _.filter(assessModule.minerals[roomName].neededTransfer,(arr)=>{
                     return Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].indexOf(arr[0])!==-1 &&
+                           assessModule.structures.usableLabs[arr[0]] &&
                            Game.getObjectById(assessModule.structures.usableLabs[arr[0]][0]).store.getFreeCapacity(arr[0]) > 0
                 })
             }else{
                 // Only Occupy One Lab
                 assessModule.minerals[roomName].neededTransfer = _.filter(assessModule.minerals[roomName].neededTransfer,(arr)=>{
                     return Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].indexOf(arr[0])===-1 ||
-                           Game.getObjectById(assessModule.structures.usableLabs[arr[0]][0]).store.getFreeCapacity(arr[0]) > 0
+                           (assessModule.structures.usableLabs[arr[0]] &&
+                           Game.getObjectById(assessModule.structures.usableLabs[arr[0]][0]).store.getFreeCapacity(arr[0]) > 0)
+                           
                 })
+            }
+        }
+        // Dealing with the needed to exhaust case
+        assessModule.structures[roomName]["usableLabs"]["neededExhaust"] = []
+        for (let i = 0; i < Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].length;i++){
+            const __mineralType = Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName][i]
+            assessModule.structures[roomName]["usableLabs"][__mineralType] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === __mineralType)
+            if ((!helpFunc.inArr(__mineralType,reference.production.lab.allowedStack) && assessModule.structures[roomName]["usableLabs"][__mineralType].length > 1) ||
+                !helpFunc.inArr(__mineralType,assessModule.minerals[roomName].usedCompounds)){
+                assessModule.structures[roomName]["usableLabs"]["neededExhaust"].push(__mineralType)
             }
         }
     }
