@@ -331,15 +331,15 @@ const initAssess = function() {
                 // Can Transfer
                 assessModule.minerals[roomName].neededTransfer = _.filter(assessModule.minerals[roomName].neededTransfer,(arr)=>{
                     return Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].indexOf(arr[0])!==-1 &&
-                           assessModule.structures.usableLabs[arr[0]] &&
-                           Game.getObjectById(assessModule.structures.usableLabs[arr[0]][0]).store.getFreeCapacity(arr[0]) > 0
+                           assessModule.structures[roomName]["usableLabs"][arr[0]] &&
+                           Game.getObjectById(assessModule.structures[roomName].usableLabs[arr[0]][0]).store.getFreeCapacity(arr[0]) > 0
                 })
             }else{
                 // Only Occupy One Lab
                 assessModule.minerals[roomName].neededTransfer = _.filter(assessModule.minerals[roomName].neededTransfer,(arr)=>{
                     return Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].indexOf(arr[0])===-1 ||
-                           (assessModule.structures.usableLabs[arr[0]] &&
-                           Game.getObjectById(assessModule.structures.usableLabs[arr[0]][0]).store.getFreeCapacity(arr[0]) > 0)
+                           (assessModule.structures[roomName]["usableLabs"][arr[0]] &&
+                           Game.getObjectById(assessModule.structures[roomName].usableLabs[arr[0]][0]).store.getFreeCapacity(arr[0]) > 0)
                            
                 })
             }
