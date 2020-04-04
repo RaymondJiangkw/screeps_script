@@ -296,7 +296,7 @@ const initAssess = function() {
         for (let _role in reference.production.lab.allowedCompounds[roomLevel]){
             for (let _compound in reference.production.lab.allowedCompounds[roomLevel][_role]){
                 const requiredAmount = reference.production.lab.allowedCompounds[roomLevel][_role][_compound]
-                if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].all < requiredAmount){
+                if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].lab < requiredAmount){
                     _mineralList.push([_compound,requiredAmount])
                 }
             }

@@ -218,7 +218,7 @@ const roleJob = {
         return feedBack
     },
     storeBehavior:function(creep,absolute = false){
-        const roomName = creep.room.name
+        const roomName = creep.memory.home
         let feedBack = JobERR
         let HasSignal = false
         for (let signal in creep.memory.signals){
@@ -245,10 +245,14 @@ const roleJob = {
             }else {
                 chosenStructure = Game.spawns['Origin'].memory.init.access.storages[roomName][0]
             }
-            chosenStructure = Game.getObjectById(chosenStructure)
-            if (helpFunc.creepTransferAll(creep.id,chosenStructure.id) === ERR_NOT_IN_RANGE){
-                creep.moveTo(chosenStructure)
-            }
+			if (chosenStructure !== undefined) {
+				chosenStructure = Game.getObjectById(chosenStructure)
+				if (helpFunc.creepTransferAll(creep.id,chosenStructure.id) === ERR_NOT_IN_RANGE){
+					creep.moveTo(chosenStructure)
+				}
+			}else{
+				feedBack = JobERR
+			}
         }
         return feedBack
     },
@@ -672,10 +676,11 @@ const roleJob = {
         // memory.iftransfering to ensure the creep begins to transfer only when the container is full
         // Only consider the single mineral case
         const roomName = creep.room.name
+		let feedBack = JobERR
+		if (!helpFunc.inArr(roomName,Game.spawns['Origin'].memory.init.infoRooms.controlled)) return feedBack
         const cachedContainer = helpFunc.storeFilternSort(Game.spawns['Origin'].memory.init.groupedContainers.cachedMinerals[roomName])
         const mineralType = Game.getObjectById(Game.spawns['Origin'].memory.init.access.minerals[roomName][0]).mineralType
         const mineralAmount = Game.getObjectById(Game.spawns['Origin'].memory.init.access.minerals[roomName][0]).mineralAmount
-        let feedBack = JobERR
         if ((cachedContainer.length === 0 && creep.store.getUsedCapacity(mineralType) !== 0) || 
             (creep.store.getFreeCapacity() === 0 && creep.store.getUsedCapacity(mineralType) !== 0)){
             creep.memory.signals.mineralTransfer = true
@@ -933,6 +938,7 @@ const roleJob = {
     SexhuastLabBehavior:function(creep,absolute = false){
         const roomName = creep.room.name
         let feedBack = JobERR
+		if (!helpFunc.inArr(roomName,Game.spawns['Origin'].memory.init.infoRooms.controlled)) return feedBack
         if (!creep.memory.signals.labExhaust && creep.memory.labExhaustMineralType &&
             creep.store.getUsedCapacity(creep.memory.labExhaustMineralType) > 0 &&
             (creep.store.getFreeCapacity() === 0 ||
@@ -964,7 +970,25 @@ const roleJob = {
         }
         return feedBack
     },
-    run:function(object, type = 'creep'){
+    chargeNukerBehavior:function(creep,absolute = false){
+        const roomName = creep.room.name
+        let feedBack = JobERR
+
+        return feedBack
+    },
+    SnukerRetrieveBehavior:function(creep,absolute = false){
+        const roomName = creep.room.name
+        let feedBack = JobERR
+
+        return feedBack
+    },
+    NukerTransferBehavior:function(creep,absolute = false){
+        const roomName = creep.room.name
+        let feedBack = JobERR
+
+        return feedBack
+    },
+    run:function(object,type = 'creep'){
         let roomName = undefined
         let role = undefined
         let taskList = []

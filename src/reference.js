@@ -243,7 +243,10 @@ const referenceModule = {
             "25":"ScompoundFactoryRetrieve",
             "26":"compoundFactoryTransfer",
             "27":"chargePower",
-            "28":"SexhuastLab"
+            "28":"SexhuastLab",
+            "29":"chargeNuker",
+            "30":"SnukerRetrieve",
+            "31":"NukerTransfer"
         },
         standard:{
             standardNum:4,
@@ -268,7 +271,7 @@ const referenceModule = {
             harvester:"12-13-0-3-4-1-20-2-12-13",
             builder:"12-13-1-0-4-20-2-12-13",
             transferer:"13-11-13",
-            upgrader:"16-12-13-2-16-12-13",
+            upgrader:"16-12-13-2-16",
             repairer:"12-13-5-4-0-1-2-12-13",
             miner:"14-Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers>0?14:3-14",
             pickuper:"18-7-28-21-25-23-4-24-26-22-3",
@@ -312,7 +315,7 @@ const referenceModule = {
             reservedEnergy:0.2, // Energy should not be automatically sold in case of buying energy
         },
         sell:{ // transaction
-            sellingMineral:0.3,
+            sellingMineral:0.8,
             reservedEnergy:0.2,
             // These two are ordered, the former one will be sold first, the after ones will be sold 
             // when and only when the former ones have all been sold to a propriate degree
@@ -346,6 +349,7 @@ const referenceModule = {
                 In the process of running, the programme will filter out the needed compounds and produces them only when
                 they are enough available.
             */
+				"0":{},
                 "1":{},
                 "2":{},
                 "3":{},
