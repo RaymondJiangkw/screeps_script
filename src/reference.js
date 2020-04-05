@@ -349,7 +349,7 @@ const referenceModule = {
                 In the process of running, the programme will filter out the needed compounds and produces them only when
                 they are enough available.
             */
-				"0":{},
+                "0":{},
                 "1":{},
                 "2":{},
                 "3":{},
@@ -358,13 +358,13 @@ const referenceModule = {
                 "6":{},
                 "7":{
                     "miner":{
-                        "UO":3000,
+                        //"UO":0,
                     },
                     "builder":{
-                        "LH":1500,
+                        //"LH":1500,
                     },
                     "upgrader":{
-                        "GH":3000,
+                        //"GH":0,
                     },
                     "repairer":{
                         "LH":1500,
@@ -373,7 +373,7 @@ const referenceModule = {
                         "KH":3000,
                     },
                     "goods":{
-                        "G":3000
+                        "G":0
                     }
                 },
                 "8":{

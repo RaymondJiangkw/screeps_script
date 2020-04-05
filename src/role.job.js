@@ -224,11 +224,8 @@ const roleJob = {
         for (let signal in creep.memory.signals){
             if (creep.memory.signals[signal] === true){
                 HasSignal = true
+                break
             }
-            if (creep.store.getUsedCapacity() === 0){
-                creep.memory.signals[signal] = false
-            }
-            creep.memory.hasGoods = false
         }
         if ((      (Game.spawns['Origin'].memory.assess.access.is.storages[roomName].neededChargeEnergy ||
               Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName].available.length > 0 ||
@@ -246,10 +243,18 @@ const roleJob = {
                 chosenStructure = Game.spawns['Origin'].memory.init.access.storages[roomName][0]
             }
 			if (chosenStructure !== undefined) {
-				chosenStructure = Game.getObjectById(chosenStructure)
-				if (helpFunc.creepTransferAll(creep.id,chosenStructure.id) === ERR_NOT_IN_RANGE){
+                chosenStructure = Game.getObjectById(chosenStructure)
+                let __feedBack = helpFunc.creepTransferAll(creep.id,chosenStructure.id)
+				if (__feedBack === ERR_NOT_IN_RANGE){
 					creep.moveTo(chosenStructure)
-				}
+				}else if (__feedBack === OK){
+                    for (let signal in creep.memory.signals){
+                        creep.memory.signals[signal] = false
+                        creep.memory.hasGoods = false
+                    }
+                }else{
+                    feedBack = JobERR
+                }
 			}else{
 				feedBack = JobERR
 			}
@@ -944,10 +949,10 @@ const roleJob = {
             (creep.store.getFreeCapacity() === 0 ||
             Game.getObjectById(creep.memory.targetLabExhaust).store.getUsedCapacity(creep.memory.labExhaustMineralType) === 0)){
                 creep.memory.signals.labExhaust = true
-                if (Game.getObjectById(creep.memory.targetLabExhaust).store.getUsedCapacity(creep.memory.labExhaustMineralType) === 0){
-                    creep.memory.targetLabExhaust = undefined
-                    creep.memory.labExhaustMineralType = undefined
-                }
+        }
+        if (creep.memory.targetLabExhaust && Game.getObjectById(creep.memory.targetLabExhaust).store.getUsedCapacity(creep.memory.labExhaustMineralType) === 0){
+            creep.memory.targetLabExhaust = undefined
+            creep.memory.labExhaustMineralType = undefined
         }
         if ((!creep.memory.signals.labExhaust && creep.store.getFreeCapacity() > 0 && Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["neededExhaust"].length > 0) ||
             absolute === true){

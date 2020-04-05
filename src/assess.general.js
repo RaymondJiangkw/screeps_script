@@ -279,6 +279,10 @@ const initAssess = function() {
             const labB = Game.getObjectById(labIdB)
             return labA.cooldown - labB.cooldown
         })
+        for (let i = 0; i < Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].length;i++){
+            const ___mineralType = Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName][i]
+            assessModule.structures[roomName]["usableLabs"][___mineralType] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === ___mineralType)
+        }
         // Dealing with the minerals Only consider when the economy is quite good
         if (!Game.spawns['Origin'].memory.assess || 
             !Game.spawns['Origin'].memory.assess.access.minerals ||
@@ -296,9 +300,7 @@ const initAssess = function() {
         for (let _role in reference.production.lab.allowedCompounds[roomLevel]){
             for (let _compound in reference.production.lab.allowedCompounds[roomLevel][_role]){
                 const requiredAmount = reference.production.lab.allowedCompounds[roomLevel][_role][_compound]
-                if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][_compound].lab < requiredAmount){
-                    _mineralList.push([_compound,requiredAmount])
-                }
+                _mineralList.push([_compound,requiredAmount])
             }
         }
         let ptr = 0
@@ -348,7 +350,6 @@ const initAssess = function() {
         assessModule.structures[roomName]["usableLabs"]["neededExhaust"] = []
         for (let i = 0; i < Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].length;i++){
             const __mineralType = Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName][i]
-            assessModule.structures[roomName]["usableLabs"][__mineralType] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === __mineralType)
             if ((!helpFunc.inArr(__mineralType,reference.production.lab.allowedStack) && assessModule.structures[roomName]["usableLabs"][__mineralType].length > 1) ||
                 !helpFunc.inArr(__mineralType,assessModule.minerals[roomName].usedCompounds)){
                 assessModule.structures[roomName]["usableLabs"]["neededExhaust"].push(__mineralType)

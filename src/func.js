@@ -169,6 +169,7 @@ const helpFunc = {
                 return feedBack
             }
         }
+        return OK
     },
     getUsedCapacity:function(structure_id,_default = null){
       let _defaultResult = Game.getObjectById(structure_id).store.getUsedCapacity(_default)
