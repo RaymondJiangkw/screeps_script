@@ -4,6 +4,9 @@ const roleSpawn = require('role.spawn')
 const roleLink = require('role.link')
 const roleJob = require('role.job')
 const roleLab = require('role.lab')
+const roleFactory = require('role.factory')
+const roleNuker = require('role.nuker')
+const Traveler = require('Traveler')
 module.exports.loop = function () {
     console.log("")
     console.log("==========","New Loop",Game.time,"==========")
@@ -26,6 +29,12 @@ module.exports.loop = function () {
     }
     if (Game.spawns['Origin'].memory.hasOwnProperty("mineralOccupied") === false) {
         Game.spawns['Origin'].memory['mineralOccupied'] = {}
+    }
+    if (Game.spawns['Origin'].memory.hasOwnProperty("task") === false){
+        Game.spawns['Origin'].memory['task'] = {}
+    }
+    if (Game.spawns['Origin'].memory.task.hasOwnProperty("transfer") === false){
+        Game.spawns['Origin'].memory['task']['transfer'] = {terminal:{},powerSpawn:{},lab:{},factory:{},nuker:{},storage:{},container:{}}
     }
     // Assess the situation
     assessModule.init()
@@ -73,6 +82,14 @@ module.exports.loop = function () {
         // But since labs produce minerals do not require energy, we should make use of them fully
         if (Game.spawns['Origin'].memory.assess.access.is.labs[roomName] === true) {
             roleLab.run(roomName)
+        }
+        // Factory
+        if (Game.spawns['Origin'].memory.assess.access.is.factories[roomName] === true){
+            roleFactory.run(roomName)
+        }
+        // Nuker
+        if (Game.spawns['Origin'].memory.assess.access.is.nukers[roomName] === true){
+            roleNuker.run(roomName)
         }
     }
 }

@@ -23,7 +23,9 @@ let initModule = {
     roads:{},
     extractors:{},
     walls:{},
-    ramparts:{}
+    ramparts:{},
+    nukers:{},
+    powerSpawns:{}
 }
 let rooms = {
     controlled:[]
@@ -71,7 +73,9 @@ let resources = {
 }
 let mineralsnCompounds = {
     /*
-    `Type`:{storage:,terminal:,lab:,all:}
+    `Type`:{storage:,terminal:,lab:,all:} // Guideline of the production from the lab
+                                          // Since it's usual the case that the lab utilize the outcomes of the lab, we do not need to add minerals in factory
+                                          // to this list in order to avoid transfer back and forth
     */
 }
 let labs = {
@@ -174,8 +178,7 @@ const groupFunction = function(roomName){
         return false
     })
     // Memory Cost and Save Time
-    /*
-    if (labs.core.hasOwnProperty(roomName) === false || labs.core[roomName].length !== initModule.labs[roomName].length){
+    /*if (labs.core.hasOwnProperty(roomName) === false || labs.core[roomName].length !== initModule.labs[roomName].length){
         labs.core[roomName] = {
             adjacentRelationship:{},
             length:initModule.labs[roomName].length
@@ -317,6 +320,8 @@ const initFunction = function() {
         initModule.extractors[roomName] = _.filter(allStructures,(structure)=>structure.structureType===STRUCTURE_EXTRACTOR).map(helpFunc.getId)
         initModule.walls[roomName] = _.filter(allStructures,(structure)=>structure.structureType === STRUCTURE_WALL).map(helpFunc.getId)
         initModule.ramparts[roomName] = _.filter(allStructures,(structure)=>structure.structureType === STRUCTURE_RAMPART).map(helpFunc.getId)
+        initModule.powerSpawns[roomName] = _.filter(allStructures,(structure)=>structure.structureType === STRUCTURE_POWER_SPAWN).map(helpFunc.getId)
+        initModule.nukers[roomName] = _.filter(allStructures,(structure)=>structure.structureType === STRUCTURE_NUKER).map(helpFunc.getId)
         console.log("   Structures init",Game.cpu.getUsed())
         groupFunction(roomName)
         console.log("   Group Structures init",Game.cpu.getUsed())

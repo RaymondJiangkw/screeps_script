@@ -1,5 +1,6 @@
 const helpFunc = require("func")
 const reference = require("reference")
+const task = require("task.general")
 const roleLab = {
     /*
         Goal:
@@ -11,6 +12,7 @@ const roleLab = {
         console.log("   ===",roomName," Process Labs","===")
         const basicIngredients = reference.production.lab.basicIngredients
         const productionList = Game.spawns['Origin'].memory.assess.access.minerals[roomName].neededProduce
+        const reversedList = reference.production.lab.reversedCompounds
         for (let i = 0; i < productionList.length; i++){
             const productionCompound = productionList[i]
             const _mineral = productionCompound[0]
@@ -52,6 +54,28 @@ const roleLab = {
                     console.log("       Finish Reaction: ",requiredCompounds[0],"+",requiredCompounds[1],"->",_mineral)
                 }
             }
+        }
+        for (let i = 0; i < reversedList.length;i++){
+            const reversedCompound = reversedList[i][0]
+            const reversedCompountAmount = reversedList[i][1]
+            const output = reference.production.lab.formula[reversedCompound]
+            const _reversedCompoundLab = helpFunc.isInLabnFull(roomName,reversedCompound)
+            const outputLab1 = helpFunc.getAvailableLab(roomName,output[0]);
+            const outputLab2 = helpFunc.getAvailableLab(roomName,output[1]);
+            if (_reversedCompoundLab != undefined && _reversedCompoundLab != null){
+                if (outputLab1 != undefined && outputLab2 != undefined){
+                    Game.getObjectById(_reversedCompoundLab).reverseReaction(Game.getObjectById(outputLab1),Game.getObjectById(outputLab2))
+                }
+            }
+            if (_reversedCompoundLab == null ||
+                (_reversedCompoundLab != undefined && compountInfo.lab < reversedCompountAmount)){
+                const compountInfo  = Game.spawns['Origin'].memory.init.infoCompounds[roomName][reversedCompound]
+                if (compountInfo.all - compountInfo.lab > 0){
+                    task.addTransfer(roomName,"lab",reversedCompound,Math.min(compountInfo.all,reversedCompountAmount)-compountInfo.lab)
+                }
+            }
+            helpFunc.insertVacantLab(roomName,outputLab1,output[0])
+            helpFunc.insertVacantLab(roomName,outputLab2,output[1])
         }
     }
 }

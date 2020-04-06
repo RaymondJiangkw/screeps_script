@@ -144,7 +144,7 @@ const helpFunc = {
         }else{
             const creep = Game.getObjectById(creep_id)
             const target = Game.getObjectById(target_id)
-            creep.moveTo(target)
+            creep.travelTo(target)
         }
     },
     creepWithdrawAll:function(creep_id,target_id){
@@ -216,6 +216,43 @@ const helpFunc = {
     },
     inArr:function(_content,_arr){
         return _arr.indexOf(_content) !== -1
+    },
+    isCompoundEnough:function(roomName,compoundType,amount){
+        if (Game.spawns['Origin'].memory.init.infoCompounds[roomName][compoundType].all >= amount){
+            return true 
+        }
+        return false 
+    },
+    isInLabnFull:function(roomName,compoundType){
+        // null no
+        // id in not full
+        // undefined full
+        if (this.inArr(compoundType,Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName])){
+            if (Game.getObjectById(Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"][compoundType][0]).store.getFreeCapacity(compoundType) == 0){
+                return undefined;
+            }else{
+                return Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"][compoundType][0];
+            }
+        }else{
+            return null;
+        }
+    },
+    getAvailableLab:function(roomName,compoundType){
+        const potentialLab = this.isInLabnFull(roomName,compoundType)
+        if (potentialLab === undefined) return undefined
+        if (potentialLab === null) {
+            if (Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["vacant"].length > 0){
+                return Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["vacant"].pop()
+            }else{
+                return undefined
+            }
+        }
+        return potentialLab
+    },
+    insertVacantLab:function(roomName,labId,compoundType){
+        if (labId !== undefined && Game.getObjectById(labId).store.getUsedCapacity(compoundType) === 0){
+            Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["vacant"].push(labId)
+        }
     }
 }
 module.exports = helpFunc

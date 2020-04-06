@@ -39,17 +39,6 @@ signals(Guidelines for carrying resources):
     
 */
 const referenceModule = {
-    default:{
-        signController:"",
-        roomMode:{
-            "normal":{
-                "standard":""
-            },
-            "passive":{
-                "standard":""
-            }
-        }
-    },
     assess:{
         economy:{
             assessRatio:{
@@ -162,7 +151,15 @@ const referenceModule = {
             },
             creep:{
                 containerWaitingBearableTimeInterval:15,
-                harvestTerminalReservedEnergyEconomyLevel:2.5
+                harvestTerminalReservedEnergyEconomyLevel:2.5,
+                task:{
+                    transfer:{
+                        reserved:{
+                            energyEconomyLevel:3,
+                            mineralNum:0
+                        }
+                    }
+                }
             },
             build:{
                 helpBuildControllerLevel:2,
@@ -240,13 +237,10 @@ const referenceModule = {
             "22":"compoundLabTransfer",
             "23":"ScompoundMarketRetrieve",
             "24":"compoundMarketTransfer",
-            "25":"ScompoundFactoryRetrieve",
-            "26":"compoundFactoryTransfer",
+            "25":"SgeneralRetrieve",
+            "26":"generalTransfer",
             "27":"chargePower",
             "28":"SexhuastLab",
-            "29":"chargeNuker",
-            "30":"SnukerRetrieve",
-            "31":"NukerTransfer"
         },
         standard:{
             standardNum:4,
@@ -337,6 +331,7 @@ const referenceModule = {
         getSellingMineral:function(){return this.general.getTransactionSpace() * this.sell.sellingMineral}
     },
     production:{
+        // All compound information in lab are sustain-number, thus should not be larger than 3000
         lab:{
             requiredEconomyLevel:0.5,
             minBoostEnergy:20,
@@ -377,10 +372,13 @@ const referenceModule = {
                     }
                 },
                 "8":{
-
+                    "goods":{
+                        "G":3000
+                    }
                 }
             },
-            allowedStack:["G"],
+            allowedStack:[],
+            reversedCompounds:[["GH",3000]],
             basicIngredients:[RESOURCE_OXYGEN,RESOURCE_HYDROGEN,RESOURCE_UTRIUM,RESOURCE_KEANIUM,RESOURCE_LEMERGIUM,RESOURCE_ZYNTHIUM,RESOURCE_CATALYST],
             formula:{
                 "OH":["H","O"],
@@ -456,8 +454,17 @@ const referenceModule = {
                 energy:10000,
                 allowedCompound:[]
             },
-            reaction:{},
-            formula:{}
+            reaction:{
+                "default":['ghodium_melt']
+            },
+            formula:{
+                'ghodium_melt':[[RESOURCE_GHODIUM,500],[RESOURCE_ENERGY]]
+            }
+        }
+    },
+    defense:{
+        settings:{
+            fillNuker:true
         }
     },
     constants:{

@@ -19,6 +19,7 @@ const assessModule = {
             /*
             exists:
             neededChargeEnergy:
+            storage: info about storing resources
             */
         },
         terminals:{},
@@ -37,6 +38,8 @@ const assessModule = {
             }
             */
         },
+        powerSpawns:{},
+        nukers:{},
         neededCharge:{},
         neededRepair:{},
         neededStrengthen:{}
@@ -59,7 +62,8 @@ const assessModule = {
             spawns:,
             extensions:,
             labs:,
-            factory:
+            factory:,
+            nuker:
         }
         neededRepair:{
             roads:,
@@ -147,15 +151,21 @@ const initAssess = function() {
         assessModule.is.storages[roomName] = {}
         assessModule.is.storages[roomName].exists = false
         assessModule.is.storages[roomName].neededChargeEnergy = false
+        assessModule.is.storages[roomName].storage = {}
         assessModule.is.terminals[roomName] = false
         assessModule.is.labs[roomName] = false
         assessModule.is.factories[roomName] = false
         assessModule.is.extractors[roomName] = false
+        assessModule.is.powerSpawns[roomName] = false
+        assessModule.is.nukers[roomName] = false
         if (helpFunc.isHave(Game.spawns['Origin'].memory.init.access.storages[roomName])){
             assessModule.is.storages[roomName].exists = true
             const _storage = Game.getObjectById(Game.spawns['Origin'].memory.init.access.storages[roomName][0])
             if (_storage.store.getUsedCapacity(RESOURCE_ENERGY) <= reference.assess.economy.storageAmount["0"]){
                 assessModule.is.storages[roomName].neededChargeEnergy = true
+            }
+            for (let resourceType in _storage.store){
+                assessModule.is.storages[roomName].storage[resourceType] = _storage.store.getUsedCapacity(resourceType)
             }
         }
         if (helpFunc.isHave(Game.spawns['Origin'].memory.init.access.terminals[roomName])){
@@ -169,6 +179,12 @@ const initAssess = function() {
         }
         if (helpFunc.isHave(Game.spawns['Origin'].memory.init.access.extractors[roomName])){
             assessModule.is.extractors[roomName] = true
+        }
+        if (helpFunc.isHave(Game.spawns['Origin'].memory.init.access.powerSpawns[roomName])){
+            assessModule.is.powerSpawns[roomName] = true
+        }
+        if (helpFunc.isHave(Game.spawns['Origin'].memory.init.access.nukers[roomName])){
+            assessModule.is.nukers[roomName] = true
         }
         assessModule.is.links[roomName] = {
             from:{
@@ -213,7 +229,8 @@ const initAssess = function() {
         const neededChargeStructures = _.filter([].concat(Game.spawns['Origin'].memory.init.access.spawns[roomName],
             Game.spawns['Origin'].memory.init.access.extensions[roomName],
             Game.spawns['Origin'].memory.init.access.labs[roomName],
-            Game.spawns['Origin'].memory.init.access.towers[roomName]),(structure_id)=>Game.getObjectById(structure_id).store.getFreeCapacity(RESOURCE_ENERGY)>0)
+            Game.spawns['Origin'].memory.init.access.towers[roomName],
+            Game.spawns['Origin'].memory.init.access.nukers[roomName]),(structure_id)=>Game.getObjectById(structure_id).store.getFreeCapacity(RESOURCE_ENERGY)>0)
         assessModule.structures[roomName] = {
             neededCharge:{},
             neededRepair:{}
@@ -238,6 +255,7 @@ const initAssess = function() {
                 assessModule.structures[roomName]["neededCharge"]["factory"].push(Game.spawns['Origin'].memory.init.access.factories[roomName][0])
             }
         }
+        assessModule.structures[roomName]["neededCharge"]["nuker"] = _.filter(neededChargeStructures,(structure_id)=>Game.getObjectById(structure_id).structureType === STRUCTURE_NUKER)
         assessModule.is.neededCharge[roomName] = assessModule.structures[roomName]["neededCharge"]["spawns"].length > 0 ||
                                                  assessModule.structures[roomName]["neededCharge"]["extensions"].length > 0
         
@@ -313,7 +331,9 @@ const initAssess = function() {
             const _amount = _mineralList[ptr][1]
             const currentAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].all
             const labAmount = Game.spawns['Origin'].memory.init.infoCompounds[roomName][_type].lab
-            assessModule.minerals[roomName].usedCompounds.push(_type)
+            if (_amount > 0){
+                assessModule.minerals[roomName].usedCompounds.push(_type)
+            }
             if (currentAmount < _amount){ // Out One
                 resultList.push([_type,_amount - currentAmount])
                 if (reference.production.lab.basicIngredients.indexOf(_type) === -1){ // Out 2

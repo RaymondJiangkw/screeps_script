@@ -1,5 +1,6 @@
 const reference = require("reference")
 const helpFunc = require("func")
+const task = require("task.general")
 // Some absolute calls may cause errors or bugs.
 // building:: finish the goal of the task
 // JobOK/ERR:: satisfy the requirement of the task
@@ -92,7 +93,7 @@ const roleJob = {
                 reference.production.lab.minBoostEnergy * creep.memory.bodyParts[reference.production.lab.effect[creep.memory.boostDiffArr[0]]]){
                 let _feedBack = Game.getObjectById(chosenLabId).boostCreep(creep)
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(chosenLabId))
+                    creep.travelTo(Game.getObjectById(chosenLabId))
                 }else if (_feedBack === OK){
                     creep.memory.hasBoosted.push(creep.memory.boostDiffArr[0])
                     creep.memory.boostDiffArr.shift()
@@ -110,7 +111,7 @@ const roleJob = {
             const moveInfo = creep.memory._move
             const dest = moveInfo.dest
             if (creep.pos.x !== dest.x || creep.pos.y !== dest.y || creep.room.name !== dest.room){
-                creep.moveTo(new RoomPosition(dest.x,dest.y,dest.room),{noPathFinding: true})
+                creep.travelTo(new RoomPosition(dest.x,dest.y,dest.room),{noPathFinding: true})
                 return JobOK
             }
         }
@@ -137,7 +138,7 @@ const roleJob = {
             chosenStructure = Game.getObjectById(chosenStructure)
             let _feedBack = creep.transfer(chosenStructure,RESOURCE_ENERGY)
             if (_feedBack === ERR_NOT_IN_RANGE){
-                creep.moveTo(chosenStructure)
+                creep.travelTo(chosenStructure)
             }else if (_feedBack !== OK){
                 feedBack = JobERR 
             }
@@ -164,7 +165,7 @@ const roleJob = {
             }
             let _feedBack = creep.transfer(chosenStructure,RESOURCE_ENERGY)
             if (_feedBack === ERR_NOT_IN_RANGE){
-                creep.moveTo(chosenStructure)
+                creep.travelTo(chosenStructure)
             }else if (_feedBack !== OK){
                 feedBack = JobERR
             }
@@ -196,7 +197,7 @@ const roleJob = {
         }
         if (feedBack === JobOK){
             if (creep.build(constructionSites[0]) === ERR_NOT_IN_RANGE){
-                creep.moveTo(constructionSites[0])
+                creep.travelTo(constructionSites[0])
             }
         }
         return feedBack
@@ -212,7 +213,7 @@ const roleJob = {
         }
         if (feedBack === JobOK){
             if (creep.upgradeController(Game.rooms[roomName].controller) === ERR_NOT_IN_RANGE){
-                creep.moveTo(Game.rooms[roomName].controller)
+                creep.travelTo(Game.rooms[roomName].controller)
             }
         }
         return feedBack
@@ -246,7 +247,7 @@ const roleJob = {
                 chosenStructure = Game.getObjectById(chosenStructure)
                 let __feedBack = helpFunc.creepTransferAll(creep.id,chosenStructure.id)
 				if (__feedBack === ERR_NOT_IN_RANGE){
-					creep.moveTo(chosenStructure)
+					creep.travelTo(chosenStructure)
 				}else if (__feedBack === OK){
                     for (let signal in creep.memory.signals){
                         creep.memory.signals[signal] = false
@@ -270,21 +271,34 @@ const roleJob = {
             creep.memory.signals.building = false
         }
         if (creep.memory.chargeTarget && 
-            Game.getObjectById(creep.memory.chargeTarget).store.getFreeCapacity(RESOURCE_ENERGY) <= creep.store.getCapacity(RESOURCE_ENERGY)){ // Loose the condition to let more towers be charged
+            ( (Game.getObjectById(creep.memory.chargeTarget).structureType === STRUCTURE_TOWER && Game.getObjectById(creep.memory.chargeTarget).store.getFreeCapacity(RESOURCE_ENERGY) <= creep.store.getCapacity(RESOURCE_ENERGY)) ||
+              (Game.getObjectById(creep.memory.chargeTarget).structureType === STRUCTURE_NUKER && Game.getObjectById(creep.memory.chargeTarget).getFreeCapacity(RESOURCE_ENERGY) === 0)) ){ // Loose the condition to let more towers be charged
             creep.memory.chargeTarget = undefined
         }
         if ( ( (creep.memory.chargeTarget ||
-                Game.spawns['Origin'].memory.assess.access.structures[roomName]["neededCharge"]["towers"].length > 0) &&
+                Game.spawns['Origin'].memory.assess.access.structures[roomName]["neededCharge"]["towers"].length > 0 ||
+                Game.spawns['Origin'].memory.assess.access.structures[roomName]["neededCharge"]["nuker"].length > 0) &&
              creep.memory.signals.building) || absolute === true){
             feedBack = JobOK
         }
         if (feedBack === JobOK){
             if (!creep.memory.chargeTarget){
-                creep.memory.chargeTarget = Game.spawns['Origin'].memory.assess.access.structures[roomName]["neededCharge"]["towers"][0]
+                if (Game.spawns['Origin'].memory.assess.access.structures[roomName]["neededCharge"]["towers"].length > 0){
+                    creep.memory.chargeTarget = Game.spawns['Origin'].memory.assess.access.structures[roomName]["neededCharge"]["towers"][0]
+                }else if (Game.spawns['Origin'].memory.assess.access.structures[roomName]["neededCharge"]["nuker"].length > 0){
+                    if (Game.spawns['Origin'].memory.assess.access.is.storages[roomName].exists && 
+                        Game.getObjectById(Game.spawns['Origin'].memory.init.access.storages[roomName][0]).store.getUsedCapacity(RESOURCE_ENERGY) >= reference.assess.economy.storageAmount[reference.assess.work.creep.task.transfer.reserved.energyEconomyLevel.toString()]){
+                            creep.memory.chargeTarget = Game.spawns['Origin'].memory.assess.access.structures[roomName]["neededCharge"]["nuker"][0]
+                        }
+                }
             }
-            const _feedBack = creep.transfer(Game.getObjectById(creep.memory.chargeTarget),RESOURCE_ENERGY)
-            if (_feedBack === ERR_NOT_IN_RANGE){
-                creep.moveTo(Game.getObjectById(creep.memory.chargeTarget))
+            if (creep.memory.chargeTarget){
+                const _feedBack = creep.transfer(Game.getObjectById(creep.memory.chargeTarget),RESOURCE_ENERGY)
+                if (_feedBack === ERR_NOT_IN_RANGE){
+                    creep.travelTo(Game.getObjectById(creep.memory.chargeTarget))
+                }
+            }else{
+                feedBack = JobERR
             }
         }
         return feedBack
@@ -315,7 +329,7 @@ const roleJob = {
                 }else{
                     const repairTargetObject = Game.getObjectById(object.memory.repairTarget)
                     if (object.repair(repairTargetObject) === ERR_NOT_IN_RANGE){
-                        object.moveTo(repairTargetObject)
+                        object.travelTo(repairTargetObject)
                     }
                 }
             }else if (object.structureType === STRUCTURE_TOWER && _isTowerEnergyEnough(object.id)) {
@@ -379,14 +393,14 @@ const roleJob = {
             if (targetTombStones.length > 0){
                 targetPickUpObject = targetTombStones[0]
                 if (helpFunc.creepWithdrawAll(creep.id,targetPickUpObject.id) === ERR_NOT_IN_RANGE){
-                    creep.moveTo(targetPickUpObject)
+                    creep.travelTo(targetPickUpObject)
                 }else{
                     creep.memory.hasPickUp = true
                 }
             }else if (targetDroppedResources.length > 0){
                 targetPickUpObject = targetDroppedResources[0]
                 if (creep.pickup(targetPickUpObject) === ERR_NOT_IN_RANGE){
-                    creep.moveTo(targetPickUpObject)
+                    creep.travelTo(targetPickUpObject)
                 }else{
                     creep.memory.hasPickUp = true
                 }
@@ -399,7 +413,7 @@ const roleJob = {
         const targetRoom = creep.memory.targetRoom
         let feedBack = JobERR
         if (targetRoom !== roomName){
-            creep.moveTo(new RoomPosition(1,1,targetRoom))
+            creep.travelTo(new RoomPosition(1,1,targetRoom))
             feedBack = JobOK
         }else{
             if (!creep.memory.targetId){
@@ -428,7 +442,7 @@ const roleJob = {
                 feedBack = JobOK
                 if (_feedBack === ERR_NOT_IN_RANGE){
                     const targetObject = Game.getObjectById(creep.memory.targetId)
-                    let __feedBack = creep.moveTo(targetObject)
+                    let __feedBack = creep.travelTo(targetObject)
                     if (__feedBack === ERR_NO_PATH){
                         console.log("[ATTENTION][BUG]",creep,"in the process of attacking","ERR_NO_PATH")
                     }
@@ -446,11 +460,11 @@ const roleJob = {
         const targetRoom = creep.memory.targetRoom
         let feedBack = JobERR
         if (targetRoom !== roomName){
-            creep.moveTo(new RoomPosition(1,1,targetRoom))
+            creep.travelTo(new RoomPosition(1,1,targetRoom))
             feedBack = JobOK
         }else{
             if (creep.claimController(Game.rooms[targetRoom].controller) === ERR_NOT_IN_RANGE){
-                let _feedBack = creep.moveTo(Game.rooms[targetRoom].controller)
+                let _feedBack = creep.travelTo(Game.rooms[targetRoom].controller)
                 if (_feedBack === ERR_NO_PATH){
                     console.log("[ATTENTION][BUG]",creep,"in the process of claiming","ERR_NO_PATH")
                 }
@@ -556,7 +570,7 @@ const roleJob = {
                 const resource = Game.getObjectById(creep.memory.resourceId)
                 const cachedContainerId = Game.spawns['Origin'].memory.init.resourceCached["resources"][roomName][creep.memory.resourceId]
                 if (creep.harvest(resource) === ERR_NOT_IN_RANGE || (cachedContainerId && helpFunc.pos(creep.id,cachedContainerId) !== 0)) {
-                    creep.moveTo(Game.getObjectById(cachedContainerId))
+                    creep.travelTo(Game.getObjectById(cachedContainerId))
                 }
             }
         }
@@ -579,11 +593,11 @@ const roleJob = {
                 creep.memory.cachedContainerId = Game.spawns['Origin'].memory.init.resourceCached["minerals"][roomName][creep.memory.mineralId]
             }
             if (creep.memory.cachedContainerId && helpFunc.pos(creep.id,creep.memory.cachedContainerId) !== 0){
-                creep.moveTo(Game.getObjectById(creep.memory.cachedContainerId))
+                creep.travelTo(Game.getObjectById(creep.memory.cachedContainerId))
             }else{
                 let _feedBack = creep.harvest(Game.getObjectById(creep.memory.mineralId))
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(creep.memory.mineralId))
+                    creep.travelTo(Game.getObjectById(creep.memory.mineralId))
                 }else if (_feedBack === ERR_NOT_ENOUGH_RESOURCES){
                     feedBack = JobERR
                 }
@@ -629,7 +643,7 @@ const roleJob = {
                 feedBack = JobERR
             }else{
                 if (creep.withdraw(targetWithdrawl,RESOURCE_ENERGY) === ERR_NOT_IN_RANGE){
-                    creep.moveTo(targetWithdrawl)
+                    creep.travelTo(targetWithdrawl)
                 }
             }
         }
@@ -724,7 +738,7 @@ const roleJob = {
             Game.getObjectById(creep.memory.targetRetrieve).store.getUsedCapacity(creep.memory.targetResource[0]) == 0){
             creep.memory.targetRetrieve = undefined
         }
-        if (!creep.memory.signals.labTransfer && creep.memory.targetResource && creep.store.getUsedCapacity(creep.memory.targetResource[0]) > 0 &&
+        if (!creep.memory.signals.labTransfer && !creep.memory.signals.labExhaust && creep.memory.targetResource && creep.store.getUsedCapacity(creep.memory.targetResource[0]) > 0 &&
             (creep.store.getFreeCapacity() === 0 || creep.memory.targetResource[1] === 0)){
                 creep.memory.signals.labTransfer = true
         }
@@ -752,7 +766,7 @@ const roleJob = {
                 }else{
                     let _feedBack = creep.withdraw(targetObject,creep.memory.targetResource[0],retrieveNum)
                     if (_feedBack === ERR_NOT_IN_RANGE){
-                        creep.moveTo(targetObject)
+                        creep.travelTo(targetObject)
                     }else if (_feedBack === OK){
                         creep.memory.targetResource[1] = creep.memory.targetResource[1] - retrieveNum
                     }
@@ -785,7 +799,7 @@ const roleJob = {
             if (creep.memory.targetLab){
                 let _feedBack = creep.transfer(Game.getObjectById(creep.memory.targetLab),creep.memory.targetResource[0])
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(creep.memory.targetLab))
+                    creep.travelTo(Game.getObjectById(creep.memory.targetLab))
                 }else if (_feedBack === OK){
                     creep.memory.targetResource = undefined
                     creep.memory.targetLab = undefined
@@ -833,7 +847,7 @@ const roleJob = {
                 const _storage = Game.getObjectById(Game.spawns['Origin'].memory.init.access.storages[roomName][0])
                 let _factory = undefined
                 if (Game.spawns['Origin'].memory.assess.access.is.terminals[roomName]){
-                    _factory = Game.getObjectById(Game.spawns['Origin'].memory.init.access.terminals[roomName][0])
+                    _factory = Game.getObjectById(Game.spawns['Origin'].memory.init.access.factories[roomName][0])
                 }
 
                 // Reverse the writing order to overlap
@@ -879,7 +893,7 @@ const roleJob = {
             if (creep.memory.marketTarget){
                 const _feedBack = creep.withdraw(Game.getObjectById(creep.memory.marketTarget[0]),creep.memory.marketTarget[1])
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(creep.memory.marketTarget[0]))
+                    creep.travelTo(Game.getObjectById(creep.memory.marketTarget[0]))
                 }else if (_feedBack === ERR_NOT_ENOUGH_RESOURCES){
                     creep.memory.marketTarget = undefined
                 }else if (_feedBack === OK){
@@ -909,7 +923,7 @@ const roleJob = {
         if (feedBack === JobOK){
             const _feedBack = creep.transfer(_terminal,creep.memory.marketTarget[1])
             if (_feedBack === ERR_NOT_IN_RANGE){
-                creep.moveTo(_terminal)
+                creep.travelTo(_terminal)
             }else if (_feedBack === OK){
                 creep.memory.hasGoods = false
                 creep.memory.signals.marketTransfer = false
@@ -923,16 +937,6 @@ const roleJob = {
                 feedBack = JobERR
             }
         }
-        return feedBack
-    },
-    ScompoundFactoryRetrieveBehavior:function(creep,absolute = false){
-        const roomName = creep.room.name
-        let feedBack = JobERR
-        return feedBack
-    },
-    compoundFactoryTransferBehavior:function(creep,absolute = false){
-        const roomName = creep.room.name
-        let feedBack = JobERR
         return feedBack
     },
     chargePowerBehavior:function(creep,absolute = false){
@@ -966,7 +970,11 @@ const roleJob = {
             if (creep.memory.targetLabExhaust){
                 const _feedBack = creep.withdraw(Game.getObjectById(creep.memory.targetLabExhaust),creep.memory.labExhaustMineralType)
                 if (_feedBack === ERR_NOT_IN_RANGE){
-                    creep.moveTo(Game.getObjectById(creep.memory.targetLabExhaust))
+                    creep.travelTo(Game.getObjectById(creep.memory.targetLabExhaust))
+                }else if (_feedBack === ERR_NOT_ENOUGH_RESOURCES){
+                    creep.memory.targetLabExhaust = undefined
+                    creep.memory.labExhaustMineralType = undefined
+                    feedBack = JobERR
                 }
             }
             if (!creep.memory.targetLabExhaust){
@@ -975,25 +983,129 @@ const roleJob = {
         }
         return feedBack
     },
-    chargeNukerBehavior:function(creep,absolute = false){
+    SgeneralRetrieveBehavior:function(creep,absolute = false){
         const roomName = creep.room.name
         let feedBack = JobERR
-
+        if (creep.memory.taskTransfer && creep.memory.taskTransfer.transferTarget && 
+            Game.getObjectById(creep.memory.taskTransfer.transferTarget).store.getUsedCapacity(creep.memory.taskTransfer.task[1]) == 0){
+            creep.memory.taskTransfer.task[2] = 0
+        }
+        if (!creep.memory.taskTransfer || !creep.memory.taskTransfer.task){
+            creep.memory.taskTransfer = {}
+            creep.memory.taskTransfer.task = task.getTask(roomName,"transfer")
+            creep.memory.taskTransfer.retrieveTarget = undefined
+            creep.memory.taskTransfer.transferTarget = undefined
+        }
+        if (!creep.memory.signals.generalTransfer && creep.memory.taskTransfer && creep.memory.taskTransfer.task && creep.store.getUsedCapacity(creep.memory.taskTransfer.task[1]) > 0 &&
+            (creep.store.getFreeCapacity() === 0 || creep.memory.taskTransfer.task[2] === 0)){
+                creep.memory.signals.generalTransfer = true
+        }
+        if ((creep.memory.taskTransfer && creep.memory.taskTransfer.task && 
+             !creep.memory.signals.generalTransfer &&
+             creep.store.getFreeCapacity() > 0) || absolute === true){
+            feedBack = JobOK
+        }
+        if (feedBack === JobOK){
+            if (!creep.memory.taskTransfer.retrieveTarget){
+                const retrieveType = creep.memory.taskTransfer.task[1]
+                const transferTargetType = creep.memory.taskTransfer.task[0]
+                if (transferTargetType !== "terminal" && Game.spawns['Origin'].memory.init.infoCompounds[roomName][retrieveType].terminal > 0){
+                    creep.memory.taskTransfer.retrieveTarget = Game.spawns['Origin'].memory.init.access.terminals[roomName][0]
+                }else if (transferTargetType !== "storage" && Game.spawns['Origin'].memory.init.infoCompounds[roomName][retrieveType].storage > 0){
+                    creep.memory.taskTransfer.retrieveTarget = Game.spawns['Origin'].memory.init.access.storages[roomName][0]
+                }else if (transferTargetType !== "lab" && Game.spawns['Origin'].memory.init.infoCompounds[roomName][retrieveType].lab > 0){
+                    creep.memory.taskTransfer.retrieveTarget = Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"][retrieveType][0]
+                }else{
+                    feedBack = JobERR
+                }
+            }
+            if (creep.memory.taskTransfer.retrieveTarget){
+                const targetObject = Game.getObjectById(creep.memory.taskTransfer.retrieveTarget)
+                const retrieveNum = Math.min(creep.store.getFreeCapacity(),creep.memory.taskTransfer.task[2],targetObject.store.getUsedCapacity(creep.memory.taskTransfer.task[1]))
+                if (retrieveNum == 0){
+                    creep.memory.taskTransfer.retrieveTarget = undefined
+                    feedBack = JobERR
+                }else{
+                    let _feedBack = creep.withdraw(targetObject,creep.memory.taskTransfer.task[1],retrieveNum)
+                    if (_feedBack === ERR_NOT_IN_RANGE){
+                        creep.travelTo(targetObject)
+                    }else if (_feedBack === OK){
+                        creep.memory.taskTransfer.task[2] = creep.memory.taskTransfer.task[2] - retrieveNum
+                    }
+                }
+            }
+        }
         return feedBack
     },
-    SnukerRetrieveBehavior:function(creep,absolute = false){
+    generalTransferBehavior:function(creep,absolute = false){
         const roomName = creep.room.name
         let feedBack = JobERR
+        if (!creep.memory.taskTransfer ||
+            !creep.memory.taskTransfer.task
+            || creep.store.getUsedCapacity(creep.memory.taskTransfer.task[1]) === 0){
+            creep.memory.signals.generalTransfer = false
+        }
+        if (creep.memory.signals.generalTransfer || absolute === true){
+            feedBack = JobOK
+        }
+        if (feedBack === JobOK){
+            if (!creep.memory.taskTransfer.transferTarget){
+                const transferType = creep.memory.taskTransfer.task[0]
+                let chosenStructure = undefined
+                if (transferType === "lab"){
+                    chosenStructure = helpFunc.getAvailableLab(roomName,creep.memory.taskTransfer.task[1])
+                }else if (transferType === "factory"){
+                    if (Game.spawns['Origin'].memory.assess.access.is.factories[roomName]){
+                        chosenStructure = Game.spawns['Origin'].memory.init.access.factories[roomName][0]
+                    }
+                }else if (transferType === "terminal"){
+                    if (Game.spawns['Origin'].memory.assess.access.is.terminals[roomName]){
+                        chosenStructure = Game.spawns['Origin'].memory.init.access.terminals[roomName][0]
+                    }
+                }else if (transferType === "powerSpawn"){
+                    if (Game.spawns['Origin'].memory.assess.access.is.powerSpawns[roomName]){
+                        chosenStructure = Game.spawns['Origin'].memory.init.access.powerSpawns[roomName][0]
+                    }
+                }else if (transferType === "nuker"){
+                    if (Game.spawns['Origin'].memory.assess.access.is.nukers[roomName]){
+                        chosenStructure = Game.spawns['Origin'].memory.init.access.nukers[roomName][0]
+                    }
+                }else if (transferType === "storage"){
+                    if (Game.spawns['Origin'].memory.assess.access.is.storages[roomName]){
+                        chosenStructure = Game.spawns['Origin'].memory.init.access.storages[roomName][0]
+                    }
+                }else if (transferType === "container"){
 
+                }
+                if (chosenStructure){
+                    creep.memory.taskTransfer.transferTarget = chosenStructure
+                }else{
+                    feedBack = JobERR
+                }
+            }
+            if (creep.memory.taskTransfer.transferTarget){
+                let _feedBack = creep.transfer(Game.getObjectById(creep.memory.taskTransfer.transferTarget),creep.memory.taskTransfer.task[1])
+                if (_feedBack === ERR_NOT_IN_RANGE){
+                    creep.travelTo(Game.getObjectById(creep.memory.taskTransfer.transferTarget))
+                }else if (_feedBack === OK){
+                    creep.memory.taskTransfer.retrieveTarget = undefined
+                    if (creep.memory.taskTransfer.task[2] === 0){
+                        task.finishTransferTask(roomName,creep.memory.taskTransfer.task[0],creep.memory.taskTransfer.task[1])
+                        creep.memory.taskTransfer = null
+                    }
+                }else if (_feedBack === ERR_FULL || _feedBack === ERR_INVALID_TARGET){
+                    creep.memory.taskTransfer.transferTarget = undefined
+                    feedBack = JobERR
+                }
+            }else{
+                task.deleteTransferTask(roomName,creep.memory.taskTransfer.task[0],creep.memory.taskTransfer.task[1])
+                creep.memory.taskTransfer = undefined
+                feedBack = JobERR
+            }
+        }
         return feedBack
     },
-    NukerTransferBehavior:function(creep,absolute = false){
-        const roomName = creep.room.name
-        let feedBack = JobERR
-
-        return feedBack
-    },
-    run:function(object,type = 'creep'){
+    run:function(object, type = 'creep'){
         let roomName = undefined
         let role = undefined
         let taskList = []
