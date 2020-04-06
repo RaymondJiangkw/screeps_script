@@ -268,7 +268,7 @@ const referenceModule = {
             upgrader:"16-12-13-2-16",
             repairer:"12-13-5-4-0-1-2-12-13",
             miner:"14-Game.spawns['Origin'].memory.assess.access.creeps[roomName].pickupers>0?14:3-14",
-            pickuper:"18-7-21-25-28-23-4-26-22-24-3",
+            pickuper:"18-7-21-25-23-28-4-26-22-24-3",
             tower:"6-5-19-5",
             attacker:"9",
             claimer:"8",
@@ -284,7 +284,7 @@ const referenceModule = {
             harvester:"12-13-0-4-5-3-1-2-12-13",
             builder:"12-13-4-1-0-5-2-12-13",
             repairer:"15-12-13-5-4-0-1-2-12-13",
-            pickuper:"18-7-21-25-28-15-24-26-22-4-3",
+            pickuper:"18-7-21-25-15-28-24-26-22-4-3",
             tower:"6-5",
         },
         warJob:{

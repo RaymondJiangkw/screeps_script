@@ -77,6 +77,9 @@ const assessModule = {
             vacant: // with no minerals in it, thus able to perform reaction, ordered by cooldown
             neededExhaust: // storing duplicate basic minerals lab
         } 
+        terminalInfo:{
+
+        }
         */
     },
     minerals:{
@@ -300,6 +303,13 @@ const initAssess = function() {
         for (let i = 0; i < Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].length;i++){
             const ___mineralType = Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName][i]
             assessModule.structures[roomName]["usableLabs"][___mineralType] = _.filter(Game.spawns['Origin'].memory.init.access.labs[roomName],(labId)=>Game.getObjectById(labId).mineralType === ___mineralType)
+        }
+        assessModule.structures[roomName]["terminalInfo"] = {}
+        if (assessModule.is.terminals[roomName]){
+            const _terminal = Game.getObjectById(Game.spawns['Origin'].memory.init.access.terminals[roomName][0])
+            for (let resourceType in _terminal.store){
+                assessModule.structures[roomName]["terminalInfo"][resourceType] = _terminal.store.getUsedCapacity(resourceType)
+            }
         }
         // Dealing with the minerals Only consider when the economy is quite good
         if (!Game.spawns['Origin'].memory.assess || 

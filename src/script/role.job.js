@@ -1042,6 +1042,7 @@ const roleJob = {
                         creep.travelTo(targetObject)
                     }else if (_feedBack === OK){
                         creep.memory.taskTransfer.task[2] = creep.memory.taskTransfer.task[2] - retrieveNum
+                        creep.memory.signals.generalTransfer = true
                     }
                 }
             }
@@ -1051,10 +1052,6 @@ const roleJob = {
     generalTransferBehavior:function(creep,absolute = false){
         const roomName = creep.room.name
         let feedBack = JobERR
-        if (creep.memory.taskTransfer && creep.memory.taskTransfer.task && creep.memory.taskTransfer.task[2] === 0){
-            task.finishTransferTask(roomName,creep.memory.taskTransfer.task[0],creep.memory.taskTransfer.task[1])
-            creep.memory.taskTransfer = null
-        }
         if (!creep.memory.taskTransfer ||
             !creep.memory.taskTransfer.task
             || creep.store.getUsedCapacity(creep.memory.taskTransfer.task[1]) === 0){
@@ -1104,6 +1101,10 @@ const roleJob = {
                     creep.travelTo(Game.getObjectById(creep.memory.taskTransfer.transferTarget))
                 }else if (_feedBack === OK){
                     creep.memory.taskTransfer.retrieveTarget = undefined
+                    if (creep.memory.taskTransfer && creep.memory.taskTransfer.task && creep.memory.taskTransfer.task[2] === 0){
+                        task.finishTransferTask(roomName,creep.memory.taskTransfer.task[0],creep.memory.taskTransfer.task[1])
+                        creep.memory.taskTransfer = null
+                    }
                 }else if (_feedBack === ERR_FULL || _feedBack === ERR_INVALID_TARGET){
                     creep.memory.taskTransfer.transferTarget = undefined
                     feedBack = JobERR

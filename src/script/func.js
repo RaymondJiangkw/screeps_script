@@ -255,6 +255,20 @@ const helpFunc = {
         }
         return potentialLab
     },
+    looseGetAvailableLab:function(roomName,compoundType){ // Get even full
+        let potentialLab = this.isInLabnFull(roomName,compoundType)
+        if (potentialLab === undefined) {
+            potentialLab = Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"][compoundType][0]
+        }
+        if (potentialLab === null) {
+            if (Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["vacant"].length > 0){
+                return Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["vacant"].pop()
+            }else{
+                return undefined
+            }
+        }
+        return potentialLab
+    },
     insertVacantLab:function(roomName,labId,compoundType){
         if (labId !== undefined && Game.getObjectById(labId).store.getUsedCapacity(compoundType) === 0){
             Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["vacant"].push(labId)

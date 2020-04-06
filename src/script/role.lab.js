@@ -59,7 +59,7 @@ const roleLab = {
             const reversedCompound = reversedList[i][0]
             const reversedCompountAmount = reversedList[i][1]
             const output = reference.production.lab.formula[reversedCompound]
-            const _reversedCompoundLab = helpFunc.isInLabnFull(roomName,reversedCompound)
+            const _reversedCompoundLab = helpFunc.looseGetAvailableLab(roomName,reversedCompound)
             const outputLab1 = helpFunc.getAvailableLab(roomName,output[0]);
             const outputLab2 = helpFunc.getAvailableLab(roomName,output[1]);
             if (_reversedCompoundLab != undefined && _reversedCompoundLab != null){
@@ -68,8 +68,7 @@ const roleLab = {
                 }
             }
             const compountInfo  = Game.spawns['Origin'].memory.init.infoCompounds[roomName][reversedCompound]
-            if (_reversedCompoundLab == null ||
-                (_reversedCompoundLab != undefined && compountInfo.lab < reversedCompountAmount)){
+            if (!_reversedCompoundLab){
                 if (compountInfo.all - compountInfo.lab > 0){
                     task.addTransfer(roomName,"lab",reversedCompound,Math.min(compountInfo.all,reversedCompountAmount)-compountInfo.lab)
                 }
