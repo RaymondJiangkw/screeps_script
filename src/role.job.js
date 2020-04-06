@@ -389,26 +389,37 @@ const roleJob = {
             feedBack = JobOK
         }
         if (feedBack === JobOK){
-            let targetPickUpObject = undefined
-            if (targetTombStones.length > 0){
-                targetPickUpObject = targetTombStones[0]
-                if (helpFunc.creepWithdrawAll(creep.id,targetPickUpObject.id) === ERR_NOT_IN_RANGE){
-                    creep.travelTo(targetPickUpObject)
+            if (!creep.memory.targetPickUpTombStone){
+                if (targetTombStones.length > 0){
+                    creep.memory.targetPickUpTombStone = targetTombStones[0].id
+                }
+            }
+            if (!creep.memory.targetPickUp){
+                if (targetDroppedResources.length > 0){
+                    creep.memory.targetPickUp = targetDroppedResources[0].id
+                }
+            }
+            if (creep.memory.targetPickUpTombStone){
+                if (helpFunc.creepWithdrawAll(creep.id,creep.memory.targetPickUpTombStone) === ERR_NOT_IN_RANGE){
+                    creep.travelTo(Game.getObjectById(creep.memory.targetPickUpTombStone))
                 }else{
                     creep.memory.hasPickUp = true
+                    creep.memory.targetPickUpTombStone = undefined
                 }
-            }else if (targetDroppedResources.length > 0){
-                targetPickUpObject = targetDroppedResources[0]
-                if (creep.pickup(targetPickUpObject) === ERR_NOT_IN_RANGE){
-                    creep.travelTo(targetPickUpObject)
+            }else if (creep.memory.targetPickUp){
+                if (creep.pickup(Game.getObjectById(creep.memory.targetPickUp)) === ERR_NOT_IN_RANGE){
+                    creep.travelTo(Game.getObjectById(creep.memory.targetPickUp))
                 }else{
                     creep.memory.hasPickUp = true
+                    creep.memory.targetPickUp = undefined
                 }
+            }else{
+                feedBack = JobERR
             }
         }
         return feedBack
     },
-    attackBehavior:function(creep,absolute = false){
+    attackBehavior:function(creep, absolute = false){
         const roomName = creep.room.name
         const targetRoom = creep.memory.targetRoom
         let feedBack = JobERR
@@ -987,7 +998,7 @@ const roleJob = {
         const roomName = creep.room.name
         let feedBack = JobERR
         if (creep.memory.taskTransfer && creep.memory.taskTransfer.transferTarget && 
-            Game.getObjectById(creep.memory.taskTransfer.transferTarget).store.getUsedCapacity(creep.memory.taskTransfer.task[1]) == 0){
+            Game.getObjectById(creep.memory.taskTransfer.transferTarget).store.getFreeCapacity(creep.memory.taskTransfer.task[1]) == 0){
             creep.memory.taskTransfer.task[2] = 0
         }
         if (!creep.memory.taskTransfer || !creep.memory.taskTransfer.task){
@@ -1040,6 +1051,10 @@ const roleJob = {
     generalTransferBehavior:function(creep,absolute = false){
         const roomName = creep.room.name
         let feedBack = JobERR
+        if (creep.memory.taskTransfer && creep.memory.taskTransfer.task && creep.memory.taskTransfer.task[2] === 0){
+            task.finishTransferTask(roomName,creep.memory.taskTransfer.task[0],creep.memory.taskTransfer.task[1])
+            creep.memory.taskTransfer = null
+        }
         if (!creep.memory.taskTransfer ||
             !creep.memory.taskTransfer.task
             || creep.store.getUsedCapacity(creep.memory.taskTransfer.task[1]) === 0){
@@ -1089,10 +1104,6 @@ const roleJob = {
                     creep.travelTo(Game.getObjectById(creep.memory.taskTransfer.transferTarget))
                 }else if (_feedBack === OK){
                     creep.memory.taskTransfer.retrieveTarget = undefined
-                    if (creep.memory.taskTransfer.task[2] === 0){
-                        task.finishTransferTask(roomName,creep.memory.taskTransfer.task[0],creep.memory.taskTransfer.task[1])
-                        creep.memory.taskTransfer = null
-                    }
                 }else if (_feedBack === ERR_FULL || _feedBack === ERR_INVALID_TARGET){
                     creep.memory.taskTransfer.transferTarget = undefined
                     feedBack = JobERR

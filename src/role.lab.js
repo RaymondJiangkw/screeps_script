@@ -67,9 +67,9 @@ const roleLab = {
                     Game.getObjectById(_reversedCompoundLab).reverseReaction(Game.getObjectById(outputLab1),Game.getObjectById(outputLab2))
                 }
             }
+            const compountInfo  = Game.spawns['Origin'].memory.init.infoCompounds[roomName][reversedCompound]
             if (_reversedCompoundLab == null ||
                 (_reversedCompoundLab != undefined && compountInfo.lab < reversedCompountAmount)){
-                const compountInfo  = Game.spawns['Origin'].memory.init.infoCompounds[roomName][reversedCompound]
                 if (compountInfo.all - compountInfo.lab > 0){
                     task.addTransfer(roomName,"lab",reversedCompound,Math.min(compountInfo.all,reversedCompountAmount)-compountInfo.lab)
                 }

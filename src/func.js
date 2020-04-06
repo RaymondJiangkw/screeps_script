@@ -144,10 +144,13 @@ const helpFunc = {
         }else{
             const creep = Game.getObjectById(creep_id)
             const target = Game.getObjectById(target_id)
-            creep.travelTo(target)
+            creep.moveTo(target)
         }
     },
     creepWithdrawAll:function(creep_id,target_id){
+        if (!Game.getObjectById(target_id)){
+            return ERR_INVALID_TARGET
+        }
         const creep = Game.getObjectById(creep_id)
         const target = Game.getObjectById(target_id)
         const targetStore = Object.keys(target.store)
@@ -159,6 +162,9 @@ const helpFunc = {
         return OK
     },
     creepTransferAll:function(creep_id,target_id){
+        if (!Game.getObjectById(target_id)){
+            return ERR_INVALID_TARGET
+        }
         const creep = Game.getObjectById(creep_id)
         const target = Game.getObjectById(target_id)
         let feedBack = undefined
