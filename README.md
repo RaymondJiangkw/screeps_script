@@ -1,4 +1,4 @@
-# This is RaymondKevin's Personal Screeps' Script and Other Tools
+# RaymondKevin's Personal Screeps' Script and Other Tools
 
 ## Introduction
 - Script
@@ -9,4 +9,4 @@
         - I adjust the package *screepsapi* to fit for the purpose of market-orientation.
 
 ## Requirement
-- There must be a spawn named 'Origin'
+- There must be a spawn named 'Origin'.

@@ -137,9 +137,16 @@ const groupFunction = function(roomName){
     })
     links.emitFrom[roomName] = {}
     links.emitTo[roomName] = {}
+    links.emitTo[roomName]['upgrade'] = _.filter(initModule.links[roomName],(link_id)=>{
+        if (helpFunc.m_adjacent(link_id,initModule.controllers[roomName].id,5)){
+            return true
+        }
+        return false
+    })
     links.emitFrom[roomName]['resources'] = _.filter(initModule.links[roomName],(link_id)=>{
         for (let i = 0; i < initModule.resources[roomName].length;i++){
-            if (helpFunc.m_adjacent(link_id,initModule.resources[roomName][i],3) === true){
+            if (helpFunc.m_adjacent(link_id,initModule.resources[roomName][i],3) &&
+            links.emitTo[roomName]['upgrade'].indexOf(link_id) === -1){
                 return true
             }
         }
@@ -155,13 +162,6 @@ const groupFunction = function(roomName){
         }
         return false
     })*/
-    links.emitTo[roomName]['upgrade'] = _.filter(initModule.links[roomName],(link_id)=>{
-        if (helpFunc.m_adjacent(link_id,initModule.controllers[roomName].id,5) && 
-        links.emitFrom[roomName]['resources'].indexOf(link_id) === -1 && links.emitFrom[roomName]['minerals'].indexOf(link_id) === -1){
-            return true
-        }
-        return false
-    })
     links.emitTo[roomName]['backUp'] = _.filter(initModule.links[roomName],(link_id)=>{
         for (let i = 0; i < initModule.storages[roomName].length;i++){
             if (helpFunc.adjacent(link_id,initModule.storages[roomName][i]) && 
