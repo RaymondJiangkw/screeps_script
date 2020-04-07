@@ -1,5 +1,6 @@
 const initModule = require("init.general")
 const assessModule = require("assess.general")
+const task = require("task.general")
 const roleSpawn = require('role.spawn')
 const roleLink = require('role.link')
 const roleJob = require('role.job')
@@ -50,6 +51,12 @@ module.exports.loop = function () {
                 Game.spawns['Origin'].memory["resourceOccupied"][Memory.creeps[name].home][Memory.creeps[name].resourceId] = false
             }else if (_creepRole === 'miner' && Memory.creeps[name].mineralId !== undefined){
                 Game.spawns['Origin'].memory["mineralOccupied"][Memory.creeps[name].home][Memory.creeps[name].mineralId] = false
+            }else if (_creepRole === 'pickuper' && Memory.creeps[name].taskTransfer && Memory.creeps[name].taskTransfer.task){
+                if (Memory.creeps[name].taskTransfer.task[2] === 0){
+                    task.finishTransferTask(Memory.creeps[name].home,Memory.creeps[name].taskTransfer.task[0],Memory.creeps[name].taskTransfer.task[1])
+                }else if (Memory.creeps[name].taskTransfer.task[2] > 0){
+                    task.renewTransfer(Memory.creeps[name].home,Memory.creeps[name].taskTransfer.task[0],Memory.creeps[name].taskTransfer.task[1],Memory.creeps[name].taskTransfer.task[2])
+                }
             }
             delete Memory.creeps[name];
             console.log('Clearing non-existing creep memory:', name);

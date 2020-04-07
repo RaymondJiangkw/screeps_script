@@ -181,7 +181,7 @@ const referenceModule = {
             }
         },
         worker:{work:2,carry:3,move:4},
-        upgrader:{work:5,carry:1,move:2},
+        upgrader:{work:8,carry:2,move:5},
         transferer:{work:5,carry:1,move:2},
         miner:{work:5,carry:2,move:6},
         repairer:{work:3,carry:3,move:6},

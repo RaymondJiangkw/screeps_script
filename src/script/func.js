@@ -255,16 +255,17 @@ const helpFunc = {
         }
         return potentialLab
     },
-    looseGetAvailableLab:function(roomName,compoundType){ // Get even full
+    looseGetAvailableLab:function(roomName,compoundType){
+        // null no storing lab and no vacant lab
+        // undefined no storing lab and has vacant lab
+        // id potential usable lab which storing this compound, even full
         let potentialLab = this.isInLabnFull(roomName,compoundType)
         if (potentialLab === undefined) {
             potentialLab = Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"][compoundType][0]
         }
-        if (potentialLab === null) {
+        if (potentialLab === null){
             if (Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["vacant"].length > 0){
-                return Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["vacant"].pop()
-            }else{
-                return undefined
+                potentialLab = undefined
             }
         }
         return potentialLab

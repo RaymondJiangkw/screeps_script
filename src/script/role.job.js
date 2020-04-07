@@ -221,18 +221,10 @@ const roleJob = {
     storeBehavior:function(creep,absolute = false){
         const roomName = creep.memory.home
         let feedBack = JobERR
-        let HasSignal = false
-        for (let signal in creep.memory.signals){
-            if (creep.memory.signals[signal] === true){
-                HasSignal = true
-                break
-            }
-        }
-        if ((      (Game.spawns['Origin'].memory.assess.access.is.storages[roomName].neededChargeEnergy ||
+        if ((       Game.spawns['Origin'].memory.assess.access.is.storages[roomName].neededChargeEnergy ||
               Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName].available.length > 0 ||
               (         (creep.memory.role === 'miner' || creep.memory.role === 'pickuper') &&
-              Game.spawns['Origin'].memory.assess.access.is.storages[roomName].exists === true))           && // Deal with the case of storing minerals
-              HasSignal === true) || absolute === true){
+              Game.spawns['Origin'].memory.assess.access.is.storages[roomName].exists === true) ) || absolute === true){
             feedBack = JobOK
         }
         if (feedBack === JobOK){

@@ -22,6 +22,15 @@ const task = {
             }
         }
     },
+    renewTransfer:function(roomName,target,type,newNum){
+        if (!Game.spawns['Origin'].memory.task.transfer[target][roomName]) Game.spawns['Origin'].memory.task.transfer[target][roomName] = {}
+        if (this.searchTask(roomName,"transfer",target,type)){
+            Game.spawns['Origin'].memory.task.transfer[target][roomName][type] = {
+                amount:newNum,
+                working:0
+            }
+        }
+    },
     getTask:function(roomName,taskType){
         if (!Game.spawns['Origin'].memory.task[taskType]) return null
         if (taskType == 'transfer'){
