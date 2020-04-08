@@ -8,19 +8,19 @@ class Info:
         Class for getting information from the server,
         including market,console,time,terminal module.
 
-        Need to provide TOKEN and SHARD.
+        Need to provide _TOKEN and SHARD.
         Variables & Constants:
-            URL : the url to execute api request.
-            TOKEN : the token.
+            _URL : the url to execute api request.
+            _TOKEN : the token.
             SHARD : the working shard.
             WORLD_SIZE : the size of the SHARD.
 
         Example:
         >>> Info("3bdd1da7-3002-4aaa-be91-330562f54093","shard3")
     """
-    URL = "https://screeps.com/api/"
+    _URL = "https://screeps.com/api/"
     def __init__(self,TOKEN,SHARD):
-        self.TOKEN = TOKEN
+        self._TOKEN = TOKEN
         self.SHARD = SHARD
         self._worldSize()
     def console(self,cmd):
@@ -29,8 +29,8 @@ class Info:
             params:
                 cmd :: string, command.
         """
-        url = self.URL + "user/console"
-        params = {"_token":self.TOKEN,"expression":cmd,"shard":self.SHARD}
+        url = self._URL + "user/console"
+        params = {"_token":self._TOKEN,"expression":cmd,"shard":self.SHARD}
         requests.post(url,params)
     def time(self):
         """
@@ -38,8 +38,8 @@ class Info:
             return:
                 time :: current tick.
         """
-        url = self.URL + "game/time"
-        params = {"_token":self.TOKEN,"shard":self.SHARD}
+        url = self._URL + "game/time"
+        params = {"_token":self._TOKEN,"shard":self.SHARD}
         result = requests.get(url,params).json()
         return result['time']
     def resourceOrder(self,resourceType):
@@ -68,8 +68,8 @@ class Info:
                 'roomName': 'W26N9'
              },...]
         """
-        url = self.URL + "game/market/orders"
-        params = {"_token":self.TOKEN,"resourceType":resourceType,"shard":self.SHARD}
+        url = self._URL + "game/market/orders"
+        params = {"_token":self._TOKEN,"resourceType":resourceType,"shard":self.SHARD}
         return requests.get(url,params).json()['list']
     def terminalInfo(self):
         """
@@ -85,9 +85,9 @@ class Info:
              'W22N25': {'energy': 60030, 'K': 1330, 'ghodium_melt': 600},
              'W23N25': {}}
         """
-        url = self.URL + "user/memory"
+        url = self._URL + "user/memory"
         path = "spawns.Origin"
-        params = {"_token":self.TOKEN,"path":path,"shard":self.SHARD}
+        params = {"_token":self._TOKEN,"path":path,"shard":self.SHARD}
         result = requests.get(url,params).json()
         if 'data' in result:
             try:
@@ -120,8 +120,8 @@ class Info:
              {'_id': 'UL', 'count': 3435, 'avgPrice': 0.002, 'stddevPrice': 0},
              {'_id': 'tube', 'count': 136, 'avgPrice': 434.377, 'stddevPrice': 0},...]
         """
-        url = self.URL + "game/market/orders-index"
-        params = {"_token":self.TOKEN,"shard":self.SHARD}
+        url = self._URL + "game/market/orders-index"
+        params = {"_token":self._TOKEN,"shard":self.SHARD}
         return requests.get(url,params).json()['list']
     def myOrder(self):
         """
@@ -157,8 +157,8 @@ class Info:
               'roomName': 'W22N25',
               'created': 17101053}]
         """
-        url = self.URL + "game/market/my-orders"
-        params = {"_token":self.TOKEN}
+        url = self._URL + "game/market/my-orders"
+        params = {"_token":self._TOKEN}
         return requests.get(url,params).json()['shards'][self.SHARD]
     def cancelOrder(self,id):
         """
@@ -170,7 +170,7 @@ class Info:
             >>> info = Info("3bdd1da7-3002-4aaa-be91-330562f54093","shard3")
             >>> info.cancelOrder('5e88ad9da71a8c545a27a232')
         """
-        self.console("Game.market.cancelOrder({})".format(id))
+        self.console("Game.market.cancelOrder('{}')".format(id))
     def createOrder(self,orderType,resourceType,price,totalAmount,roomName):
         """
             A function to create an order.
@@ -185,7 +185,7 @@ class Info:
             >>> info = Info("3bdd1da7-3002-4aaa-be91-330562f54093","shard3")
             >>> info.createOrder("buy","energy",0.01,10000,"W22N25")
         """
-        self.console(f"Game.market.createOrder({orderType},{resourceType},{price},{totalAmount},{roomName})")
+        self.console(f"Game.market.createOrder('{orderType}','{resourceType}',{price},{totalAmount},'{roomName}')")
     def dealOrder(self,id,amount,roomName):
         """
             A function to deal the order.
@@ -198,10 +198,10 @@ class Info:
             >>> info = Info("3bdd1da7-3002-4aaa-be91-330562f54093","shard3")
             >>> info.dealOrder("5e85d6d99df71e776cc8a6f0",1000,"W22N25")
         """
-        self.console(f"Game.market.deal({id},{amount},{roomName})")
+        self.console(f"Game.market.deal('{id}',{amount},'{roomName}')")
     def _worldSize(self):
-        url = self.URL + "game/world-size"
-        params = {"_token":self.TOKEN,"shard":self.SHARD}
+        url = self._URL + "game/world-size"
+        params = {"_token":self._TOKEN,"shard":self.SHARD}
         self.WORLD_SIZE = requests.get(url,params).json()
         self.WORLD_SIZE = [self.WORLD_SIZE['width'],self.WORLD_SIZE['height']]
     def _roomNameToXY(self,room):
@@ -252,3 +252,69 @@ class Info:
             633
         """
         return ceil(  amount * ( 1 - e ** (- self.calcRoomsDistance(room1,room2) / 30) )  )
+    def getRecentBalance(self,page = 0):
+        """
+            A function to get the user's recent balance history.
+            params::
+                page :: int, the page number
+                        default 0
+                        can receive 'all' which will get all the records.
+                            Or all-{pageNum} all the records since the pageNum.
+            return::
+                A list of dictionary.
+                    keys:
+                        _id :: string, deal id
+                        data :: time, format:: e.g. 2020-04-08T02:46:57.259Z
+                        tick :: int, the tick
+                        user :: string, user id
+                        type :: string, market.sell OR market.buy
+                        balance :: real, balance
+                        change :: real, change in the balance
+                        market :: dictionary
+                            keys:
+                                resourceType :: string, such as "H"
+                                roomName :: owner's roomName
+                                targetRoomName :: dealer's roomName
+                                price :: real, price
+                                npc :: bool, whether one side is npc
+                                owner :: owner's id
+                                dealer :: dealer's id
+                                amount :: int, the transaction amount
+                        shard :: string
+                A boolean(if not 'all') :: indicate whether there are more pages to show
+            
+            Example:
+            >>> info = Info("3bdd1da7-3002-4aaa-be91-330562f54093","shard3")
+            >>> info.getRecentBalance()
+            [[{'_id': '5e8d3b210e7cf61989a9201b',
+              'date': '2020-04-08T02:46:57.259Z',
+              'tick': 17196120,
+              'user': '5e2315ea3df256e71aecade5',
+              'type': 'market.sell',
+              'balance': 29845.822,
+              'change': 40,
+              'market': {'resourceType': 'H',
+                  'roomName': 'W22N25',
+                  'targetRoomName': 'E29S29',
+                  'price': 0.08,
+                  'npc': False,
+                  'owner': '5e2315ea3df256e71aecade5',
+                  'dealer': '58c6e6b7ddc5f2790254a787',
+                  'amount': 500},
+              'shard': 'shard3'},...],True]
+        """
+        url = self._URL + "user/money-history"
+        page = str(page)
+        params = {"_token":self._TOKEN,"page":page}
+        if page == 'all' : page = 'all-0'
+        if page.find('all') == -1:
+            result = requests.get(url,params).json()
+            return [result['list'],result['hasMore']]
+        else:
+            realPage = page.split('-')[1]
+            params['page'] = realPage
+            result = requests.get(url,params).json()
+            if result['hasMore'] == True:
+                return result['list'] + self.getRecentBalance('all-'+str(int(realPage) + 1))
+            else:
+                return result['list']

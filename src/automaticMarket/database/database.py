@@ -1,9 +1,10 @@
-import sqlite3,re
+import sqlite3,re,time
 class Database:
     """
         A class to manipulate the data retrieved from the market.
         Constants:
             _START_TIME :: "2020-01-01"
+            _START_TIME_SEC :: secs counted from _START_TIME
             OUTDATED_TIME :: 365
             _SELL    ::  0
             _BUY     ::  1
@@ -26,12 +27,26 @@ class Database:
                                     amount
                                     remainingAmount
                                     price
+                Record:   FIELDS    _id :: the id of transaction
+                                    date :: Integer the time measured in milisecond from _START_TIME
+                                    tick
+                                    orderType :: "market.buy" -> _BUY, "market.sell" -> _SELL
+                                    balance
+                                    change
+                                    resource_id
+                                    room_id
+                                    targetRoom_id
+                                    npc :: "Involved" -> 1(True), "Otherwise" -> 0(False)
+                                    amount
     
     """
     _START_TIME = "2020-01-01"
     OUTDATED_TIME = 365
     _SELL = 0
     _BUY = 1
+    @property
+    def _START_TIME_SEC(self):
+        return int(time.mktime(time.strptime(self._START_TIME,r"%Y-%m-%d")))
     def __init__(self,sqlName = 'market',reset = False):
         """
             Init Function
@@ -75,7 +90,23 @@ class Database:
             remainingAmount INTEGER,
             price   REAL
         );
-        """)
+        CREATE TABLE IF NOT EXISTS Record (
+            _id TEXT NOT NULL UNIQUE,
+            date    INTEGER NOT NULL,
+            tick    INTEGER NOT NULL PRIMARY KEY UNIQUE,
+            orderType   INTEGER,
+            balance REAL,
+            change  REAL,
+            resource_id INTEGER,
+            room_id INTEGER,
+            targetRoom_id   INTEGER,
+            npc INTEGER,
+            amount  INTEGER
+        );""")
+    def _timeToStamp(self,timeStr):
+        if timeStr.find('.') != -1:
+            timeStr = timeStr.split('.')[0]
+        return int(time.mktime(time.strptime(timeStr,r"%Y-%m-%dT%H:%M:%S")))
     def _upperRoomName(self,roomName):
         result = re.match(r"([EeWw])(\d+)([SsNn])(\d+)",roomName)
         xx = result.group(2)
@@ -116,10 +147,15 @@ class Database:
             resource_id = self._getResourceID(resource)
             self._cur.execute("SELECT _id FROM Deal WHERE resource_id = ?",(resource_id,))
         return [info[0] for info in self._cur.fetchall()]
+    def _getDateTime(self,seconds):
+        SEC = seconds + self._START_TIME_SEC
+        return time.strftime(r"%Y-%m-%d %H:%M:%S",time.localtime(SEC))
     def _interpretOrderType(self,orderType):
         if type(orderType) is not str:
             raise ValueError("Expect string")
         orderType = orderType.lower()
+        if orderType.find('.') != -1:
+            orderType = orderType.split('.')[1]
         if orderType == 'sell':
             orderType = self._SELL
         elif orderType == 'buy':
@@ -165,6 +201,36 @@ class Database:
         self._cur.execute("""INSERT OR REPLACE INTO Deal (_id,resource_id,room_id,orderType,amount,remainingAmount,price) VALUES (?,?,?,?,?,?,?)""",(_id,resource_id,room_id,orderType,amount,remainingAmount,price))
         self._cur.execute("SELECT _id FROM Deal WHERE _id = ?",(_id,))
         return self._cur.fetchone()[0]
+    def insertRecordInfo(self,_id,date,tick,orderType,balance,change,resource,room,targetRoom,npc,amount):
+        """
+            A function to insert Transaction and Credit Record
+            params::
+                _id :: string, the id of deal
+                date :: string, in the form of '2020-04-08T02:31:03' OR '2020-04-08T02:31:03.990Z'
+                tick :: integer
+                orderType :: market.sell OR market.buy
+                balance :: double
+                change :: double
+                resource :: string, such as "H"
+                room :: string, deal's owner
+                targetRoom :: string, room which executes the deal
+                npc :: integer, True -> 1, False -> 0
+                amount :: integer, deal's amount
+        """
+        resource_id = self._getResourceID(resource)
+        room_id = self._getRoomID(room)
+        targetRoom_id = self._getRoomID(targetRoom)
+        orderType = self._interpretOrderType(orderType)
+        if npc == True:
+            npc = 1
+        elif npc == False:
+            npc = 0
+        else:
+            raise ValueError("Error Value for npc, expecting True or False")
+        self._cur.execute("""INSERT OR IGNORE INTO Record (_id,date,tick,orderType,balance,change,resource_id,room_id,targetRoom_id,npc,amount) VALUES (?,?,?,?,?,?,?,?,?,?,?)""",
+                                                          (_id,self._timeToStamp(date) - self._START_TIME_SEC,tick,orderType,balance,change,resource_id,room_id,targetRoom_id,npc,amount))
+        self._cur.execute("""SELECT tick FROM Record WHERE tick = ?""",(tick,))
+        return self._cur.fetchone()[0]
     def deleteFinishedDeal(self,resource,activeIDList):
         """
             A function to delete finished deals, namely disappear in the returned list from API request or remainingAmount = 0.
@@ -202,7 +268,7 @@ class Database:
             returns::
                 A list of dictionaries::
                     keys::
-                        resource :: string, such as "H"
+                        resourceType :: string, such as "H"
                         count :: int, the total transaction volume
                         avgPrice :: double
                         stddevPrice :: double
@@ -214,7 +280,7 @@ class Database:
             availableTime = 0
         lastAvailableTime = int(currentTime - availableTime)
         self._cur.execute("""SELECT * FROM Market WHERE time >= ? AND resource_id = ?""",(lastAvailableTime,resource_id))
-        return [{"resource":resource,"count":count,"avgPrice":avgPrice,"stddevPrice":stddevPrice,"time":int(time)} for _,_,count,avgPrice,stddevPrice,time in self._cur.fetchall()]
+        return [{"resourceType":resource,"count":count,"avgPrice":avgPrice,"stddevPrice":stddevPrice,"time":int(time)} for _,_,count,avgPrice,stddevPrice,time in self._cur.fetchall()]
     def seleteAvailableDeal(self,orderType,resource):
         """
             A function to get specific deal information on a resource and a specific type.
@@ -226,31 +292,70 @@ class Database:
                     keys::
                         _id
                         resourceType
-                        room
-                        orderType
+                        roomName
+                        type
                         amount
                         remainingAmount
                         price
                     Ordered by price (descend if buy, ascend if sell) first, then amount descend
         """
+        if orderType != 'sell' and orderType != 'buy':
+            raise ValueError("Unexpected value from orderType, expecting 'sell' or 'buy'")
         resource_id = self._getResourceID(resource)
         orderType = self._interpretOrderType(orderType)
-        _order = "ASC"
-        if orderType == self._BUY:
-            _order = "DESC"
-        self._cur.execute("""SELECT * FROM Deal WHERE resource_id = ? AND orderType = ? ORDER BY price ?,amount DESC""",(resource_id,orderType,_order))
+        if orderType == self._SELL:
+            self._cur.execute("""SELECT * FROM Deal WHERE resource_id = ? AND orderType = ? ORDER BY price ASC,amount DESC""",(resource_id,orderType))
+        elif orderType == self._BUY:
+            self._cur.execute("""SELECT * FROM Deal WHERE resource_id = ? AND orderType = ? ORDER BY price DESC,amount DESC""",(resource_id,orderType))
+        else:
+            raise ValueError("Unexpected Error occured from (orderType,{})".format(orderType))
         dic = self._cur.fetchall()
-        result = [{"_id":_id,"resourceType":resource,"room":self._getRoomNameFromID(room_id),"orderType":orderType,"amount":amount,"remainingAmount":remainingAmount,"price":price} for _id,_,room_id,_,amount,remainingAmount,price in dic]
+        result = [{"_id":_id,"resourceType":resource,"roomName":self._getRoomNameFromID(room_id),"type":orderType,"amount":amount,"remainingAmount":remainingAmount,"price":price} for _id,_,room_id,_,amount,remainingAmount,price in dic]
+        return result
+    def seleteRecentRecord(self,availableTime = OUTDATED_TIME):
+        """
+            A function to select Records given the restriction of days.
+            params::
+                availableTime :: integer, the days from today
+            returns::
+                A list of dictionaries.
+                    keys:
+                        _id,
+                        date :: in the format %Y-%m-%d %H:%M:%S
+                        tick,
+                        orderType,
+                        balance,
+                        change,
+                        resourceType,
+                        roomName,
+                        targetRoomName,
+                        npc,
+                        amount
+        """
+        lastAvailableTimeStamp = int(time.time()) - self._START_TIME_SEC - availableTime * 24 * 60
+        self._cur.execute("""SELECT * FROM Record WHERE date >= ?""",(lastAvailableTimeStamp,))
+        dic = self._cur.fetchall()
+        result = [{"_id":_id,
+                   "date":self._getDateTime(date),
+                   "tick":tick,
+                   "orderType":self._interpretNum2OrderType(orderType),
+                   "balance":balance,"change":change,
+                   "resourceType":self._getResourceFromID(resource_id),
+                   "roomName":self._getRoomNameFromID(room_id),
+                   "targetRoomName":self._getRoomNameFromID(targetRoom_id),
+                   "npc":npc == 1,
+                   "amount":amount} for _id,date,tick,orderType,balance,change,resource_id,room_id,targetRoom_id,npc,amount in dic]
         return result
     def reset(self):
         """
             A function to reset all the data.
             This function will commit the changes automatically.
         """
-        self._cur.execute("""DROP TABLE IF EXISTS Resource;
+        self._cur.executescript("""DROP TABLE IF EXISTS Resource;
                             DROP TABLE IF EXISTS Room;
                             DROP TABLE IF EXISTS Deal;
-                            DROP TABLE IF EXISTS Market;""")
+                            DROP TABLE IF EXISTS Market;
+                            DROP TABLE IF EXISTS Record;""")
         self.commit()
     def commit(self):
         """
@@ -258,4 +363,5 @@ class Database:
         """
         self._conn.commit()
     def __del__(self):
+        self.commit()
         self._conn.close()
