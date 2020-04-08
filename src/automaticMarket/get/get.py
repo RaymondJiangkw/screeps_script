@@ -215,6 +215,21 @@ class Info:
         if verticalDir == 'N':
             yy = - yy - 1
         return (xx,yy)
+    def calcFee(self,price,amount):
+        """
+            A function to calculate the fee.
+            params::
+                price :: double, price
+                amount :: integer, amount
+            return::
+                the fee cost of credit
+            
+            Example:
+            >>> info = Info("3bdd1da7-3002-4aaa-be91-330562f54093","shard3")
+            >>> info.calcFee(1,1)
+            0.05
+        """
+        return price * amount * 0.05
     def calcRoomsDistance(self,room1,room2):
         """
             A function to calculate the distance between rooms in the SHARD.
@@ -264,7 +279,7 @@ class Info:
                 A list of dictionary.
                     keys:
                         _id :: string, deal id
-                        data :: time, format:: e.g. 2020-04-08T02:46:57.259Z
+                        date :: time, format:: e.g. 2020-04-08T02:46:57.259Z
                         tick :: int, the tick
                         user :: string, user id
                         type :: string, market.sell OR market.buy

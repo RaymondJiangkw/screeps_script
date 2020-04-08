@@ -170,6 +170,14 @@ class Database:
             return "buy"
         else:
             raise ValueError(f"Inappropriate Value, expecting {self._SELL} or {self._BUY}")
+    def getAllResourceType(self):
+        """
+            A function to get all the available resourceTypes which have the MarketInfo.
+            return::
+                A list of strings which indicate the resourceType.
+        """
+        self._cur.execute("""SELECT name FROM Resource""")
+        return [l[0] for l in self._cur.fetchall()]
     def insertMarketInfo(self,resource,count,avgPrice,stddevPrice):
         """
             A function to insert Market Information.
