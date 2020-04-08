@@ -370,6 +370,17 @@ class Database:
             A function to commit the changes.
         """
         self._conn.commit()
+    def close(self):
+        """
+            A function to close the connection.
+        """
+        self._conn.close()
+    def connect(self):
+        """
+            A function to conect the database.
+        """
+        self._conn = sqlite3.connect(self._sqlName)
+        self._cur = self._conn.cursor()
     def __del__(self):
         self.commit()
         self._conn.close()
