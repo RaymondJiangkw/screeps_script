@@ -16,6 +16,8 @@ class Interface:
         self.database.commit()
     def insertResourceOrder(self,resource):
         ret = self.info.resourceOrder(resource)
+        activeIDList = [elem['_id'] for elem in ret]
+        self.database.deleteFinishedDeal(resource,activeIDList)
         for _ in range(len(ret)):
             try:
                 ret[_]['orderType'] = ret[_]['type']
