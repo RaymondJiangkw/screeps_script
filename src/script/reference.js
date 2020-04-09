@@ -117,8 +117,8 @@ const referenceModule = {
                     "1":0,
                     "2":0,
                     "3":0,
-                    "4":0.00001,
-                    "5":0.0001,
+                    "4":0,
+                    "5":0.01,
                     "6":0.001,
                     "7":0.01,
                     "8":1
@@ -132,7 +132,7 @@ const referenceModule = {
                     "5":0.00001,
                     "6":0.0001,
                     "7":0.001,
-                    "8":0.1
+                    "8":0.0004
                 }
             }
         },
@@ -181,7 +181,7 @@ const referenceModule = {
             }
         },
         worker:{work:2,carry:3,move:4},
-        upgrader:{work:8,carry:2,move:5},
+        upgrader:{work:10,carry:2,move:6},
         transferer:{work:5,carry:1,move:2},
         miner:{work:5,carry:2,move:6},
         repairer:{work:3,carry:3,move:6},
@@ -362,7 +362,7 @@ const referenceModule = {
                         //"GH":0,
                     },
                     "repairer":{
-                        "LH":1500,
+                        "LH2O":1500,
                     },
                     "pickuper":{
                         "KH":3000,
@@ -378,7 +378,7 @@ const referenceModule = {
                 }
             },
             allowedStack:[],
-            reversedCompounds:[["GO",3000]],
+            reversedCompounds:[], // [[type,amount]]
             basicIngredients:[RESOURCE_OXYGEN,RESOURCE_HYDROGEN,RESOURCE_UTRIUM,RESOURCE_KEANIUM,RESOURCE_LEMERGIUM,RESOURCE_ZYNTHIUM,RESOURCE_CATALYST],
             formula:{
                 "OH":["H","O"],
@@ -556,4 +556,3 @@ const referenceModule = {
     }
 }
 module.exports = referenceModule
-
