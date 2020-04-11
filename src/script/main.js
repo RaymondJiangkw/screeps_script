@@ -1,15 +1,17 @@
+const mountModule = require('mount')
 const initModule = require("init.general")
 const assessModule = require("assess.general")
 const task = require("task.general")
+const taskSend = require("task.send")
 const roleSpawn = require('role.spawn')
 const roleLink = require('role.link')
 const roleJob = require('role.job')
 const roleLab = require('role.lab')
 const roleFactory = require('role.factory')
 const roleNuker = require('role.nuker')
-const Traveler = require('Traveler')
 module.exports.loop = function () {
     console.log("")
+    mountModule()
     console.log("==========","New Loop",Game.time,"==========")
     // Prepare the information
     initModule.init()
@@ -62,9 +64,10 @@ module.exports.loop = function () {
             console.log('Clearing non-existing creep memory:', name);
         }
     }
-    const controlledRooms = Object.values(Game.rooms).filter(room => room.controller.my)
+    taskSend()
+    let controlledRooms = Game.spawns['Origin'].memory.init.infoRooms.controlled
     for (let i = 0; i < controlledRooms.length;i++){
-        const roomName = controlledRooms[i].name
+        const roomName = controlledRooms[i]
         // Spawn
         for (let j = 0; j < Game.spawns['Origin'].memory.init.access.spawns[roomName].length;j++){
             roleSpawn.run(Game.getObjectById(Game.spawns['Origin'].memory.init.access.spawns[roomName][j]))

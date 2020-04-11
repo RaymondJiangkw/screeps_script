@@ -1,4 +1,5 @@
 const reference = require('reference')
+const SHA1 = require('sha1')
 const helpFunc = {
     abs:function(number){
         if (number < 0) {
@@ -274,6 +275,13 @@ const helpFunc = {
         if (labId !== undefined && Game.getObjectById(labId).store.getUsedCapacity(compoundType) === 0){
             Game.spawns['Origin'].memory.assess.access.structures[roomName]["usableLabs"]["vacant"].push(labId)
         }
+    },
+    gRandomSHA1:function(){
+        let hash = SHA1.create()
+        const current_date = (new Date()).valueOf().toString()
+        const random = Math.random().toString()
+        hash.update(current_date + random)
+        return hash.hex()
     }
 }
 module.exports = helpFunc

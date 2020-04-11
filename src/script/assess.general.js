@@ -52,7 +52,8 @@ const assessModule = {
             upgraders:{},
             repairers:{},
             miners:{},
-            pickupers:{}
+            pickupers:{},
+            travelers:{}
         */
     },
     structures:{
@@ -91,9 +92,9 @@ const assessModule = {
     }
 }
 const initAssess = function() {
-    const controlledRooms = Object.values(Game.rooms).filter(room => room.controller.my)
+    let controlledRooms = Game.spawns['Origin'].memory.init.infoRooms.controlled
     for (let i = 0; i < controlledRooms.length; i++){
-        const roomName = controlledRooms[i].name
+        const roomName = controlledRooms[i]
         console.log("   === ",roomName,"Assessment Log ","===")
         // Assess the state level
         // War
@@ -219,7 +220,8 @@ const initAssess = function() {
             upgraders:0,
             repairers:0,
             miners:0,
-            pickupers:0
+            pickupers:0,
+            travelers:0
         }
         assessModule.creeps[roomName].harvesters = helpFunc.countCreeps('harvester',roomName)
         assessModule.creeps[roomName].builders = helpFunc.countCreeps('builder',roomName)
@@ -228,6 +230,7 @@ const initAssess = function() {
         assessModule.creeps[roomName].repairers = helpFunc.countCreeps('repairer',roomName)
         assessModule.creeps[roomName].miners = helpFunc.countCreeps('miner',roomName)
         assessModule.creeps[roomName].pickupers = helpFunc.countCreeps('pickuper',roomName)
+        assessModule.creeps[roomName].travelers = helpFunc.countCreeps('traveler',roomName)
         //structures
         const neededChargeStructures = _.filter([].concat(Game.spawns['Origin'].memory.init.access.spawns[roomName],
             Game.spawns['Origin'].memory.init.access.extensions[roomName],

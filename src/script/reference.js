@@ -150,6 +150,7 @@ const referenceModule = {
                 leastWarEnergyRatio:0.5,
             },
             creep:{
+                stopWorkingTick:1,
                 containerWaitingBearableTimeInterval:15,
                 harvestTerminalReservedEnergyEconomyLevel:2.5,
                 task:{
@@ -159,12 +160,50 @@ const referenceModule = {
                             mineralNum:0
                         }
                     }
-                }
+                },
             },
             build:{
                 helpBuildControllerLevel:2,
                 helpBuildHomeControllerLevel:6
-            }
+            },
+        }
+    },
+    task:{
+        "Travel":{
+            "W22N25":{
+                "travelW23N25":{
+                    targetRoom:"W23N25",
+                    standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_ENERGY) >= 0.5 * 1000000",
+                    trigger:{
+                        call:["Spawn","W22N25","spawnTraveler"],
+                        condition:"Game.spawns['Origin'].memory.assess.access.creeps[hostRoom].travelers < Game.spawns['Origin'].memory.task.travel[hostRoom].taskList.length"
+                    },
+                    params:{
+                        targetRoomName:"W23N25",
+                        structureType:STRUCTURE_STORAGE,
+                        resourceType:RESOURCE_ENERGY,
+                        stopAmount:0.3*1000000
+                    }
+                },}
+        },
+        "Spawn":{
+            "W22N25":{
+                "spawnTraveler":{
+                    targetRoom:"W22N25",
+                    standard:"false",
+                    trigger:{
+                        condition:"false",
+                        call:["","",""]
+                    },
+                    params:{
+                        role:"traveler",
+                        components:{carry:10,move:5},
+                        "_memory":{
+                            acceptedTask:["travel"],
+                            group:undefined
+                        }
+                    }
+                },}
         }
     },
     spawn:{
@@ -181,7 +220,7 @@ const referenceModule = {
             }
         },
         worker:{work:2,carry:3,move:4},
-        upgrader:{work:10,carry:2,move:6},
+        upgrader:{work:8,carry:2,move:4},
         transferer:{work:5,carry:1,move:2},
         miner:{work:5,carry:2,move:6},
         repairer:{work:3,carry:3,move:6},
@@ -241,6 +280,8 @@ const referenceModule = {
             "26":"generalTransfer",
             "27":"chargePower",
             "28":"SexhuastLab",
+            "29":"StaskTravel",
+            "30":"receiveTask"
         },
         standard:{
             standardNum:4,
@@ -263,7 +304,7 @@ const referenceModule = {
         },
         normalJob:{
             harvester:"12-13-0-3-4-1-20-2-12-13",
-            builder:"12-13-1-0-4-20-2-12-13",
+            builder:"15-12-13-1-0-4-20-2-12-13",
             transferer:"13-11-13",
             upgrader:"16-12-13-2-16",
             repairer:"12-13-5-4-0-1-2-12-13",
@@ -272,6 +313,7 @@ const referenceModule = {
             tower:"6-5-19-5",
             attacker:"9",
             claimer:"8",
+            traveler:"30-29-3"
         },
         economyJob:{
             harvester:"15-12-13-0-4-3-1-2-15-12-13",
@@ -350,7 +392,11 @@ const referenceModule = {
                 "3":{},
                 "4":{},
                 "5":{},
-                "6":{},
+                "6":{
+                    "pickuper":{
+                        "KH":3000
+                    }
+                },
                 "7":{
                     "miner":{
                         //"UO":0,
@@ -366,6 +412,9 @@ const referenceModule = {
                     },
                     "pickuper":{
                         "KH":3000,
+                    },
+                    "traveler":{
+                        "KH2O":600
                     },
                     "goods":{
                         "G":0

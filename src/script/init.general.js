@@ -290,10 +290,15 @@ const getMarketInfo = function(roomName) {
 }
 const initFunction = function() {
     // Considering the case of only-need-one-time initializing
-    const controlledRooms = Object.values(Game.rooms).filter(room => room.controller.my)
-    rooms.controlled = controlledRooms.map((room)=>room.name)
+    let controlledRooms = []
+    for (let room in Game.rooms) {
+        if (Game.rooms[room].controller && Game.rooms[room].controller.my){
+            controlledRooms.push(room)
+        }
+    }
+    rooms.controlled = controlledRooms
     for (let i = 0; i < controlledRooms.length; i++){
-        const roomName = controlledRooms[i].name
+        const roomName = controlledRooms[i]
         console.log("Room",roomName," begin to initialize",Game.cpu.getUsed())
         initModule.resources[roomName] = Game.rooms[roomName].find(FIND_SOURCES).map(helpFunc.getId)
         initModule.minerals[roomName] = Game.rooms[roomName].find(FIND_MINERALS).map(helpFunc.getId)

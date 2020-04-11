@@ -86,9 +86,9 @@ const roleSpawn = {
         let flag = ERR_BUSY
         let feedback = null
         // Init the memory
-        if (!spawn.memory.lastSpawnTime) {
-            spawn.memory.lastSpawnTime = Game.time
-        }
+        if (!spawn.memory.lastSpawnTime) spawn.memory.lastSpawnTime = Game.time
+        if (!spawn.memory.home) spawn.memory.home = spawn.room.name
+        spawn.initTaskMemory()
         // Dealing with harvester
         if (neededCoreCreeps[0] > 0){
             feedback = this.spawnCreep(spawn,perAllocate,"harvester",reference.spawn.worker,flag)
@@ -170,6 +170,14 @@ const roleSpawn = {
             flag = feedback[1]
         }
         // Dealing with other special spawns
+        if (spawn.isIdle()) spawn.getTask("spawn")
+        if (!spawn.isIdle() && !spawn.spawning){
+            const taskInfo = spawn.retTaskInfo()
+            feedback = this.spawnCreep(spawn,remainingEnergy,taskInfo.data.role,taskInfo.data.components,flag,taskInfo.data["_memory"])
+            remainingEnergy -= feedback[0]
+            flag = feedback[1]
+            if (flag === OK) spawn.finishTask()
+        }
         // automatic detect and spawn attacker and claimer only based on the setting of memories
     }
 }
