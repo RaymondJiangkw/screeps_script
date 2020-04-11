@@ -384,7 +384,8 @@ const initAssess = function() {
         for (let i = 0; i < Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName].length;i++){
             const __mineralType = Game.spawns['Origin'].memory.init.groupedLabs.storedMineralTypes[roomName][i]
             if ((!helpFunc.inArr(__mineralType,reference.production.lab.allowedStack) && assessModule.structures[roomName]["usableLabs"][__mineralType].length > 1) ||
-                !helpFunc.inArr(__mineralType,assessModule.minerals[roomName].usedCompounds)){
+                !helpFunc.inArr(__mineralType,assessModule.minerals[roomName].usedCompounds) ||
+                Game.getObjectById(assessModule.structures[roomName].usableLabs[__mineralType][0]).store.getUsedCapacity(__mineralType) < 5){
                 assessModule.structures[roomName]["usableLabs"]["neededExhaust"].push(__mineralType)
             }
         }

@@ -18,9 +18,10 @@ const checkTask = function() {
     const taskList = reference.task
     for (let taskType in taskList) {
         for (let hostRoom in taskList[taskType]) {
-            if (!helpFunc.inArr(Game.spawns['Origin'].memory.init.infoRooms.controlled,hostRoom)) continue
+            if (!helpFunc.inArr(hostRoom,Game.spawns['Origin'].memory.init.infoRooms.controlled)) continue
             for (let subTask in taskList[taskType][hostRoom]){
                 const targetRoom = taskList[taskType][hostRoom][subTask]["targetRoom"]
+                console.log(targetRoom)
                 if (eval(taskList[taskType][hostRoom][subTask]["standard"])){
                     let _params = []
                     for (let key in taskList[taskType][hostRoom][subTask]["params"]){

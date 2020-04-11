@@ -304,7 +304,7 @@ const referenceModule = {
         },
         normalJob:{
             harvester:"12-13-0-3-4-1-20-2-12-13",
-            builder:"15-12-13-1-0-4-20-2-12-13",
+            builder:"15-12-13-1-0-4-20-2-12-13-15",
             transferer:"13-11-13",
             upgrader:"16-12-13-2-16",
             repairer:"12-13-5-4-0-1-2-12-13",
@@ -411,10 +411,10 @@ const referenceModule = {
                         "LH2O":1500,
                     },
                     "pickuper":{
-                        "KH":3000,
+                        "KH":2400,
                     },
                     "traveler":{
-                        "KH2O":600
+                        "KH":600
                     },
                     "goods":{
                         "G":0
