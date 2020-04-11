@@ -224,14 +224,14 @@ const roleJob = {
         let feedBack = JobERR
         if ((       Game.spawns['Origin'].memory.assess.access.is.storages[roomName].neededChargeEnergy ||
               Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName].available.length > 0 ||
-              (         (creep.memory.role === 'miner' || creep.memory.role === 'pickuper') &&
+              (         (creep.memory.role === 'miner' || creep.memory.role === 'pickuper' || creep.memory.role === 'traveler') &&
               Game.spawns['Origin'].memory.assess.access.is.storages[roomName].exists === true) ) || absolute === true){
             feedBack = JobOK
         }
         if (feedBack === JobOK){
             let chosenStructure = undefined
             if (Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName].available.length > 0 && 
-            creep.memory.role !== 'miner' && creep.memory.role !== 'pickuper'){ // Deal with the case of storing minerals
+            creep.memory.role !== 'miner' && creep.memory.role !== 'pickuper' && creep.memory.role !== 'traveler'){ // Deal with the case of storing minerals
                 chosenStructure = Game.spawns['Origin'].memory.init.groupedContainers.backUp[roomName].available[0]
             }else {
                 chosenStructure = Game.spawns['Origin'].memory.init.access.storages[roomName][0]
@@ -1164,10 +1164,6 @@ const roleJob = {
             if (!object.memory.bodyParts) helpFunc.getCreepBody(object)
             if (object.memory.signals === undefined) object.memory.signals = {}
             if (!object.memory.taskInfo) object.initTaskMemory()
-            // Dealing with the case of dying
-            if (object.ticksToLive <= reference.assess.work.creep.stopWorkingTick) {
-                if (!object.isIdle()) object.renewTask()
-            }
             // Prepare the boosts
             let __feedBack = JobERR //this.creepCachedMove(object)
             let _feedBack = this.prepareCreep(object)

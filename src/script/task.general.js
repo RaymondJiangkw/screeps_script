@@ -112,7 +112,7 @@ const task = {
         }
         return false
     },
-    searchSpawn:function(roomName,role){
+    searchSpawn:function(roomName,role,components = {},_memory = {}){
         if (!Game.spawns['Origin'].memory.task['spawn']) return false
         if (!Game.spawns['Origin'].memory.task['spawn'][roomName]) return false
         for (const task of Game.spawns['Origin'].memory.task['spawn'][roomName].taskList) {

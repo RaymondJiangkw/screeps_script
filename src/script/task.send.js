@@ -16,24 +16,26 @@ const forceCall = function(hostRoom,taskType,_object) {
 }
 const checkTask = function() {
     const taskList = reference.task
+    // Issue new Tasks
     for (let taskType in taskList) {
         for (let hostRoom in taskList[taskType]) {
             if (!helpFunc.inArr(hostRoom,Game.spawns['Origin'].memory.init.infoRooms.controlled)) continue
             for (let subTask in taskList[taskType][hostRoom]){
                 const targetRoom = taskList[taskType][hostRoom][subTask]["targetRoom"]
-                console.log(targetRoom)
-                if (eval(taskList[taskType][hostRoom][subTask]["standard"])){
-                    let _params = []
-                    for (let key in taskList[taskType][hostRoom][subTask]["params"]){
-                        _params.push(taskList[taskType][hostRoom][subTask]["params"][key])
-                    }
-                    if (task["add"+taskType](hostRoom,..._params)){
-                        if (eval(taskList[taskType][hostRoom][subTask]["trigger"]["condition"])){
-                            const _call = taskList[taskType][hostRoom][subTask]["trigger"]["call"]
-                            forceCall(_call[1],_call[0],reference.task[_call[0]][_call[1]][_call[2]])
-                        }
-                    }
+                let _params = []
+                for (let key in taskList[taskType][hostRoom][subTask]["params"]){
+                    _params.push(taskList[taskType][hostRoom][subTask]["params"][key])
                 }
+                if (task["search" + taskType](hostRoom,..._params)){
+                    // Ensure the triggering as long as existing
+                    if (eval(taskList[taskType][hostRoom][subTask]["trigger"]["condition"])){
+                        const _call = taskList[taskType][hostRoom][subTask]["trigger"]["call"]
+                        forceCall(_call[1],_call[0],reference.task[_call[0]][_call[1]][_call[2]])
+                    }
+                }else{
+                    if (eval(taskList[taskType][hostRoom][subTask]["standard"])) task["add"+taskType](hostRoom,..._params)
+                }
+                
             }
         }
     }

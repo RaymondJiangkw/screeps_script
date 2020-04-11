@@ -60,6 +60,9 @@ module.exports.loop = function () {
                     task.renewTransfer(Memory.creeps[name].home,Memory.creeps[name].taskTransfer.task[0],Memory.creeps[name].taskTransfer.task[1],Memory.creeps[name].taskTransfer.task[2])
                 }
             }
+            if (Memory.creeps[name].taskInfo && Memory.creeps[name].taskInfo.taskID){
+                task.renewTask(Memory.creeps[name].taskInfo.taskType,Memory.creeps[name].home,Memory.creeps[name].taskInfo.taskID,Memory.creeps[name].taskInfo.taskPos)
+            }
             delete Memory.creeps[name];
             console.log('Clearing non-existing creep memory:', name);
         }

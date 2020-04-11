@@ -164,7 +164,7 @@ const referenceModule = {
             },
             build:{
                 helpBuildControllerLevel:2,
-                helpBuildHomeControllerLevel:6
+                helpBuildHomeControllerLevel:8
             },
         }
     },
@@ -176,7 +176,7 @@ const referenceModule = {
                     standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_ENERGY) >= 0.5 * 1000000",
                     trigger:{
                         call:["Spawn","W22N25","spawnTraveler"],
-                        condition:"Game.spawns['Origin'].memory.assess.access.creeps[hostRoom].travelers < Game.spawns['Origin'].memory.task.travel[hostRoom].taskList.length"
+                        condition:"Game.spawns['Origin'].memory.assess.access.creeps[hostRoom].travelers < Game.spawns['Origin'].memory.task.travel[hostRoom].taskList.length - 1"
                     },
                     params:{
                         targetRoomName:"W23N25",
@@ -303,7 +303,7 @@ const referenceModule = {
             }
         },
         normalJob:{
-            harvester:"12-13-0-3-4-1-20-2-12-13",
+            harvester:"12-13-0-3-4-1-20-2-3",
             builder:"15-12-13-1-0-4-20-2-12-13-15",
             transferer:"13-11-13",
             upgrader:"16-12-13-2-16",
