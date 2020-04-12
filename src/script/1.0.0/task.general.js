@@ -94,8 +94,9 @@ const task = {
     addTravel:function(roomName,targetRoomName,structureType,resourceType,stopAmount){
         this.addQueue('travel',roomName,["targetRoom","stopAmount"],[],["structureType","resourceType"])
         if (!this.searchTravel(roomName,targetRoomName,structureType,resourceType)){
+            const ID = helpFunc.gRandomSHA1()
             Game.spawns['Origin'].memory.task["travel"][roomName].taskList.push({
-                id:helpFunc.gRandomSHA1(),
+                id:ID,
                 target:undefined,
                 targetPos:undefined,
                 settings:{
@@ -108,7 +109,7 @@ const task = {
                     "resourceType":resourceType,
                 }
             })
-            return true
+            return ID
         }
         return false
     },
@@ -125,8 +126,9 @@ const task = {
     addSpawn:function(roomName,role,components,_memory = {}){
         this.addQueue('spawn',roomName,[],[],["role","components","_memory"])
         if (!this.searchSpawn(roomName,role)){
+            const ID = helpFunc.gRandomSHA1()
             Game.spawns['Origin'].memory.task["spawn"][roomName].taskList.push({
-                id:helpFunc.gRandomSHA1(),
+                id:ID,
                 target:undefined,
                 targetPos:undefined,
                 settings:{},
@@ -137,7 +139,40 @@ const task = {
                     "_memory":_memory
                 }
             })
-            return true
+            return ID
+        }
+        return false
+    },
+    searchMine:function(roomName,targetRoomName,resourceType,targetID){
+        if (!Game.spawns['Origin'].memory.task['mine']) return false
+        if (!Game.spawns['Origin'].memory.task['mine'][roomName]) return false
+        for (const task of Game.spawns['Origin'].memory.task['mine'][roomName].taskList) {
+            if (task.settings.targetRoom === targetRoomName && 
+                task.data.resourceType === resourceType && 
+                task.data.targetID === targetID){
+                return true
+            }
+        }
+        return false
+    },
+    addMine:function(roomName,targetRoomName,resourceType,targetID){
+        this.addQueue('mine',roomName,["targetRoom"],[],["resourceType","targetID"])
+        if (!this.searchMine(roomName,targetRoomName,resourceType,targetID)){
+            const ID = helpFunc.gRandomSHA1()
+            Game.spawns['Origin'].memory.task["mine"][roomName].taskList.push({
+                id:ID,
+                target:targetID,
+                targetPos:Game.getObjectById(targetPos).pos,
+                settings:{
+                    "targetRoom":targetRoomName,
+                },
+                options:{},
+                data:{
+                    "resourceType":resourceType,
+                    "targetID":targetID
+                }
+            })
+            return ID
         }
         return false
     },

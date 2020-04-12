@@ -119,7 +119,7 @@ const referenceModule = {
                     "3":0,
                     "4":0,
                     "5":0.01,
-                    "6":0.001,
+                    "6":0.01,
                     "7":0.01,
                     "8":1
                 },
@@ -159,6 +159,9 @@ const referenceModule = {
                             energyEconomyLevel:3,
                             mineralNum:0
                         }
+                    },
+                    mine:{
+                        hostRoomLevel:6
                     }
                 },
             },
@@ -411,7 +414,7 @@ const referenceModule = {
                         "LH2O":1500,
                     },
                     "pickuper":{
-                        "KH":2400,
+                        "KH":3000,
                     },
                     "traveler":{
                         "KH":600

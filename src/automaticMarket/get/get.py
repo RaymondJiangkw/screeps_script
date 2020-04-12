@@ -70,7 +70,10 @@ class Info:
         """
         url = self._URL + "game/market/orders"
         params = {"_token":self._TOKEN,"resourceType":resourceType,"shard":self.SHARD}
-        return requests.get(url,params).json()['list']
+        result = requests.get(url,params)
+        if result == None:
+            return []
+        return result.json()['list']
     def terminalInfo(self):
         """
             A function to get current resource type and amount in the terminal,if exists, of the controlled rooms.
@@ -122,7 +125,10 @@ class Info:
         """
         url = self._URL + "game/market/orders-index"
         params = {"_token":self._TOKEN,"shard":self.SHARD}
-        return requests.get(url,params).json()['list']
+        result = requests.get(url,params)
+        if result == None:
+            return []
+        return result.json()['list']
     def myOrder(self):
         """
             A function to get my orders' history.
@@ -159,7 +165,10 @@ class Info:
         """
         url = self._URL + "game/market/my-orders"
         params = {"_token":self._TOKEN}
-        return requests.get(url,params).json()['shards'][self.SHARD]
+        result = requests.get(url,params)
+        if result == None:
+            return []
+        return result.json()['shards'][self.SHARD]
     def cancelOrder(self,id):
         """
             A function to cancel an order.

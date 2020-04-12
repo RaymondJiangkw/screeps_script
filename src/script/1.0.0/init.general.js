@@ -28,7 +28,8 @@ let initModule = {
     powerSpawns:{}
 }
 let rooms = {
-    controlled:[]
+    controlled:[],
+    observed:[]
 }
 let containers = {
     cachedResources:{},
@@ -291,12 +292,16 @@ const getMarketInfo = function(roomName) {
 const initFunction = function() {
     // Considering the case of only-need-one-time initializing
     let controlledRooms = []
+    let observedRooms = []
     for (let room in Game.rooms) {
         if (Game.rooms[room].controller && Game.rooms[room].controller.my){
             controlledRooms.push(room)
+        }else if (!Game.rooms[room.controller]){
+            observedRooms.push(room)
         }
     }
     rooms.controlled = controlledRooms
+    rooms.observed = observedRooms
     for (let i = 0; i < controlledRooms.length; i++){
         const roomName = controlledRooms[i]
         console.log("Room",roomName," begin to initialize",Game.cpu.getUsed())

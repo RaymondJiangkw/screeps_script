@@ -518,8 +518,7 @@ const roleJob = {
         const fullContainers = _.filter(availableContainers,(containerId)=>Game.getObjectById(containerId).store.getUsedCapacity(RESOURCE_ENERGY) >= creep.store.getFreeCapacity()).sort((containerIdA,containerIdB)=>{
             return helpFunc.pos(creep.id,containerIdA) - helpFunc.pos(creep.id,containerIdB)
         })
-        if ((creep.store.getFreeCapacity() === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) !== 0) ||
-            (Game.spawns['Origin'].memory.assess.access.is.containers[roomName].cached.resources && availableContainers.length === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) !== 0)){
+        if (creep.store.getFreeCapacity() === 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) !== 0){
             creep.memory.signals.building = true
             creep.memory.harvestContainerTarget = undefined
         }
@@ -723,7 +722,7 @@ const roleJob = {
             const _feedBack = helpFunc.creepWithdrawAll(creep.id,cachedContainer[0])
             if (_feedBack === ERR_NOT_IN_RANGE){
                 helpFunc.adjacentMove(creep.id,cachedContainer[0])
-            }else if (_feedBack === OK && Game.getObjectById(cachedContainer[0]).store.getUsedCapacity() === 0){
+            }else if (_feedBack === OK && Game.getObjectById(cachedContainer[0]).store.getUsedCapacity() <= 50){
                 creep.memory.iftransfering = false
                 feedBack = JobERR
             }
@@ -1152,7 +1151,10 @@ const roleJob = {
         }
         return JobERR
     },
-    run:function(object, type = 'creep'){
+    groupRun:function(roomName,group){
+        
+    },
+    run:function(object,type = 'creep'){
         let roomName = undefined
         let role = undefined
         let taskList = []

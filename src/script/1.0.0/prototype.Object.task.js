@@ -79,5 +79,10 @@ const commonTaskExtension = {
         const _taskPos = this.memory.taskInfo.taskPos
         const pos = task.searchTask(_taskType,this.memory.home,_taskID,_taskPos)
         return Game.spawns['Origin'].memory.task[_taskType][this.memory.home].taskList[pos]
+    },
+    clearTask(){
+        this.memory.taskInfo.taskType = undefined
+        this.memory.taskInfo.taskID = undefined
+        this.memory.taskInfo.taskPos = undefined
     }
 }
