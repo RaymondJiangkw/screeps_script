@@ -1,5 +1,6 @@
 const CACHE_TIMEOUT = 50;
 const CACHE_OFFSET  = 4;
+const SHA1 = require('fingerprint.Algorithm.sha1')
 const utilsCollection = {
     dis:function(_object_1_id,_object_2_id){
         const _object_1 = Game.getObjectById(_object_1_id)
@@ -20,6 +21,11 @@ const utilsCollection = {
     },
     getCacheExpiration:function(cache_timeout = CACHE_TIMEOUT,cache_offset = CACHE_OFFSET){
         return cache_timeout + Math.round((Math.random()*cache_offset*2)-cache_offset);
+    },
+    getTaskFingerprint:function(args){
+        var hash = SHA1.create()
+        for (var arg in args) hash.update(arg.toString())
+        return hash.digest()
     }
 }
 module.exports = utilsCollection

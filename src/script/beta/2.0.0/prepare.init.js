@@ -3,9 +3,9 @@ module.exports = function() {
     if (!global.rooms || global.rooms["_expirationTime"] <= Game.time) {
         global.rooms = {}
         global.rooms["_expirationTime"] = Game.time + utils.getCacheExpiration(5)
-        global.rooms.observed = _.filter(Game.rooms,(room) => !room.controller || !room.controller.my).map(r => r.name)
         global.rooms.my = _.filter(Game.rooms,(room) => room.controller && room.controller.my).map(r => r.name)
     }
+    global.rooms.observed = _.filter(Game.rooms,(room) => !room.controller || !room.controller.my).map(r => r.name)
     if (!global.links || global.links["_expirationTime"] <= Game.time) {
         var roomName
         global.links = {}
