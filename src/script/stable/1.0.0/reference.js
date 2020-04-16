@@ -117,7 +117,7 @@ const referenceModule = {
                     "1":0,
                     "2":0,
                     "3":0,
-                    "4":0,
+                    "4":0.01,
                     "5":0.01,
                     "6":0.01,
                     "7":0.01,
@@ -128,8 +128,8 @@ const referenceModule = {
                     "1":0,
                     "2":0,
                     "3":0,
-                    "4":0,
-                    "5":0.00001,
+                    "4":0.0001,
+                    "5":0.0001,
                     "6":0.0001,
                     "7":0.001,
                     "8":0.0004
@@ -184,7 +184,53 @@ const referenceModule = {
                         resourceType:RESOURCE_ENERGY,
                         stopAmount:0.3*1000000
                     }
-                },}
+                },
+				"travelK":{
+                    targetRoom:"W23N25",
+                    standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_KEANIUM) >= 30000",
+                    trigger:{
+                        call:["Spawn","W22N25","spawnMineralTraveler"],
+                        condition:"Game.spawns['Origin'].memory.assess.access.creeps[hostRoom].travelers < Game.spawns['Origin'].memory.task.travel[hostRoom].taskList.length - 1"
+                    },
+                    params:{
+                        targetRoomName:"W23N25",
+                        structureType:STRUCTURE_STORAGE,
+                        resourceType:RESOURCE_KEANIUM,
+                        stopAmount:10000
+                    }
+                }},
+            "W23N25":{
+                "travelH":{
+                    targetRoom:"W22N25",
+                    standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_HYDROGEN) >= 30000",
+                    trigger:{
+                        call:["Spawn","W23N25","spawnMineralTraveler"],
+                        condition:"Game.spawns['Origin'].memory.assess.access.creeps[hostRoom].travelers < Game.spawns['Origin'].memory.task.travel[hostRoom].taskList.length - 1"
+                    },
+                    params:{
+                        targetRoomName:"W22N25",
+                        structureType:STRUCTURE_STORAGE,
+                        resourceType:RESOURCE_HYDROGEN,
+                        stopAmount:10000
+                    }
+                }
+            },
+            "W21N24":{
+                "travelK":{
+                    targetRoom:"W22N25",
+                    standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_KEANIUM) >= 30000",
+                    trigger:{
+                        call:["Spawn","W21N24","spawnMineralTraveler"],
+                        condition:"Game.spawns['Origin'].memory.assess.access.creeps[hostRoom].travelers < Game.spawns['Origin'].memory.task.travel[hostRoom].taskList.length - 1"
+                    },
+                    params:{
+                        targetRoomName:"W22N25",
+                        structureType:STRUCTURE_STORAGE,
+                        resourceType:RESOURCE_KEANIUM,
+                        stopAmount:10000
+                    }
+                }
+            }
         },
         "Spawn":{
             "W22N25":{
@@ -203,8 +249,79 @@ const referenceModule = {
                             group:undefined
                         }
                     }
-                },}
-        }
+                },
+				"spawnMineralTraveler":{
+					targetRoom:"W22N25",
+					standard:"false",
+					trigger:{
+						condition:"false",
+						call:["","",""]
+					},
+					params:{
+                        role:"traveler",
+                        components:{carry:5,move:5},
+                        "_memory":{
+                            acceptedTask:["travel"],
+                            group:undefined
+                        }
+					}
+                }
+            },
+            "W23N25":{
+                "spawnMineralTraveler":{
+					targetRoom:"W23N25",
+					standard:"false",
+					trigger:{
+						condition:"false",
+						call:["","",""]
+					},
+					params:{
+                        role:"traveler",
+                        components:{carry:5,move:5},
+                        "_memory":{
+                            acceptedTask:["travel"],
+                            group:undefined
+                        }
+					}
+                }
+            },
+            "W21N24":{
+                "spawnMineralTraveler":{
+					targetRoom:"W21N24",
+					standard:"false",
+					trigger:{
+						condition:"false",
+						call:["","",""]
+					},
+					params:{
+                        role:"traveler",
+                        components:{carry:5,move:5},
+                        "_memory":{
+                            acceptedTask:["travel"],
+                            group:undefined
+                        }
+					}
+                }
+            },
+            "W19N22":{
+                "spawnMineralTraveler":{
+					targetRoom:"W19N22",
+					standard:"false",
+					trigger:{
+						condition:"false",
+						call:["","",""]
+					},
+					params:{
+                        role:"traveler",
+                        components:{carry:5,move:5},
+                        "_memory":{
+                            acceptedTask:["travel"],
+                            group:undefined
+                        }
+					}
+                }
+            }
+        },
     },
     spawn:{
         num:{
@@ -220,11 +337,11 @@ const referenceModule = {
             }
         },
         worker:{work:2,carry:3,move:4},
-        upgrader:{work:8,carry:2,move:4},
+        upgrader:{work:8,carry:2,move:5},
         transferer:{work:5,carry:1,move:2},
         miner:{work:5,carry:2,move:6},
         repairer:{work:3,carry:3,move:6},
-        pickuper:{tough:1,carry:5,move:6},
+        pickuper:{carry:10,move:5},
         attacker:{tough:1,attack:5,move:8},
         claimer:{claim:1,move:5},
         "BODYPART_COST": {move: 50, work: 100, attack: 80, carry: 50, heal: 250, "ranged_attack": 150, tough: 10, claim: 600 },
@@ -304,7 +421,7 @@ const referenceModule = {
         },
         normalJob:{
             harvester:"12-13-0-3-4-1-20-2-3",
-            builder:"15-12-13-1-0-4-20-2-12-13-15",
+            builder:"12-15-13-1-0-4-20-2-12-13-15",
             transferer:"13-11-13",
             upgrader:"16-12-13-2-16",
             repairer:"12-13-5-4-0-1-2-12-13",
@@ -351,7 +468,7 @@ const referenceModule = {
             reservedEnergy:0.2, // Energy should not be automatically sold in case of buying energy
         },
         sell:{ // transaction
-            sellingMineral:0.8,
+            sellingMineral:0.1,
             reservedEnergy:0.2,
             // These two are ordered, the former one will be sold first, the after ones will be sold 
             // when and only when the former ones have all been sold to a propriate degree
@@ -604,4 +721,4 @@ const referenceModule = {
         ]
     }
 }
-module.exports = referenceModule
+module.exports =  referenceModule

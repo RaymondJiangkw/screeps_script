@@ -3,13 +3,15 @@ Object.defineProperty(Room.prototype,"creeps",{
         if (this["_creeps"]) return this["_creeps"]
         else{
             var roomCreeps = _.filter(Game.creeps,(creep)=>creep.memory.home === this.name)
-            this["_creeps"] = _.groupBy(roomCreeps,c => c.memory.group.name)
+            this["_creeps"] = _.groupBy(roomCreeps,c => c.memory.group.type)
             var i;
             for (i in this["_creeps"]){
-                this["_creeps"][i] = _.groupBy(this["_creeps"][i],c => c.memory.role)
+                this["_creeps"][i] = _.groupBy(this["_creeps"][i],c => c.memory.group.name)
                 var j
                 for (j in this["_creeps"][i][j]){
-                    this["_creeps"][i][j] = _.map(this["_creeps"][i][j],c => c.id)
+                    this["_creeps"][i][j] = _.groupBy(this["_creeps"][i][j],c => c.memory.role)
+                    var k;
+                    for (k in this["_creeps"][i][j][k]) this["_creeps"][i][j][k] = _.map(this["_creeps"][i][j][k],c => c.id)
                 }
             }
             return this["_creeps"]
