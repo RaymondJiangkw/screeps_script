@@ -1,5 +1,5 @@
 module.exports = function(){
-    _.assign(Market.prototype,marketExtension)
+    _.assign(Game.market.prototype,marketExtension)
 }
 const marketExtension = {
     

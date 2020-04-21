@@ -29,8 +29,16 @@ Changelog:
 var roomStructures           = {};
 var roomStructuresExpiration = {};
 
+var roomRepairs              = {};
+var roomRepairsExpiration    = {};
+
+var roomBuilds               = {};
+var roomBuildsExpiration     = {};
+
 const CACHE_TIMEOUT = 50;
 const CACHE_OFFSET  = 4;
+
+const repairConfig = require('configuration.Repair')
 
 const multipleList = [
     STRUCTURE_SPAWN,        STRUCTURE_EXTENSION,    STRUCTURE_ROAD,         STRUCTURE_WALL,
@@ -67,6 +75,13 @@ Room.prototype._checkRoomCache = function _checkRoomCache(){
         for(i in roomStructures[this.name]){
             roomStructures[this.name][i] = _.map(roomStructures[this.name][i], s=>s.id);
         }
+    }
+}
+Room.prototype._checkBuildCache = function _checkBuildCache(){
+    if (!roomBuildsExpiration[this.name] || !roomBuilds[this.name] || roomBuildsExpiration[this.name] < Game.time){
+        roomBuildsExpiration[this.name] = Game.time + getCacheExpiration();
+        roomBuilds[this.name] = this.find(FIND_CONSTRUCTION_SITES);
+        roomBuilds[this.name] = _.map(roomBuilds,s=>s.id);
     }
 }
 
@@ -113,3 +128,68 @@ singleList.forEach(function(type){
         configurable: true,
     });
 });
+
+Object.defineProperty(Room.prototype,"buildTargets",{
+    get:function(){
+        if (this["_buildTargets"] && this["_buildTargets_ts"] === Game.time){
+            return this["_buildTargets"];
+        }else{
+            this._checkBuildCache();
+            if (roomBuilds[this.name].length > 0){
+                this["_buildTargets_ts"] = Game.time;
+                return this["_buildTargets"] = _.map(roomBuilds[this.name],Game.getObjectById);
+            }else{
+                this["_buildTargets_ts"] = Game.time;
+                return this["_buildTargets"] = undefined;
+            }
+        }
+    },
+    set:function(){},
+    enumerable:false,
+    configurable:true
+})
+
+Room.prototype._checkRepairCache = function _checkRepairCache(){
+    if (!roomRepairsExpiration[this.name] || !roomRepairs[this.name] || roomRepairsExpiration[this.name] < Game.time){
+        roomRepairsExpiration[this.name] = Game.time + getCacheExpiration();
+        var cores = [].concat(this.spawns,
+                    this.powerSpawn,
+                    this.extensions,
+                    this.towers,
+                    this.storage,
+                    this.terminal,
+                    this.factory,
+                    this.labs,
+                    this.extractor,
+                    this.observer,
+                    this.links)
+        cores = _.filter(cores,(s)=>s)
+        cores = _.filter(cores,(s)=>s.hits < s.hitsMax)
+        var roads = _.filter(this.roads,(r)=>r.hits < r.hitsMax)
+        var containers = _.filter(this.containers,(c)=>c.hits < c.hitsMax)
+        var commons = [].concat(roads,containers)
+        commons = _.filter(commons,(s)=>s)
+        commons.sort((a,b)=>a.hits/a.hitsMax - b.hits/b.hitsMax)
+        var repairTargets = [].concat(cores,commons)
+        roomRepairs[this.name] = repairTargets.map(s => s.id)
+    }
+}
+
+Object.defineProperty(Room.prototype, "repairTargets",{
+    get: function(){
+        if(this["_repairTargets"] && this["_repairTargets_ts"] === Game.time) return this["_repairTargets"]
+        else{
+            this._checkRepairCache();
+            if (roomRepairs[this.name].length > 0){
+                this["_repairTargets_ts"] = Game.time;
+                return this["_repairTargets"] = _.map(roomRepairs[this.name],Game.getObjectById)
+            }else{
+                this["_repairTargets_ts"] = Game.time;
+                return this["_repairTargets"] = undefined;
+            }
+        }
+    },
+    set:function(){},
+    enumerable:false,
+    configurable:true
+})

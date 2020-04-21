@@ -8,9 +8,16 @@ const taskAttack = require('task.Attack')
 const taskSpawn = require('task.Spawn')
 module.exports = function(){
     if (!global.task) global.task = {}
+    if (!global.task.upgrade){
+        global.task.upgrade = true
+        for (var roomName of global.rooms.my){
+            Game.rooms[roomName].AddUpgradeTask()
+        }
+    }
     taskHarvest()
     taskBuild()
     taskRepair()
     taskTransfer()
     taskPickup()
+    taskSpawn()
 }

@@ -10,17 +10,22 @@ const creepConfiguration = {
         "healer":{move:10,heal:30,move:10},
         "claimer":{move:1,claim:1}
     },
+    boosts:{
+        "transferer":["KH","KH2O"],
+    },
     groupAcceptedTask:{
         // PRIMARY KEY PRINCIPLE
-        "remoteHarvest":{"harvester":["harvest-remote"],"transferer":["transfer-remote"]},
-        "powerHarvest":{"attacker":["attack-harvest"],"healer":["attack-heal"],"transferer":["transfer-remote"]},
+        "remoteHarvest":{"harvester":["harvest-remote"],"transferer":["-transfer-remote"]},
+        "powerHarvest":{"attacker":["attack-harvest"],"healer":["-attack-heal"],"transferer":["-transfer-remote"]},
         "localHarvest":{"harvester":["harvest-local"]},
         "pureTransfer":{"transferer":["pickup","transfer-core|defense|advanced"]},
-        "pureWorker":{"worker":["build","repair","upgrade"]},
-        "pureRepairer":{"repairer":["repair","upgrade"]},
-        "pureUpgrader":{"upgrader":"upgrade"},
+        "pureWorker":{"worker":["build","repair-local","upgrade"]},
+        "pureRepairer":{"repairer":["repair-local","upgrade"]},
+        "remoteRepairer":{"repairer":["repair-remote"]},
+        "pureUpgrader":{"upgrader":["upgrade"]},
         "Defend":{"defender":["defend"]},
-        "Attack":{"attacker":["attack-attack"],"healer":["attack-heal"],"claimer":["attack-claim"]},
+        "Attack":{"attacker":["attack-attack"],"healer":["-attack-heal"]},
+        "Claim":{"claimer":["attack-claim"]},
     }
 }
 module.exports = creepConfiguration

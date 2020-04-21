@@ -4,11 +4,8 @@ const hitsCompare = function(objectA,objectB) {
     return objectA.hits/objectA.hitsMax - objectB.hits/objectB.hitsMax
 }
 module.exports = function() {
-    if (!global.rooms || global.rooms["_expirationTime"] <= Game.time) {
-        global.rooms = {}
-        global.rooms["_expirationTime"] = Game.time + utils.getCacheExpiration(5)
-        global.rooms.my = _.filter(Game.rooms,(room) => room.controller && room.controller.my).map(r => r.name)
-    }
+    global.rooms = {}
+    global.rooms.my = _.filter(Game.rooms,(room) => room.controller && room.controller.my).map(r => r.name)
     global.rooms.observed = _.filter(Game.rooms,(room) => !room.controller || !room.controller.my).map(r => r.name)
 
 //    if (!global.links || global.links["_expirationTime"] <= Game.time) {
@@ -23,14 +20,13 @@ module.exports = function() {
             }
             var link
             for (link of Game.rooms[roomName]["links"]){
-                if (link.getUsedCapacity(RESOURCE_ENERGY) === 0) continue
                 if (utils.adjacent(link.id,Game.rooms[roomName].controller.id,3)) global.links[roomName].upgrade.push(link)
-                else if (utils.Adjacent(link.id,Game.rooms[roomName]["energes"].map(r => r.id),2)) global.links[roomName].resources.push(link)
+                else if (utils.Adjacent(link.id,Game.rooms[roomName]["energys"].map(r => r.id),2)) global.links[roomName].resources.push(link)
                 else if (utils.Adjacent(link.id,Game.rooms[roomName]["spawns"].map(s => s.id))) global.links[roomName].charges.push(link)
             }
-            for (var linkType in global.links[roomName])    global.links[roomName][linkType].sort((linkA,linkB)=>linkB.store.getUsedCapacity(RESOURCE_ENERGY) - linkA.store.getUsedCapacity(RESOURCE_ENERGY))
         }
 //    }
+    for (var linkType in global.links[roomName])    global.links[roomName][linkType].sort((linkA,linkB)=>linkB.store.getUsedCapacity(RESOURCE_ENERGY) - linkA.store.getUsedCapacity(RESOURCE_ENERGY))
 
 //    if (!global.containers || global.containers["_expirationTime"] <= Game.time) {
         var roomName
@@ -41,15 +37,15 @@ module.exports = function() {
                 resources:[],
                 mineral:undefined,
             }
+            var container
+            for (container of Game.rooms[roomName]["containers"]){
+                if (utils.Adjacent(container.id,Game.rooms[roomName]["energys"].map(r => r.id))) global.containers[roomName].resources.push(container)
+                else if (utils.adjacent(container.id,Game.rooms[roomName]["mineral"].id)) global.containers[roomName].mineral = container
+            }
         }
-        var container
-        for (container of Game.rooms[roomName]["containers"]){
-            if (utils.Adjacent(container.id,Game.rooms[roomName]["energes"].map(r => r.id))) global.containers[roomName].resources.push(container)
-            else if (utils.adjacent(container.id,Game.rooms[roomName]["mineral"].id)) global.containers[roomName].mineral = container
-        }
-        for (var containerType in global.containers[roomName]) global.containers[roomName][containerType].sort((containerA,containerB)=>containerB.store.getUsedCapacity() - containerA.store.getUsedCapacity())
- //   }
-    
+//    }
+    for (var containerType in global.containers[roomName]) if (global.containers[roomName][containerType]) global.containers[roomName][containerType].sort((containerA,containerB)=>containerB.store.getUsedCapacity() - containerA.store.getUsedCapacity())
+
     global.labs = {}
     for (var roomName of global.rooms.my) {
         global.labs[roomName] = {}
@@ -71,12 +67,24 @@ module.exports = function() {
         global.resources[roomName] = {}
         const storedStructure = ["labs","storage","terminal","containers","factory"]
         for (var structureName of storedStructure){
-            for (var structure of Game.rooms[roomName][structureName]){
-                var storedResources = Object.keys(structure.store)
-                for (var resource of storedResources){
-                    if (!global.resources[roomName][resource]) global.resources[roomName][resource] = {}
-                    if (!global.resources[roomName][resource][structureName]) global.resources[roomName][resource][structureName] = 0
-                    global.resources[roomName][resource][structureName] += structure.store.getUsedCapacity(resource)
+            if (structureName.charAt(structureName.length-1) == "s"){
+                for (var structure of Game.rooms[roomName][structureName]){
+                    var storedResources = Object.keys(structure.store)
+                    for (var resource of storedResources){
+                        if (!global.resources[roomName][resource]) global.resources[roomName][resource] = {}
+                        if (!global.resources[roomName][resource][structureName]) global.resources[roomName][resource][structureName] = 0
+                        global.resources[roomName][resource][structureName] += structure.store.getUsedCapacity(resource)
+                    }
+                }
+            }else{
+                structure = Game.rooms[roomName][structureName]
+                if (structure){
+                    var storedResources = Object.keys(structure.store)
+                    for (var resource of storedResources){
+                        if (!global.resources[roomName][resource]) global.resources[roomName][resource] = {}
+                        if (!global.resources[roomName][resource][structureName]) global.resources[roomName][resource][structureName] = 0
+                        global.resources[roomName][resource][structureName] += structure.store.getUsedCapacity(resource)
+                    }
                 }
             }
         }
@@ -87,11 +95,11 @@ module.exports = function() {
             }
         }
     }
-
     if (!global.labStructures || global.labStructures["_expirationTime"] <= Game.time){
         global.labStructures = {}
-        global.towerRepairs["_expirationTime"] = Game.time + utils.getCacheExpiration(100)
+        global.labStructures["_expirationTime"] = Game.time + utils.getCacheExpiration(100)
         for (var roomName of global.rooms.my){
+            if (Game.rooms[roomName].labs.length === 0) continue
             global.labStructures[roomName] = {
                 core:[],
                 XGroup:[],
@@ -116,11 +124,11 @@ module.exports = function() {
             }).map(Game.getObjectById)
         }
     }
-
     if (!global.towerRepairs || global.towerRepairs["_expirationTime"] <= Game.time){
         global.towerRepairs = {}
         global.towerRepairs["_expirationTime"] = Game.time + utils.getCacheExpiration()
         for (var roomName of global.rooms.my){
+            if (!global.towerRepairs[roomName]) global.towerRepairs[roomName] = {}
             var roads = _.filter(Game.rooms[roomName].roads,(road)=>road.hits/road.hitsMax <= configTower.road)
             var containers = _.filter(Game.rooms[roomName].containers,(container)=>container.hits/container.hitsMax <= configTower.container)
             var roomLevel = Game.rooms[roomName].controller.level.toString()

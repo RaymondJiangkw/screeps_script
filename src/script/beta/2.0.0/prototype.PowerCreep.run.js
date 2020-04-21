@@ -1,6 +1,6 @@
 const configPC = require('configuration.PowerCreep')
 module.exports = function(){
-    _.assign(powerCreep.prototype,runExtension)
+    _.assign(PowerCreep.prototype,runExtension)
 }
 const runExtension = {
     run(){

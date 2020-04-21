@@ -1,9 +1,9 @@
 const labConfig = require('configuration.Lab')
 module.exports = function() {
-    _.assign(Lab.prototype,labExtensions)
+    _.assign(Structure.prototype,labExtensions)
 }
 const labExtensions = {
-    run(){
+    labRun(){
         
     }
 }

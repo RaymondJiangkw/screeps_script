@@ -18,7 +18,16 @@ function getCacheExpiration() {
 Room.prototype._checkRoomResourceCache = function _checkRoomResourceCache(){
     if (!roomResourcesExpiration[this.name] || !roomResources[this.name] || roomResourcesExpiration[this.name] < Game.time){
         roomResourcesExpiration[this.name] = Game.time + getCacheExpiration();
-        roomResources[this.name] = _.groupBy(this.find(FIND_SOURCES_ACTIVE))
+        const sources = this.find(FIND_SOURCES_ACTIVE)
+        const minerals = this.find(FIND_MINERALS)
+        const deposits = this.find(FIND_DEPOSITS)
+        var _sets = [].concat(sources,minerals,deposits)
+        _sets = _.filter(_sets,s=>s)
+        roomResources[this.name] = _.groupBy(_sets,s=>{
+            if (s.mineralType) return s.mineralType
+            if (s.depositType) return s.depositType
+            return "energy"
+        })
         var i;
         for (i in roomResources[this.name]) {
             roomResources[this.name][i] = _.map(roomResources[this.name][i], r => r.id);
@@ -67,21 +76,21 @@ singleList.forEach(function(type){
         configurable:true,
     })
 })
-Room.prototype.mineral = {
+Object.defineProperty(Room.prototype,"mineral",{
     get:function(){
         if (this["_mineral"]) return this["_mineral"]
         else{
             var mineralType
             for (mineralType of singleList){
-                if (this[mineralType]){
-                    this["_mineral"] = this[mineralType]
+                if (roomResources[this.name][mineralType]){
+                    return this["_mineral"] = Game.getObjectById(roomResources[this.name][mineralType][0]);
                     break
                 }
             }
-            return this["_mineral"]
+            return this["_mineral"] = undefined;
         }
     },
     set:function(){},
     enumerable:false,
     configurable:true
-}
+})

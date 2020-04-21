@@ -11,7 +11,7 @@ const towerConfiguration = {
         "5":0.01,
         "6":0.01,
         "7":0.01,
-        "8":0.1
+        "8":0.01
     },
     "wall":{
         "0":0,
@@ -21,8 +21,9 @@ const towerConfiguration = {
         "4":0.0001,
         "5":0.0001,
         "6":0.0001,
-        "7":0.001,
-        "8":0.0004
-    }
+        "7":0.0001,
+        "8":0.0001
+    },
+    fullyRepair:[]
 }
 module.exports = towerConfiguration

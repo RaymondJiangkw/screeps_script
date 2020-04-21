@@ -21,7 +21,7 @@ const utilsCollection = {
     },
     adjacentPos:function(pos1,pos2, distance = 1){
         const dist = this.disPos(pos1,pos2)
-        return dist[0] <= distance && dist[1] <= distance
+        return dist[0] <= distance && dist[1] <= distance && pos1.roomName === pos2.roomName
     },
     adjacent:function(_object_1_id,_object_2_id, distance = 1){
         const dist = this.dis(_object_1_id,_object_2_id)
@@ -44,11 +44,18 @@ const utilsCollection = {
     },
     getTaskFingerprint:function(args){
         var str = ""
-        for (var arg in args) {
-            if (arg['amount']){
-                var _arg = JSON.parse(JSON.stringify(arg))
-                delete _arg["amount"]
-                str = str + _arg.toString()
+        for (var key in args) {
+            var arg = args[key]
+            if (typeof arg === "object"){
+                if (arg['amount']){
+                    arg = JSON.parse(JSON.stringify(arg))
+                    delete arg["amount"]
+                }
+                if (arg['memory'] && arg['memory']['group']['name']){
+                    arg = JSON.parse(JSON.stringify(arg))
+                    delete arg["memory"]["group"]["name"]
+                }
+                str = str + JSON.stringify(arg)
             }else str = str + arg.toString()
         }
         var hash = MD5(str)
@@ -69,7 +76,7 @@ const utilsCollection = {
         const energyDisCom = this._getComponentRatio(componentsObj)
         var result = []
         for (var component in componentsObj){
-            var times = Math.floor(availableEnergy * energyDisCom[component] / BODYPART_COST[component])
+            var times = Math.min(Math.max(Math.floor(availableEnergy * energyDisCom[component] / BODYPART_COST[component]),1),componentsObj[component])
             for (var i = 0; i < times; i++) result.push(component)
         }
         return result
@@ -81,8 +88,8 @@ const utilsCollection = {
     },
     analyseCreep:function(creepID,analysis = false){
         const creep = Game.getObjectById(creepID)
-        const bodyAnalysis = {}
-        const hits = 0
+        var bodyAnalysis = {}
+        var hits = 0
         const bodyNum = creep.body.length
         for (var body of creep.body){
             if (!bodyAnalysis[body.type]) bodyAnalysis[body.type] = [0,0,[],false]
@@ -117,6 +124,37 @@ const utilsCollection = {
             }else role = "advancedHealer"
         }
         return [role,damageSituatioin]
-    }
+    },
+    roomNameToXY:function(name) {
+        let xx = parseInt(name.substr(1), 10);
+        let verticalPos = 2;
+        if (xx >= 100) {
+            verticalPos = 4;
+        } else if (xx >= 10) {
+            verticalPos = 3;
+        }
+        let yy = parseInt(name.substr(verticalPos + 1), 10);
+        let horizontalDir = name.charAt(0);
+        let verticalDir = name.charAt(verticalPos);
+        if (horizontalDir === 'W' || horizontalDir === 'w') {
+            xx = -xx - 1;
+        }
+        if (verticalDir === 'N' || verticalDir === 'n') {
+            yy = -yy - 1;
+        }
+        return [xx, yy];
+    },
+    calcRoomsDistance : function(room1, room2, continuous) {
+        var [x1,y1] = this.roomNameToXY(room1);
+        var [x2,y2] = this.roomNameToXY(room2);
+        var dx = Math.abs(x2-x1);
+        var dy = Math.abs(y2-y1);
+        if(continuous) {
+            var worldSize = Game.map.getWorldSize();
+            dx = Math.min(worldSize - dx, dx);
+            dy = Math.min(worldSize - dy, dy);
+        }
+        return dx + dy;
+    },
 }
 module.exports = utilsCollection

@@ -127,7 +127,7 @@ module.exports = function() {
                 }
             }
         }
-        if (!global.task.transfer[roomName]["tombExpirationTime"] || global.task.transfer[roomName]["tombExpirationTime"] <= Game.time){
+        if (Game.rooms[roomName].storage && (!global.task.transfer[roomName]["tombExpirationTime"] || global.task.transfer[roomName]["tombExpirationTime"] <= Game.time)){
             global.task.transfer[roomName]["tombExpirationTime"] = Game.time + utils.getCacheExpiration()
             var tombStones = Game.rooms[roomName].find(FIND_TOMBSTONES)
             tombStones.sort((a,b)=>b.store.getUsedCapacity() - a.store.getUsedCapacity())
