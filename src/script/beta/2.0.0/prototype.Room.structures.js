@@ -81,7 +81,7 @@ Room.prototype._checkBuildCache = function _checkBuildCache(){
     if (!roomBuildsExpiration[this.name] || !roomBuilds[this.name] || roomBuildsExpiration[this.name] < Game.time){
         roomBuildsExpiration[this.name] = Game.time + getCacheExpiration();
         roomBuilds[this.name] = this.find(FIND_CONSTRUCTION_SITES);
-        roomBuilds[this.name] = _.map(roomBuilds,s=>s.id);
+        roomBuilds[this.name] = _.map(roomBuilds[this.name],s=>s.id);
     }
 }
 
@@ -135,12 +135,13 @@ Object.defineProperty(Room.prototype,"buildTargets",{
             return this["_buildTargets"];
         }else{
             this._checkBuildCache();
+            roomBuilds[this.name] = _.filter(roomBuilds[this.name],s=>Game.getObjectById(s))
             if (roomBuilds[this.name].length > 0){
                 this["_buildTargets_ts"] = Game.time;
                 return this["_buildTargets"] = _.map(roomBuilds[this.name],Game.getObjectById);
             }else{
                 this["_buildTargets_ts"] = Game.time;
-                return this["_buildTargets"] = undefined;
+                return this["_buildTargets"] = [];
             }
         }
     },
@@ -180,12 +181,14 @@ Object.defineProperty(Room.prototype, "repairTargets",{
         if(this["_repairTargets"] && this["_repairTargets_ts"] === Game.time) return this["_repairTargets"]
         else{
             this._checkRepairCache();
+            roomRepairs[this.name] = _.filter(roomRepairs[this.name],s=>Game.getObjectById(s))
+            roomRepairs[this.name] = _.filter(roomRepairs[this.name],s=>Game.getObjectById(s).hits < Game.getObjectById(s).hitsMax)
             if (roomRepairs[this.name].length > 0){
                 this["_repairTargets_ts"] = Game.time;
                 return this["_repairTargets"] = _.map(roomRepairs[this.name],Game.getObjectById)
             }else{
                 this["_repairTargets_ts"] = Game.time;
-                return this["_repairTargets"] = undefined;
+                return this["_repairTargets"] = [];
             }
         }
     },

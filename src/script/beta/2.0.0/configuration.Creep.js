@@ -1,7 +1,7 @@
 const creepConfiguration = {
     components:{
         "harvester":{work:5,carry:1,move:3},
-        "transferer":{carry:5,move:10},
+        "transferer":{carry:10,move:10},
         "upgrader":{work:8,carry:2,move:5},
         "worker":{work:3,carry:3,move:3},
         "repairer":{work:5,carry:3,move:4},
@@ -19,8 +19,8 @@ const creepConfiguration = {
         "powerHarvest":{"attacker":["attack-harvest"],"healer":["-attack-heal"],"transferer":["-transfer-remote"]},
         "localHarvest":{"harvester":["harvest-local"]},
         "pureTransfer":{"transferer":["pickup","transfer-core|defense|advanced"]},
-        "pureWorker":{"worker":["build","repair-local","upgrade"]},
-        "pureRepairer":{"repairer":["repair-local","upgrade"]},
+        "pureWorker":{"worker":["build","*repair-local","*upgrade"]},
+        "pureRepairer":{"repairer":["repair-local","*upgrade"]},
         "remoteRepairer":{"repairer":["repair-remote"]},
         "pureUpgrader":{"upgrader":["upgrade"]},
         "Defend":{"defender":["defend"]},

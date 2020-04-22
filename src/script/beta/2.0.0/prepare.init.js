@@ -16,17 +16,23 @@ module.exports = function() {
             global.links[roomName] = {
                 resources:[],
                 upgrade:[],
-                charges:[]
+                charges:[],
+                map:{}
             }
             var link
             for (link of Game.rooms[roomName]["links"]){
+                var adjacentEnergy = utils.Adjacent(link.id,Game.rooms[roomName]["energys"].map(r => r.id),2)
+                var adjacentSpawn = utils.Adjacent(link.id,Game.rooms[roomName]["spawns"].map(s => s.id))
                 if (utils.adjacent(link.id,Game.rooms[roomName].controller.id,3)) global.links[roomName].upgrade.push(link)
-                else if (utils.Adjacent(link.id,Game.rooms[roomName]["energys"].map(r => r.id),2)) global.links[roomName].resources.push(link)
-                else if (utils.Adjacent(link.id,Game.rooms[roomName]["spawns"].map(s => s.id))) global.links[roomName].charges.push(link)
+                else if (adjacentEnergy) {global.links[roomName].resources.push(link);global.links[roomName].map[adjacentEnergy] = link.id;}
+                else if (adjacentSpawn) {global.links[roomName].charges.push(link);global.links[roomName].map[adjacentSpawn] = link.id;}
             }
         }
 //    }
-    for (var linkType in global.links[roomName])    global.links[roomName][linkType].sort((linkA,linkB)=>linkB.store.getUsedCapacity(RESOURCE_ENERGY) - linkA.store.getUsedCapacity(RESOURCE_ENERGY))
+    const usedEnergyCompare = (linkA,linkB)=>linkB.store.getUsedCapacity(RESOURCE_ENERGY) - linkA.store.getUsedCapacity(RESOURCE_ENERGY)
+    global.links[roomName]["resources"].sort(usedEnergyCompare)
+    global.links[roomName]["upgrade"].sort(usedEnergyCompare)
+    global.links[roomName]["charges"].sort(usedEnergyCompare)
 
 //    if (!global.containers || global.containers["_expirationTime"] <= Game.time) {
         var roomName
@@ -36,15 +42,17 @@ module.exports = function() {
             global.containers[roomName] = {
                 resources:[],
                 mineral:undefined,
+                map:{}
             }
             var container
             for (container of Game.rooms[roomName]["containers"]){
-                if (utils.Adjacent(container.id,Game.rooms[roomName]["energys"].map(r => r.id))) global.containers[roomName].resources.push(container)
-                else if (utils.adjacent(container.id,Game.rooms[roomName]["mineral"].id)) global.containers[roomName].mineral = container
+                var adjacentEnergy = utils.Adjacent(container.id,Game.rooms[roomName]["energys"].map(r => r.id))
+                if (adjacentEnergy) {global.containers[roomName].resources.push(container);global.containers[roomName].map[adjacentEnergy] = container.id;}
+                else if (utils.adjacent(container.id,Game.rooms[roomName]["mineral"].id)) {global.containers[roomName].mineral = container;global.containers[roomName].map[Game.rooms[roomName]["mineral"].id] = container.id;}
             }
         }
 //    }
-    for (var containerType in global.containers[roomName]) if (global.containers[roomName][containerType]) global.containers[roomName][containerType].sort((containerA,containerB)=>containerB.store.getUsedCapacity() - containerA.store.getUsedCapacity())
+    global.containers[roomName]["resources"].sort((containerA,containerB)=>containerB.store.getUsedCapacity() - containerA.store.getUsedCapacity())
 
     global.labs = {}
     for (var roomName of global.rooms.my) {

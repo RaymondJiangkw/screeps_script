@@ -23,7 +23,7 @@ const towerExtension = {
     },
     _attack(){
         if (Game.rooms[this.room.name].enemies.length > 0) {
-            tower.attack(Game.rooms[this.room.name].enemies[0])
+            this.attack(Game.rooms[this.room.name].enemies[0])
             return true
         }
     },

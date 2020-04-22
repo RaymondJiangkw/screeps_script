@@ -19,10 +19,7 @@ module.exports = function(){
             var repairTargets = [].concat(roads,containers)
             repairTargets.sort(hitsCompare)
             var home = utils.getClosetSuitableRoom(roomName,7)
-            for (var repairTarget of repairTargets){
-                Game.rooms[home].AddRepairTask("remote",repairTarget.id,repairTarget.pos)
-            }
+            for (var repairTarget of repairTargets) Game.rooms[home].AddRepairTask("remote",repairTarget.id,repairTarget.pos)
         }
-        
     }
 }

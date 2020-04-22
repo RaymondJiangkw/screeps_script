@@ -35,7 +35,7 @@ const utilsCollection = {
     },
     Adjacent:function(_object_1_id,_arr_id,distance = 1){
         for (var _object_2_id of _arr_id){
-            if (this.adjacent(_object_1_id,_object_2_id,distance)) return true
+            if (this.adjacent(_object_1_id,_object_2_id,distance)) return _object_2_id
         }
         return false
     },
@@ -92,16 +92,18 @@ const utilsCollection = {
         var hits = 0
         const bodyNum = creep.body.length
         for (var body of creep.body){
-            if (!bodyAnalysis[body.type]) bodyAnalysis[body.type] = [0,0,[],false]
+            if (!bodyAnalysis[body.type]) bodyAnalysis[body.type] = [0,0,false,0,[]]
             bodyAnalysis[body.type][0]++;
-            bodyAnalysis[body.type][1] += body.hits
+            bodyAnalysis[body.type][3] += body.hits
             hits += body.hits
-            if(body.boost) bodyAnalysis[body.type][2].push(body.boost)
+            if(body.boost) bodyAnalysis[body.type][4].push(body.boost)
         }
         for (var body in bodyAnalysis){
-            if (bodyAnalysis[body][1] / (bodyAnalysis[body][0] * 100) < 1) bodyAnalysis[body][3] = true
+            bodyAnalysis[body][1] = Math.floor(bodyAnalysis[body][3] / 100)
+            if (bodyAnalysis[body][1] < bodyAnalysis[body][0]) bodyAnalysis[body][2] = true
         }
         if (!analysis) return  bodyAnalysis
+        
         var damageSituatioin = ""
         var role = ""
         var hitsRatio = hits / (bodyNum * 100)
@@ -156,5 +158,16 @@ const utilsCollection = {
         }
         return dx + dy;
     },
+    canGetObjectById:function(targetID,targetPos,currentPos){
+        if (currentPos.roomName !== targetPos.roomName && !Game.rooms[targetPos.roomName]) return "unsure"
+        if (Game.getObjectById(targetID)) return true
+        else return false
+    },
+    analyseTaskList:function(taskList, _default = undefined){
+        var _taskList = taskList.split('-')
+        if (_taskList[1]) _taskList[1] = _taskList[1].split('|')
+        else _taskList[1] = _default
+        return _taskList
+    }
 }
 module.exports = utilsCollection

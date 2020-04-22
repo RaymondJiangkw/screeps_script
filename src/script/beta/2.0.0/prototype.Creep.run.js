@@ -1,40 +1,43 @@
 const utils = require('utils')
 const constants = require('constants')
 const creepConfig = require('configuration.Creep')
+const terminalConfig = require('configuration.Terminal')
 const claimRoomConfig = require('configuration.targetRooms')
 const ERR_SWITCH = "switch"
 const FINISH = "finish"
 const ERR_DELETE = "delete"
 const ERR_RENEW = "renew"
+const ERR_REPEAT = "repeat"
+const ERR_PENDING = "pending"
 module.exports = function() {
     _.assign(Creep.prototype,creepRunExtensions)
+}
+const hasEnergy = function(object,amount = 0){
+    return object.store.getUsedCapacity(RESOURCE_ENERGY) >= amount
 }
 const getLab = function(roomName,resourceType) {
 
 }
 const creepRunExtensions = {
     _adjMove(targetPos){
-        if (!targetPos) return OK
         if (!utils.adjacentPos(this.pos,targetPos)) {
-            this.moveTo(new RoomPosition(targetPos.x,targetPos.y,targetPos.roomName))
+            this.travelTo(new RoomPosition(targetPos.x,targetPos.y,targetPos.roomName))
             return ERR_NOT_IN_RANGE
         }else return OK
     },
-    _Move(targetPos){
-        if (!this.pos.x === targetPos.x || !this.pos.y === targetPos.y || !this.pos.roomName === targetPos.roomName){
+    _Move(targetPos, accAdj = false){
+        if (this.pos.x != targetPos.x || this.pos.y != targetPos.y || this.pos.roomName != targetPos.roomName){
             this.travelTo(new RoomPosition(targetPos.x,targetPos.y,targetPos.roomName))
-            if (!utils.adjacentPos(this.pos,targetPos)) return ERR_NOT_IN_RANGE
-            else return OK
+            if (accAdj && utils.adjacentPos(this.pos,targetPos)) return OK
+            else return ERR_NOT_IN_RANGE
         }else return OK
     },
     _boost(){
-        if (!this.memory["_tmp"]) this.memory["_tmp"] = {}
-        if (!this.memory["_tmp"]["bodyAnalysis"]) this.memory["_tmp"]["bodyAnalysis"] = utils.analyseCreep(this.id)
         if (!this.memory.boostCompounds || this.memory.boostCompounds === []) return FINISH
         if (global.rooms.my.indexOf(this.room.name) < 0) return FINISH
         if (!this.memory.boostTarget || !this.memory.boostTargetPos){
             const COMPOUND_UNIT = 30
-            const ENERGY_UNIT = 20    
+            const ENERGY_UNIT = 20
             for (var i = 0;i < this.memory.boostCompounds.length;i++){
                 const boostCompound = this.memory.boostCompounds[i]
                 if (!global.resources[this.room.name][boostCompound]) continue
@@ -56,295 +59,328 @@ const creepRunExtensions = {
             if (this["_adjMove"](tihs.memory.boostTargetPos) === ERR_NOT_IN_RANGE) return OK
             const boostCompound = Game.getObjectById(this.memory.boostTarget).mineralType;
             const boostBodyPart = utils.compoundEffect(boostCompound)
-            if (!Game.getObjectById(this.memory.boostTarget)){
-                this.memory.boostTarget = undefined
-                this.memory.boostTargetPos = undefined
-                return FINISH
-            }
-            var feedback = Game.getObjectById(this.memory.boostTarget).boostCreep(this)
+
+            Game.getObjectById(this.memory.boostTarget).boostCreep(this)
+
             this.memory.boostTarget = undefined
             this.memory.boostTargetPos = undefined
-            if (feedback !== OK) return FINISH
+
             this.memory["_tmp"]["bodyAnalysis"] = utils.analyseCreep(this.id)
-            if (this.memory["_tmp"]["bodyAnalysis"][boostBodyPart][0] === this.memory["_tmp"]["bodyAnalysis"][boostBodyPart][2].length){
-                this.memory.boostCompounds.splice(this.memory.boostCompounds.find(boostCompound),1)
+            if (this.memory["_tmp"]["bodyAnalysis"][boostBodyPart][0] === this.memory["_tmp"]["bodyAnalysis"][boostBodyPart][4].length){
+                this.memory.boostCompounds.splice(this.memory.boostCompounds.indexOf(boostCompound),1)
             }
         }
         return FINISH
     },
-    _withdraw(targetID,resourceType,amount){
+    _withdraw(targetID,resourceType,amount = Infinity){
+        if (amount == "full" || amount == "exhaust") amount = Infinity
+
         const target = Game.getObjectById(targetID)
-        if (!target) return [ERR_INVALID_TARGET,0]
         if (!resourceType && target.store.getUsedCapacity() === 0) return [ERR_NOT_ENOUGH_RESOURCES,0]
         else if (resourceType && target.store.getUsedCapacity(resourceType) === 0) return [ERR_NOT_ENOUGH_RESOURCES,0]
-        var Amount = this.store.getFreeCapacity()
-        if (resourceType) Amount = Math.min(Amount,target.store.getUsedCapacity(resourceType))
-        else Amount = Math.min(Amount,target.store.getUsedCapacity())
-        if (amount) Amount = Math.min(Amount,amount)
+
+        var Amount = 0
         var ret;
-        if (resourceType) ret = this.withdraw(target,resourceType,Amount)
-        else{
-            for (var resource in target.store) ret = this.withdraw(target,resource,Math.min(Amount,target.store.getUsedCapacity(resource)))
+        var baseAmount = Math.min(this.store.getFreeCapacity(),amount)
+        if (resourceType) baseAmount = Math.min(baseAmount,target.store.getUsedCapacity(resourceType))
+
+        if (resourceType) {
+            ret = this.withdraw(target,resourceType,baseAmount)
+            if (ret === OK) Amount = baseAmount
+        }else {
+            for (var resource in target.store){
+                var _baseAmount = Math.min(baseAmount,target.store.getUsedCapacity(resource))
+                ret = this.withdraw(target,resource,_baseAmount)
+                Amount += _baseAmount
+            }
         }
+
         return [ret,Amount]
     },
-    _harvestEnergy(targetID,targetPos){
+    _harvestEnergy(targetID){
         const target = Game.getObjectById(targetID)
+        var amount = Math.min(target.energy,this.memory["_tmp"]["bodyAnalysis"]["work"][1] * 2)
         var ret = this.harvest(target)
-        return [ret,0]
+        return [ret, amount]
     },
     _getEnergy(taskType){ //Most cases used for RESOURCE_ENERGY
-        if (!this.memory.get) this.memory.get = {}
         if (!this.memory.get.getTarget || !this.memory.get.getTargetPos) {
-            if (taskType === "upgradeController") {if (global.links[this.memory.home].upgrade.length > 0) this.memory.get.getTarget = global.links[this.memory.home].upgrade[0].id}
-            else {if (global.links[this.memory.home].charges.length > 0) this.memory.get.getTarget = global.links[this.memory.home].charges[0].id}
+            var chosenObject = undefined
+            var hasEnergyContainers = _.filter(global.containers[this.memory.home].resources, c=>c.store.getUsedCapacity(RESOURCE_ENERGY) > 0)
+            var hasEnoughEnergyContainers = _.filter(global.containers[this.memory.home].resources,c=>c.store.getUsedCapacity(RESOURCE_ENERGY) >= this.store.getFreeCapacity())
+            hasEnoughEnergyContainers.sort((containerA,containerB)=>utils.distancePos(this.pos,containerA.pos) - utils.distancePos(this.pos,containerB.pos))
+            
+            if (taskType === "upgradeController" && global.links[this.memory.home].upgrade.length > 0) chosenObject = global.links[this.memory.home].upgrade[0]
+            else if (taskType === "transfer" && global.links[this.memory.home].charges.length > 0) chosenObject = global.links[this.memory.home].charges[0]
+            else if (taskType === "build" && Game.rooms[this.memory.home].storage && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
+            else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && Game.rooms[this.memory.home].storage && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
+            else if (hasEnoughEnergyContainers.length > 0) chosenObject = hasEnoughEnergyContainers[0]
+            else if (hasEnergyContainers.length > 0) chosenObject = hasEnergyContainers[0]
+            else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && Game.rooms[this.memory.home].terminal && hasEnergy(Game.rooms[this.memory.home].terminal,terminalConfig.baseReservedEnergy)) chosenObject = Game.rooms[this.memory.home].terminal
+            else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && Game.rooms[this.memory.home].factory && hasEnergy(Game.rooms[this.memory.home].factory)) chosenObject = Game.rooms[this.memory.home].factory
+            else if (Game.rooms[this.memory.home].storage && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
+            else if (Game.rooms[this.memory.home].terminal && hasEnergy(Game.rooms[this.memory.home].terminal)) this.memory.get.getTarget = Game.rooms[this.memory.home].terminal.id
+            else{
+                var droppedEnergys = this.pos.findClosestByRange(FIND_DROPPED_RESOURCES,(r)=>r.resourceType === RESOURCE_ENERGY)
+                if (droppedEnergys) chosenObject = droppedEnergys
+                else if (this.memory["_tmp"]["bodyAnalysis"]["work"]){
+                    var activeSources = this.pos.findClosestByRange(FIND_SOURCES_ACTIVE)
+                    if (activeSources) chosenObject = activeSources
+                }
+            }
 
-            if (!this.memory.get.getTarget){
-                if ((taskType === "build" || taskType === "repair") && this.room.name !== this.memory.home && Game.rooms[this.room.name].energys !== []) this.memory.get.getTarget = this.pos.findClosestByRange(FIND_SOURCES_ACTIVE).id
-                else if (taskType === "build" && Game.rooms[this.memory.home].storage && Game.rooms[this.memory.home].storage.store.getUsedCapacity(RESOURCE_ENERGY) > 0) this.memory.get.getTarget = Game.rooms[this.memory.home].storage.id
-                else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && Game.rooms[this.memory.home].storage && Game.rooms[this.memory.home].storage.store.getUsedCapacity(RESOURCE_ENERGY) > 0) this.memory.get.getTarget = Game.rooms[this.memory.home].storage.id
-                else if (_.filter(global.containers[this.memory.home].resources,c=>c.store.getUsedCapacity(RESOURCE_ENERGY) > 0).length > 0) {
-                    const goodContainers = _.filter(global.containers[this.memory.home].resources,(container)=>container.store.getUsedCapacity(RESOURCE_ENERGY) >= this.store.getFreeCapacity(RESOURCE_ENERGY))
-                    goodContainers.sort((containerA,containerB)=>utils.distancePos(this.pos,containerA.pos) - utils.distancePos(this.pos,containerB.pos))
-                    if (goodContainers[0]) this.memory.get.getTarget = goodContainers[0].id
-                    else this.memory.get.getTarget = global.containers[this.memory.home].resources[0].id
-                }else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && Game.rooms[this.memory.home].terminal && Game.rooms[this.memory.home].terminal.store.getUsedCapacity(RESOURCE_ENERGY) > 30000) this.memory.get.getTarget = Game.rooms[this.memory.home].terminal.id
-                else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && Game.rooms[this.memory.home].factory && Game.rooms[this.memory.home].factory.store.getUsedCapacity(RESOURCE_ENERGY) > 0) this.memory.get.getTarget = Game.rooms[this.memory.home].factory.id
-                else if (Game.rooms[this.memory.home].storage && Game.rooms[this.memory.home].storage.store.getUsedCapacity(RESOURCE_ENERGY) > 0) this.memory.get.getTarget = Game.rooms[this.memory.home].storage.id
-                else if (Game.rooms[this.memory.home].terminal && Game.rooms[this.memory.home].terminal.store.getUsedCapacity(RESOURCE_ENERGY) > 0) this.memory.get.getTarget = Game.rooms[this.memory.home].terminal.id
-            }
-            if (!this.memory.get.getTarget && this.memory["_tmp"]["bodyAnalysis"]["work"]) {
-                this.memory.get.getTarget = this.pos.findClosestByRange(FIND_SOURCES_ACTIVE)
-                if (this.memory.get.getTarget) this.memory.get.getTarget = this.memory.get.getTarget.id
-            }
-            if (!this.memory.get.getTarget) {
-                this.memory.get.getTarget = this.pos.findClosestByRange(FIND_DROPPED_RESOURCES,(r)=>r.resourceType === RESOURCE_ENERGY)
-                if (this.memory.get.getTarget) this.memory.get.getTarget = this.memory.get.getTarget.id
-            }
-            if (this.memory.get.getTarget) this.memory.get.getTargetPos = Game.getObjectById(this.memory.get.getTarget).pos
+            if (chosenObject) {this.memory.get.getTarget = chosenObject.id;this.memory.get.getTargetPos = chosenObject.pos}
         }
         if (this.memory.get.getTarget && this.memory.get.getTargetPos) {
-            if (this["_adjMove"](this.memory.get.getTargetPos) === ERR_NOT_IN_RANGE) return OK
+            if (!utils.canGetObjectById(this.memory.get.getTarget,this.memory.get.getTargetPos,this.pos)){
+                this.memory.get.getTarget = undefined
+                this.memory.get.getTargetPos = undefined
+                return ERR_SWITCH
+            }
+            
+            var moveFeedback = this["_adjMove"](this.memory.get.getTargetPos)
+            if (moveFeedback === ERR_NOT_IN_RANGE) return OK
+            
             const target = Game.getObjectById(this.memory.get.getTarget)
-            if (!target){
-                this.memory.get.getTarget = undefined
-                this.memory.get.getTargetPos = undefined
-                return ERR_SWITCH
-            }
             var feedback = undefined
-            if (target.structureType) feedback = this._withdraw(this.memory.get.getTarget,RESOURCE_ENERGY,this.store.getFreeCapacity()) 
-            else if (target.amount) feedback = [this.pickup(Game.getObjectById(this.memory.get.getTarget)),0]
-            else feedback = this._harvestEnergy(this.memory.get.getTarget)
-            if (feedback[0] === OK) {
-                if (this.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-                    this.memory.get.getTarget = undefined
-                    this.memory.get.getTargetPos = undefined
-                }
-                return OK
-            }else if (feedback[0] === ERR_INVALID_TARGET || feedback[0] === ERR_NOT_ENOUGH_RESOURCES) {
+            if (target.structureType) feedback = this._withdraw(this.memory.get.getTarget,RESOURCE_ENERGY)
+            else if (target.amount) {
+                var amount = Math.min(target.amount,this.store.getFreeCapacity());
+                feedback = [this.pickup(Game.getObjectById(this.memory.get.getTarget)),amount]
+            }else feedback = this._harvestEnergy(this.memory.get.getTarget)
+            
+            if (feedback[0] === OK || feedback[0] === ERR_FULL) return OK
+            else if (feedback[0] === ERR_INVALID_TARGET || feedback[0] === ERR_NOT_ENOUGH_RESOURCES) {
                 this.memory.get.getTarget = undefined
                 this.memory.get.getTargetPos = undefined
-                return ERR_SWITCH
+                return ERR_REPEAT
             }
-            return OK
         }else return ERR_NOT_FOUND
     },
     _getResource(resourceType,amount){ // excludes the lab
         if (!global.resources[this.memory.home][resourceType]) return ERR_NOT_FOUND,0
-        if (!this.memory.get.getTarget && this.memory.get.getTargetPos){
-            if (global.resources[this.memory.home][resourceType]["storage"]){
-                this.memory.get.getTarget = Game.rooms[this.memory.home].storage.id
-                this.memory.get.getTargetPos = Game.rooms[this.memory.home].storage.pos
-            } else if (global.resources[this.memory.home][resourceType]["terminal"]){
-                this.memory.get.getTarget = Game.rooms[this.memory.home].terminal.id
-                this.memory.get.getTargetPos = Game.rooms[this.memory.home].terminal.pos
-            } else if (global.resources[this.memory.home][resourceType]["factory"]){
-                this.memory.get.getTarget = Game.rooms[this.memory.home].factory.id
-                this.memory.get.getTargetPos = Game.rooms[this.memory.home].factory.pos
+        if (!this.memory.get.getTarget && !this.memory.get.getTargetPos){
+            var checkOrders = ["storage","terminal","factory"]
+            for (var retrievedStructure of checkOrders){
+                if (!global.resources[this.memory.home][resourceType][retrievedStructure]) continue
+                this.memory.get.getTarget = Game.rooms[this.memory.home][retrievedStructure].id
+                this.memory.get.getTargetPos = Game.rooms[this.memory.home][retrievedStructure].pos
             }
         }
         if (this.memory.get.getTarget && this.memory.get.getTargetPos){
-            if (this.store.getFreeCapacity(resourceType) === 0){
+            if (!utils.canGetObjectById(this.memory.get.getTarget,this.memory.get.getTargetPos,this.pos)){
                 this.memory.get.getTarget = undefined
                 this.memory.get.getTargetPos = undefined
-                return FINISH,0
+                return ERR_SWITCH
             }
-            if (!this.memory.get.getTarget && this.store.getUsedCapacity(resourceType) === 0) return ERR_NOT_FOUND,0
-            else if (!this.memory.get.getTarget && this.store.getUsedCapacity(resourceType) > 0) return FINISH,0
-            if (this["_adjMove"](this.memory.get.getTargetPos) === ERR_NOT_IN_RANGE) return OK,0
+
+            var moveFeedback = this["_adjMove"](this.memory.get.getTargetPos)
+            if (moveFeedback === ERR_NOT_IN_RANGE) return OK,0
+
             const target = Game.getObjectById(this.memory.get.getTarget)
             var feedback = undefined
             feedback = this._withdraw(target.id,resourceType,amount)
-            if (feedback[0] === OK) return OK,feedback[1]
+
+            if (feedback[0] === OK || feedback[0] === ERR_FULL) return OK
             else if (feedback[0] === ERR_INVALID_TARGET || feedback[0] === ERR_NOT_ENOUGH_RESOURCES) {
                 this.memory.get.getTarget = undefined
                 this.memory.get.getTargetPos = undefined
-                return ERR_SWITCH,0
-            }else return ERR_NOT_FOUND,0
+                return ERR_REPEAT
+            }else return ERR_NOT_FOUND
+        }
+    },
+    __afterGet(taskType,resourceType,amount){
+        var feedback = undefined
+        if (this.store.getFreeCapacity(resourceType) === 0) {
+            this.memory.get.getTarget = undefined
+            this.memory.get.getTargetPos = undefined
+            this.memory.working = true
+            return FINISH
+        }
+        if (resourceType === RESOURCE_ENERGY) feedback = this._getEnergy(taskType)
+        else feedback = this._getResource(resourceType,amount)
+        if (feedback === OK) return OK
+        else if (feedback === ERR_REPEAT) return ERR_REPEAT
+        else if (feedback === ERR_NOT_FOUND) {
+            if (this.store.getUsedCapacity(resourceType) > 0) this.memory.working = true
+            else return ERR_RENEW
         }
     },
     _harvest(subTaskType,signals){
         this.initTask()
         const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
-        if (this["_adjMove"](taskInfo.targetPos) === ERR_NOT_IN_RANGE) return OK
-        if (taskInfo.data.cachedContainerPos && this["_Move"](taskInfo.data.cachedContainerPos) === ERR_NOT_IN_RANGE) return OK
-        var target = Game.getObjectById(taskInfo.targetID)
-        if (this.store.getFreeCapacity() === 0){
-            // Charge Link
-            if (taskInfo.data.chargeLink) {
-                for (var link of global.links[this.memory.home]["resources"]){
-                    if (utils.adjacent(this.id,link.id)) this.transfer(link,RESOURCE_ENERGY)
-                }
+        if (!utils.canGetObjectById(taskInfo.targetID,taskInfo.targetPos,this.pos)) return ERR_DELETE
+        if (taskInfo.data.cachedContainerId){
+            if (!utils.canGetObjectById(taskInfo.data.cachedContainerId,taskInfo.data.cachedContainerPos,this.pos)) {
+                taskInfo.data.cachedContainerId = undefined
+                taskInfo.data.cachedContainerPos = undefined
             }
+        }
+        if (!taskInfo.data.cachedContainerId){
+            if (global.containers[taskInfo.targetPos.roomName]){
+                taskInfo.data.cachedContainerId = global.containers[taskInfo.targetPos.roomName].map[taskInfo.targetID]
+                if (taskInfo.data.cachedContainerId) taskInfo.data.cachedContainerPos = Game.getObjectById(taskInfo.data.cachedContainerId).pos
+            }
+        }
+
+        var moveFeedback = undefined
+        if (taskInfo.data.cachedContainerPos) moveFeedback = this["_Move"](taskInfo.data.cachedContainerPos,true)
+        else moveFeedback = this["_adjMove"](taskInfo.targetPos)
+        if (moveFeedback === ERR_NOT_IN_RANGE) return OK
+
+        if (this.store.getFreeCapacity() === 0){
+            if (global.links[this.room.name] && global.links[this.room.name].map[taskInfo.targetID]) this.transfer(Game.getObjectById(global.links[this.room.name].map[taskInfo.targetID]),RESOURCE_ENERGY)
             if (signals["drop"]) for (var carryResourceType in this.store) this.drop(carryResourceType)
-            else if (signals["transfer"]) for (var carryResourceType in this.store) this.transfer(Game.getObjectById(signal["transfer"]),carryResourceType)
+            if (signals["transfer"]) for (var carryResourceType in this.store) this.transfer(Game.getObjectById(signal["transfer"]),carryResourceType)
             if (taskInfo.settings.changeable) return ERR_RENEW
         }
+
+        var target = Game.getObjectById(taskInfo.targetID)
         var feedback = this.harvest(target)
+
         if (feedback === OK) return OK
         else if (feedback === ERR_BUSY) return OK
-        else if (feedback === ERR_INVALID_TARGET) return FINISH
-        else if (feedback === ERR_NOT_ENOUGH_RESOURCES) return FINISH
+        else if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
+        else if (feedback === ERR_NOT_ENOUGH_RESOURCES) return ERR_DELETE
     },
     _transfer(subTaskType,signals){
         if (!this.memory.working) {
             const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
             if (taskInfo.data.from === "energy"){
-                var feedback = this._getEnergy("transfer")
-                if (feedback === ERR_SWITCH) return OK
-                else if (feedback === ERR_NOT_FOUND) {
-                    if (this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) this.memory.working = true
-                    return ERR_RENEW
-                }
-                else if (feedback === OK) {
-                    if (this.store.getFreeCapacity(RESOURCE_ENERGY) === 0) this.memory.working = true
-                    else return OK
-                }
+                var feedback = this.__afterGet("transfer",RESOURCE_ENERGY)
+                if (!this.memory.working) return feedback
             }else if (taskInfo.data.from === "resource"){
-                var feedback = this._getResource(taskInfo.data.resourceType,taskInfo.data.amount)
-                if (feedback[0] === ERR_SWITCH) return OK
-                else if (feedback[0] === ERR_NOT_FOUND) return FINISH
-                else if (feedback[0] === OK){
-                    taskInfo.data.amount -= feedback[1]
-                    return OK
-                }else if (feedback[0] === FINISH) this.memory.working = true
+                var feedback = this.__afterGet("transfer",taskInfo.data.resourceType,taskInfo.data.amount)
+                if (!this.memory.working) return feedback
             }else if (taskInfo.data.from === "creep"){
-                if (!taskInfo.targetID) taskInfo.targetID = signals["creep"]
-                taskInfo.targetPos = Game.getObjectById(taskInfo.targetID).pos
-                if (!taskInfo.targetPos) return FINISH
-                if (!utils.adjacentPos(this.pos,taskInfo.targetPos)) this.travelTo(Game.getObjectById(taskInfo.targetID))
-                if (this.store.getFreeCapacity(taskInfo.data.resourceType) === 0 ||
-                    this.store.getUsedCapacity(taskInfo.data.resourceType) === taskInfo.data.amount ||
-                    signals["finish"]){
-                    taskInfo.data.amount -= this.store.getUsedCapacity(taskInfo.data.resourceType)
+                if (!Game.getObjectById(this.memory.get.getTarget)) this.memory.get.getTarget = undefined
+                if (!this.memory.get.getTarget) this.memory.get.getTarget = signals["creep"]
+                this.memory.get.getTargetPos = Game.getObjectById(this.memory.get.getTarget).pos
+
+                var moveFeedback = this["_adjMove"](this.memory.get.getTargetPos)
+                if (moveFeedback === ERR_NOT_IN_RANGE) return OK
+                
+                if (this.store.getFreeCapacity(taskInfo.data.resourceType) === 0 || signals["finish"]){
                     this.memory.working = true;
-                    taskInfo.targetID = undefined
-                    taskInfo.targetPos = undefined    
+                    this.memory.get.getTarget = undefined
+                    this.memory.get.getTargetPos = undefined    
                 }else return OK
             }else if (taskInfo.data.from === "power"){
-                if (!taskInfo.targetID || !taskInfo.targetPos){
-                    if (!global.rooms.observed.find(taskInfo.data.fromRoom)){
-                        this["_Move"](new RoomPosition(1,1,taskInfo.data.fromRoom))
-                    }else{
+                if (!this.memory.get.getTarget || !this.memory.get.getTargetPos){
+                    if (!Game.rooms[taskInfo.data.fromRoom]) this["_Move"](new RoomPosition(15,15,taskInfo.data.fromRoom))
+                    else{
                         var ruins = Game.rooms[taskInfo.data.fromRoom].find(FIND_RUINS,(r)=>r.store.getUsedCapacity(RESOURCE_POWER) > 0)
                         var droppedPower = Game.rooms[taskInfo.data.fromRoom].find(FIND_DROPPED_RESOURCES,(r) => r.resourceType === RESOURCE_POWER)
-                        if (this.store.getFreeCapacity(RESOURCE_POWER) === 0 ||
-                            ruins.length + droppedPower.length === 0){
-                            this.memory.working = true
+                        if (ruins.length + droppedPower.length === 0){
+                            return FINISH
                         }else{
                             droppedPower.sort((a,b)=>b.amount - a.amount)
                             if (ruins.length > 0){
-                                taskInfo.targetID = ruins[0].id
-                                taskInfo.targetPos = ruins[0].pos
+                                this.memory.get.getTarget = ruins[0].id
+                                this.memory.get.getTargetPos = ruins[0].pos
                             }else if (droppedPower.length > 0){
-                                taskInfo.targetID = droppedPower[0].id
-                                taskInfo.targetPos= droppedPower[1].pos
+                                this.memory.get.getTarget = droppedPower[0].id
+                                this.memory.get.getTargetPos = droppedPower[1].pos
                             }else return FINISH
                         }
                     }
                 }
-                if (taskInfo.targetID && taskInfo.targetPos){
-                    if (this["_adjMove"](taskInfo.targetPos) === ERR_NOT_IN_RANGE) return OK
-                    var target = Game.getObjectById(taskInfo.targetID)
-                    if (!target){
-                        taskInfo.targetID = undefined
-                        taskInfo.targetPos = undefined
-                        return OK
-                    }
-                    if (target.amount){
-                        // Dropped Power
-                        var feedback = this.pickup(target)
-                    }else{
-                        // Ruin
-                        var feedback = this.withdraw(feedback,RESOURCE_POWER)
-                    }
-                    taskInfo.targetID = undefined
-                    taskInfo.targetPos = undefined
+                if (this.memory.get.getTarget && this.memory.get.getTargetPos){
+                    if (this["_adjMove"](this.memory.get.getTargetPos) === ERR_NOT_IN_RANGE) return OK
+
+                    var target = Game.getObjectById(this.memory.get.getTarget)
+                    var feedback = undefined
+                    if (target.amount) feedback = this.pickup(target)
+                    else feedback = this.withdraw(feedback,RESOURCE_POWER)
+                    if (feedback === OK) this.memory.working = true
+                    this.memory.get.getTarget = undefined
+                    this.memory.get.getTargetPos = undefined
                     return OK
                 }
             }else{
-                if (!taskInfo.targetID || !taskInfo.targetPos){
+                if (!this.memory.get.getTarget || !this.memory.get.getTargetPos){
                     if (taskInfo.data.from === "lab"){
-                        taskInfo.targetID = getLab(this.memory.home,taskInfo.data.resourceType)
-                    }else taskInfo.targetID = taskInfo.data.from
-                    taskInfo.targetPos = Game.getObjectById(taskInfo.targetID).pos
+                        try {
+                            this.memory.get.getTarget = _.filter(Game.rooms[this.memory.home].labs,(lab)=>lab.mineralType == taskInfo.data.resourceType)[0].id
+                        } catch (error) {
+                            return ERR_DELETE
+                        }
+                    }else this.memory.get.getTarget = taskInfo.data.from
+                    this.memory.get.getTargetPos = Game.getObjectById(this.memory.get.getTarget).pos
                 }
-                var target = Game.getObjectById(taskInfo.targetID)
-                if (this.room.name === taskInfo.targetPos.roomName && (!target || target.store.getUsedCapacity() === 0)) return FINISH
-                if (!utils.adjacentPos(this.pos,taskInfo.targetPos)) this["_adjMove"](taskInfo.targetPos)
-                var feedback = this._withdraw(taskInfo.targetID,taskInfo.data.resourceType,taskInfo.data.amount)
-                if (taskInfo.data.amount) taskInfo.data.amount -= feedback[1]
-                if (feedback[0] === OK) {
-                    this.memory.working = true;
-                    taskInfo.targetID = undefined
-                    taskInfo.targetPos = undefined
-                    return OK
-                }else if (feedback[0] === ERR_INVALID_TARGET || feedback[0] === ERR_NOT_ENOUGH_RESOURCES) return FINISH
+                if (!utils.canGetObjectById(this.memory.get.getTarget,this.memory.get.getTargetPos,this.pos)) {
+                    this.memory.get.getTarget = undefined
+                    this.memory.get.getTargetPos = undefined
+                    return ERR_DELETE
+                }
+                if (this.memory.get.getTarget && this.memory.get.getTargetPos){
+                    var moveFeedback =  this["_adjMove"](this.memory.get.getTargetPos)
+                    if (moveFeedback === ERR_NOT_IN_RANGE) return OK
+
+                    var target = Game.getObjectById(this.memory.get.getTarget)
+                    var feedback = undefined
+                    if (taskInfo.data.amount === "exhaust"){
+                        for (var resourceType in target.store) feedback = this.withdraw(target,resourceType)
+                        if (this.store.getUsedCapacity() === 0) return ERR_DELETE
+                    }else if (taskInfo.data.amount === "full") feedback = this.withdraw(target,taskInfo.data.resourceType)
+                    else feedback = this._withdraw(this.memory.get.getTarget,taskInfo.data.resourceType,taskInfo.data.amount)
+
+                    if (typeof(taskInfo.data.amount) === "number") {taskInfo.data.amount -= feedback[1];feedback = feedback[0]}
+
+                    if (feedback === OK || feedback === ERR_FULL) {
+                        this.memory.working = true;
+                        this.memory.get.getTarget = undefined
+                        this.memory.get.getTargetPos = undefined
+                        return OK
+                    }else if (feedback === ERR_INVALID_TARGET || feedback === ERR_NOT_ENOUGH_RESOURCES) return ERR_DELETE
+                }       
             }
         }
         if (this.memory.working) {
             const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
-            if (!taskInfo.targetID || !taskInfo.targetPos){
-                if (taskInfo.data.to === "lab"){
-                    taskInfo.targetID = getLab(this.memory.home,taskInfo.data.resourceType)
+            if (taskInfo.data.resourceType && this.store.getUsedCapacity(taskInfo.data.resourceType) == 0) this.memory.working = false
+            if (!taskInfo.data.resourceType && this.store.getUsedCapacity() == 0) this.memory.working = false
+            if (!this.memory.working) return ERR_REPEAT
+
+            if (!taskInfo.targetID || !taskInfo.targetPos){ 
+                if (!Game.getObjectById(taskInfo.data.to)){
+                    var minStore = Math.min.apply(Math,Game.rooms[this.memory.home][taskInfo.data.to].map((s)=>s.store.getUsedCapacity(taskInfo.data.resourceType)))
+                    var potentialTargets = _.filter(Game.rooms[this.memory.home][taskInfo.data.to],(s)=>s.store.getUsedCapacity(taskInfo.data.resourceType) == minStore)
+                    potentialTargets.sort((a,b)=>utils.distancePos(this.pos,a.pos) - utils.distancePos(this.pos,b.pos))
+                    if (potentialTargets.length > 0) taskInfo.targetID = potentialTargets[0].id
+                    else return ERR_DELETE
                 }else taskInfo.targetID = taskInfo.data.to
                 taskInfo.targetPos = Game.getObjectById(taskInfo.targetID).pos
             }
-            if (!utils.adjacentPos(this.pos,taskInfo.targetPos)) this["_adjMove"](taskInfo.targetPos)
-            var feedback;
-            var transferAmount = 0;
-            if (taskInfo.data.resourceType) {transferAmount+=this.store.getUsedCapacity(taskInfo.data.resourceType);feedback = this.transfer(Game.getObjectById(taskInfo.targetID),taskInfo.data.resourceType)}
-            else{
-                for (var carry in this.store) {transferAmount+=this.store.getUsedCapacity(carry);feedback = this.transfer(Game.getObjectById(taskInfo.targetID),carry);}
-            }
-            if (taskInfo.data.amount) taskInfo.data.amount -= transferAmount
-            if (this.store.getUsedCapacity(RESOURCE_ENERGY) === 0) this.memory.working = false
-            if (feedback === OK && taskInfo.data.amount <= 0) return FINISH
-            else if (feedback === OK){
+            var moveFeedback =  this["_adjMove"](taskInfo.targetPos)
+            if (moveFeedback === ERR_NOT_IN_RANGE) return OK
+
+            var feedback = undefined;
+            if (taskInfo.data.resourceType) feedback = this.transfer(Game.getObjectById(taskInfo.targetID),taskInfo.data.resourceType)
+            else for (var carry in this.store) feedback = this.transfer(Game.getObjectById(taskInfo.targetID),carry)
+
+            if (feedback === OK){
+                if (taskInfo.data.amount <= 0) return ERR_DELETE
                 if (taskInfo.settings.changeable) return ERR_RENEW
-                else return OK
-            }else if (feedback === ERR_NOT_ENOUGH_RESOURCES) return OK
-            else if (feedback === ERR_FULL) return ERR_DELETE
-            else if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
+                return OK
+            }else if (feedback === ERR_FULL || feedback === ERR_INVALID_TARGET) return ERR_DELETE
         }
     },
     _work(taskType,subTaskType,signals){
         if (!this.memory.working) {
-            var feedback = this._getEnergy(taskType)
-            if (feedback === OK || feedback === ERR_SWITCH) {
-                if (this.store.getFreeCapacity(RESOURCE_ENERGY) === 0) this.memory.working = true
-                else return OK
-            }else if (feedback === ERR_NOT_FOUND) {
-                if (this.store.getUsedCapacity(RESOURCE_ENERGY) > 0) this.memory.working = true
-                return ERR_RENEW
-            }
+            var feedback = this.__afterGet(taskType,RESOURCE_ENERGY)
+            if (!this.memory.working) return feedback
         }
         if (this.memory.working) {
             this.initTask()
             const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
+            if (!utils.canGetObjectById(taskInfo.targetID,taskInfo.targetPos,this.pos)) return ERR_DELETE
             var target = Game.getObjectById(taskInfo.targetID)
-            if (!target) this["_adjMove"](taskInfo.targetPos)
+            
+            if (taskType === "repair") if (target.hits === target.hitsMax) return ERR_DELETE
+            
             var feedback = this[taskType](target)
+            
             if (feedback === ERR_NOT_IN_RANGE) this["_adjMove"](taskInfo.targetPos)
             else if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
             else if (feedback === ERR_NOT_ENOUGH_RESOURCES && taskInfo.settings.changeable) {
@@ -352,10 +388,7 @@ const creepRunExtensions = {
                 return ERR_RENEW
             }else if (feedback === ERR_NOT_ENOUGH_RESOURCES && !taskInfo.settings.changeable){
                 this.memory.working = false
-                return OK
-            }else if (taskType === "repair"){
-                if (target.hits === target.hitsMax) return ERR_DELETE
-                return OK
+                return ERR_REPEAT
             }else if (feedback === OK) return OK
         }
     },
@@ -491,10 +524,9 @@ const creepRunExtensions = {
         }else return this.ticksToLive <= 5
     },
     run(signals = {}){
-        if (!Game.rooms[this.memory.home].checkTaskExistence(this.memory.taskFingerprint)) {
-            this.memory.taskFingerprint = null
-            return ERR_INVALID_TARGET
-        }
+        if (!this.memory.get) this.memory.get = {}
+        if (!this.memory["_tmp"]) this.memory["_tmp"] = {}
+        if (!this.memory["_tmp"]["bodyAnalysis"]) this.memory["_tmp"]["bodyAnalysis"] = utils.analyseCreep(this.id)
         const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
 //        console.log(this,taskInfo.taskType)
         return this["_" + taskInfo.taskType](taskInfo.subTaskType,signals)

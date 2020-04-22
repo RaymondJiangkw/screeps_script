@@ -10,7 +10,7 @@ module.exports = function() {
         var home = utils.getClosetSuitableRoom(roomName,7)
         const constructionSites = Game.rooms[roomName].find(FIND_CONSTRUCTION_SITES)
         for (var constructionSite of constructionSites){
-            if (global.task.build[roomName].find(constructionSite.id)) continue
+            if (global.task.build[roomName].indexOf(constructionSite.id) >= 0) continue
             Game.rooms[home].AddBuildTask(constructionSite.id,constructionSite.pos)
             global.task.build[roomName].push(constructionSite.id)
         }
