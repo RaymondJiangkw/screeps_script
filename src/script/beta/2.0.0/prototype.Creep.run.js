@@ -3,6 +3,8 @@ const constants = require('constants')
 const creepConfig = require('configuration.Creep')
 const terminalConfig = require('configuration.Terminal')
 const claimRoomConfig = require('configuration.targetRooms')
+const observerConfig = require("configuration.Observer")
+const buildConfig = require('configuration.Build')
 const ERR_SWITCH = "switch"
 const FINISH = "finish"
 const ERR_DELETE = "delete"
@@ -12,24 +14,79 @@ const ERR_PENDING = "pending"
 module.exports = function() {
     _.assign(Creep.prototype,creepRunExtensions)
 }
+const reachBoundary = function(x){
+    return x < 1 || x > 48
+}
+const getVacantPlace = function(pos,adjPos = undefined) {
+    var x = pos.x
+    var y = pos.y
+    var roomName = pos.roomName
+
+    var direction = ["stay",TOP,TOP_RIGHT,RIGHT,BOTTOM_RIGHT,BOTTOM,BOTTOM_LEFT,LEFT,TOP_LEFT]
+    var dx = [0,0,1,1,1,0,-1,-1,-1]
+    var dy = [0,-1,-1,0,1,1,1,0,-1]
+    
+    const terrain = Game.rooms[roomName].getTerrain()
+
+    for (var i = 0; i < direction.length; i++){
+        var xx = x + dx[i], yy = y + dy[i]
+        if (reachBoundary(xx) || reachBoundary(yy)) continue
+        if (terrain.get(xx,yy) == TERRAIN_MASK_WALL) continue
+        if (adjPos && !utils.adjacentPos(pos,adjPos)) continue
+
+        var noRoad = true,walkable = true
+        const structures = Game.rooms[roomName].lookForAt(LOOK_STRUCTURES,xx,yy)
+        for (var structure of structures){
+            if (structure.structureType !== STRUCTURE_ROAD &&
+                structure.structureType !== STRUCTURE_CONTAINER &&
+                structure.structureType !== STRUCTURE_RAMPART) {
+                walkable = false
+                break
+            }
+            if (structure.structureType === STRUCTURE_ROAD) {
+                noRoad = false
+                break
+            }
+        }
+        if (noRoad && walkable) return direction[i]
+    }
+    return undefined
+}
+
 const hasEnergy = function(object,amount = 0){
+    if (!object) return false
     return object.store.getUsedCapacity(RESOURCE_ENERGY) >= amount
 }
 const getLab = function(roomName,resourceType) {
 
 }
 const creepRunExtensions = {
-    _adjMove(targetPos){
+    Invisible(){
+        var vacantDirection = getVacantPlace(this.pos)
+        if (vacantDirection && vacantDirection !== "stay") this.move(vacantDirection)
+    },
+    _adjMove(targetPos,avoidBarrior = false){
         if (!utils.adjacentPos(this.pos,targetPos)) {
             this.travelTo(new RoomPosition(targetPos.x,targetPos.y,targetPos.roomName))
             return ERR_NOT_IN_RANGE
-        }else return OK
+        }else {
+            if (!avoidBarrior) return OK
+            var vacantDirection = getVacantPlace(this.pos,targetPos)
+            if (!vacantDirection || vacantDirection == "stay") return OK
+            else this.move(vacantDirection)
+            return ERR_NOT_IN_RANGE
+        }
     },
-    _Move(targetPos, accAdj = false){
+    _Move(targetPos, accAdj = false,avoidBarrior = false){
         if (this.pos.x != targetPos.x || this.pos.y != targetPos.y || this.pos.roomName != targetPos.roomName){
             this.travelTo(new RoomPosition(targetPos.x,targetPos.y,targetPos.roomName))
-            if (accAdj && utils.adjacentPos(this.pos,targetPos)) return OK
-            else return ERR_NOT_IN_RANGE
+            if (accAdj && utils.adjacentPos(this.pos,targetPos)) {
+                if (!avoidBarrior) return OK
+                var vacantDirection = getVacantPlace(this.pos,targetPos)
+                if (!vacantDirection || vacantDirection == "stay") return OK
+                else this.move(vacantDirection)
+                return ERR_NOT_IN_RANGE
+            }else return ERR_NOT_IN_RANGE
         }else return OK
     },
     _boost(){
@@ -112,18 +169,18 @@ const creepRunExtensions = {
             
             if (taskType === "upgradeController" && global.links[this.memory.home].upgrade.length > 0) chosenObject = global.links[this.memory.home].upgrade[0]
             else if (taskType === "transfer" && global.links[this.memory.home].charges.length > 0) chosenObject = global.links[this.memory.home].charges[0]
-            else if (taskType === "build" && Game.rooms[this.memory.home].storage && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
-            else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && Game.rooms[this.memory.home].storage && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
+            else if (taskType === "build" && buildConfig.notUtilsStorage.indexOf(this.memory.home) < 0 && hasEnergy(Game.rooms[this.memory.home].storage,buildConfig.baseReserveEnergy)) chosenObject = Game.rooms[this.memory.home].storage
+            else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
             else if (hasEnoughEnergyContainers.length > 0) chosenObject = hasEnoughEnergyContainers[0]
             else if (hasEnergyContainers.length > 0) chosenObject = hasEnergyContainers[0]
-            else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && Game.rooms[this.memory.home].terminal && hasEnergy(Game.rooms[this.memory.home].terminal,terminalConfig.baseReservedEnergy)) chosenObject = Game.rooms[this.memory.home].terminal
-            else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && Game.rooms[this.memory.home].factory && hasEnergy(Game.rooms[this.memory.home].factory)) chosenObject = Game.rooms[this.memory.home].factory
-            else if (Game.rooms[this.memory.home].storage && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
-            else if (Game.rooms[this.memory.home].terminal && hasEnergy(Game.rooms[this.memory.home].terminal)) this.memory.get.getTarget = Game.rooms[this.memory.home].terminal.id
+            else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && hasEnergy(Game.rooms[this.memory.home].terminal,terminalConfig.baseReservedEnergy)) chosenObject = Game.rooms[this.memory.home].terminal
+            else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && hasEnergy(Game.rooms[this.memory.home].factory)) chosenObject = Game.rooms[this.memory.home].factory
+            else if (hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
+            else if (hasEnergy(Game.rooms[this.memory.home].terminal)) this.memory.get.getTarget = Game.rooms[this.memory.home].terminal.id
             else{
                 var droppedEnergys = this.pos.findClosestByRange(FIND_DROPPED_RESOURCES,(r)=>r.resourceType === RESOURCE_ENERGY)
                 if (droppedEnergys) chosenObject = droppedEnergys
-                else if (this.memory["_tmp"]["bodyAnalysis"]["work"]){
+                else if (this.memory["_tmp"]["bodyAnalysis"]["work"] && this.memory["_tmp"]["bodyAnalysis"]["work"][1] > 0){
                     var activeSources = this.pos.findClosestByRange(FIND_SOURCES_ACTIVE)
                     if (activeSources) chosenObject = activeSources
                 }
@@ -360,6 +417,8 @@ const creepRunExtensions = {
             else for (var carry in this.store) feedback = this.transfer(Game.getObjectById(taskInfo.targetID),carry)
 
             if (feedback === OK){
+                taskInfo.targetID = undefined
+                taskInfo.targetPos = undefined
                 if (taskInfo.data.amount <= 0) return ERR_DELETE
                 if (taskInfo.settings.changeable) return ERR_RENEW
                 return OK
@@ -381,7 +440,7 @@ const creepRunExtensions = {
             
             var feedback = this[taskType](target)
             
-            if (feedback === ERR_NOT_IN_RANGE) this["_adjMove"](taskInfo.targetPos)
+            if (feedback === ERR_NOT_IN_RANGE) this["_adjMove"](taskInfo.targetPos,avoidBarrior = true)
             else if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
             else if (feedback === ERR_NOT_ENOUGH_RESOURCES && taskInfo.settings.changeable) {
                 this.memory.working = false
@@ -401,28 +460,70 @@ const creepRunExtensions = {
     _upgrade(subTaskType,signals){
         return this._work("upgradeController",subTaskType,signals)
     },
+    _travel(subTaskType,signals){
+        const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
+        if (!taskInfo.data.roomList) taskInfo.data.roomList = []
+        if (!taskInfo.targetPos){
+            if (taskInfo.data.roomList.length == 0){
+                var roomName = taskInfo.data.targetRoom
+                if (roomName.indexOf(',') >= 0) taskInfo.data.roomList = roomName.split(",")
+                else if (roomName.charAt(0) == "W" || roomName.charAt(0) == "w" ||
+                        roomName.charAt(0) == "S" || roomName.charAt(0) == "s") taskInfo.data.roomList = [roomName]
+                else{
+                    if (!observerConfig[this.memory.home] || observerConfig[this.memory.home].length == 0) return ERR_DELETE
+                    taskInfo.data.roomList = [].concat(observerConfig[this.memory.home])
+                }
+            }
+            if (taskInfo.data.roomList.length > 0){
+                for (var i = 0; i < taskInfo.data.roomList.length;i++){
+                    if (!Game.rooms[taskInfo.data.roomList[i]]){
+                        taskInfo.targetPos = new RoomPosition(15,15,taskInfo.data.roomList[i])
+                        taskInfo.data.roomList.splice(i,1)
+                        break
+                    }
+                }
+            }
+            if (!taskInfo.targetPos) taskInfo.data.roomList = []
+        }
+        if (taskInfo.targetPos){
+            this["_Move"](taskInfo.targetPos)
+            if (this.room.name == taskInfo.targetPos.roomName) taskInfo.targetPos = undefined 
+            return OK
+        }
+    },
     _pickup(subTaskType,signals){
+        const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
         if (!this.memory.working) {
-            const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
             this.initTask()
-            var target = Game.getObjectById(taskInfo.targetID)
-            if (this.room.name === taskInfo.targetPos.roomName && !target) return FINISH
+            if (!taskInfo.targetID) return ERR_DELETE
+
+            if (!utils.canGetObjectById(taskInfo.targetID,taskInfo.targetPos,this.pos)){
+                taskInfo.targetID = undefined
+                taskInfo.targetPos = undefined
+                return ERR_REPEAT
+            }
+            
             if (this["_adjMove"](taskInfo.targetPos) === ERR_NOT_IN_RANGE) return OK
-            var feedback = this.pickup(Game.getObjectById(taskInfo.targetID))
+
+            var target = Game.getObjectById(taskInfo.targetID)
+            var feedback = this.pickup(target)
+
             if (feedback === OK) this.memory.working = true
             else if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
         }
         if (this.memory.working) {
-            if (!Game.rooms[this.memory.home].storage) return FINISH
-            if (!utils.adjacentPos(this.pos,Game.rooms[this.memory.home].storage.pos)) this["_adjMove"](Game.rooms[this.memory.home].storage.pos)
-            var feedback;
+            if (!Game.rooms[this.memory.home].storage) return ERR_DELETE
+            
+            var targetPos = Game.rooms[this.memory.home].storage.pos
+            if (this["_adjMove"](targetPos) == ERR_NOT_IN_RANGE) return OK
+
+            var feedback = undefined;
             for (var carry in this.store) feedback = this.transfer(Game.rooms[this.memory.home].storage,carry)
-            const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
+
             this.memory.working = false
             if (feedback === OK && !taskInfo.settings.changeable) return OK
             else if (feedback === OK && taskInfo.settings.changeable) return ERR_RENEW
             else if (feedback === ERR_FULL) return ERR_DELETE
-            else if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
         }
     },
     _defend(subTaskType,signals){
@@ -438,36 +539,41 @@ const creepRunExtensions = {
             return OK
         }
         if (subTaskType === "harvest"){
-            const target = Game.getObjectById(taskInfo.data.target)
-            if (!taskInfo.data.targetPos) taskInfo.data.targetPos = target.pos
-            if (this["_adjMove"](taskInfo.data.targetPos) === ERR_NOT_IN_RANGE) return OK
+            if (!taskInfo.targetID) taskInfo.targetID = taskInfo.data.target
+            const target = Game.getObjectById(taskInfo.targetID)
+            if (!taskInfo.targetPos) taskInfo.targetPos = target.pos
+
+            if (this["_adjMove"](taskInfo.targetPos) === ERR_NOT_IN_RANGE) return OK
+            
             const bodySituation = utils.analyseCreep(this.id)
-            if (bodySituation["move"][1] === 0 && bodySituation["attack"][1] / (bodySituation["attack"][0] * 100) <= 0.5) return OK
+            if (bodySituation["move"][1] === 0 && bodySituation["attack"][1] / bodySituation["attack"][0] <= 0.5) return OK
+            
             var feedback = this.attack(target)
-            if (feedback === ERR_INVALID_TARGET) return FINISH
+            if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
         }else if (subTaskType === "heal"){
-            if (taskInfo.data.target === "creep") taskInfo.data.target = signals["creep"]
-            this.moveTo(Game.getObjectById(taskInfo.data.target))
-            const masterSituation = utils.analyseCreep(taskInfo.data.target)
-            if (masterSituation["attack"][3] === true || masterSituation["move"][3] === true){
-                this.heal(Game.getObjectById(taskInfo.data.target))
-            }else{
-                this.heal(this)
-            }
+            if (!Game.getObjectById(taskInfo.targetID)) taskInfo.targetID = signals["creep"]
+            var target = Game.getObjectById(taskInfo.targetID)
+            this.moveTo(target)
+
+            const masterSituation = utils.analyseCreep(taskInfo.targetID)
+            if (masterSituation["attack"][2] === true || masterSituation["move"][2] === true) this.heal(target)
+            else this.heal(this)
         }else if (subTaskType === "claim"){
-            if (!Game.rooms[taskInfo.data.targetRoom].controller || Game.rooms[taskInfo.data.targetRoom].controller.my) return OK
+            if (!Game.rooms[taskInfo.data.targetRoom].controller) return OK
             const controller = Game.rooms[taskInfo.data.targetRoom].controller
+            if (controller.my) {this.signController(controller,"");return OK}
+
             if (this["_adjMove"](controller.pos) === ERR_NOT_IN_RANGE) return OK
             if (!controller.my && controller.owner){
                 this.attackController(controller)
             }else{
-                if (claimRoomConfig.find(taskInfo.data.targetRoom)){
+                if (claimRoomConfig.indexOf(taskInfo.data.targetRoom) >= 0){
                     var feedback = this.claimController(controller)
-                    if (feedback === ERR_GCL_NOT_ENOUGH) this.reserveController(controller)
+                    if (feedback === ERR_GCL_NOT_ENOUGH) {this.reserveController(controller);this.signController(controller,"Reserved by BoosterKevin.")}
                 }else this.reserveController(controller)
             }
         }else if (subTaskType === "attack"){
-            if (!taskInfo.data.targetID){
+            if (!taskInfo.targetID){
                 const targetRoom = taskInfo.data.targetRoom
                 if (!taskInfo.data.target){
                     const targetCreeps = Game.rooms[targetRoom].find(FIND_HOSTILE_CREEPS)
@@ -477,24 +583,24 @@ const creepRunExtensions = {
                     if (targetTowers.length > 0) chosenTarget = targetTowers[0]
                     else if (targetCreeps.length > 0) chosenTarget = targetCreeps[0]
                     else if (targetSpawns.length > 0) chosenTarget = targetSpawns[0]
-                    taskInfo.data.targetID = chosenTarget.id
+                    taskInfo.targetID = chosenTarget.id
                 }
             }
-            if (taskInfo.data.targetID){
-                const target = Game.getObjectById(taskInfo.data.targetID)
-                if (this.attack(target) === ERR_NOT_IN_RANGE) this.moveTo(target)
-            }else{
-                return FINISH
-            }
+            if (taskInfo.targetID){
+                const target = Game.getObjectById(taskInfo.targetID)
+                var feedback = this.attack(target)
+                if (feedback === ERR_NOT_IN_RANGE) this.moveTo(target)
+                else if (feedback === ERR_INVALID_TARGET) taskInfo.targetID = undefined
+            }else return FINISH
         }
         return OK
     },
-    toDeath(primary = false,canGetTask = true){
+    toDeath(primary = false,canGetTask = false){
         if (!this.isIdle()) {
             if (primary) this.renewTask()
             else this.finishTask()
         }
-        if (canGetTask && !this.memory.reSpawn) {
+        if (!this.memory.reSpawn && (this.getTask(dry = true) || canGetTask)) {
             this.memory.reSpawn = true
             var boostCompounds = creepConfig.boosts[this.memory.role]
             if (!boostCompounds) boostCompounds = []

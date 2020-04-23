@@ -30,8 +30,7 @@ module.exports = function(){
         for (var primaryCreep of creeps[primaryCreepRole]){
 
             if (primaryCreep.dying()){
-                if (!primaryCreep.isIdle() || primaryCreep.getTask(true)) primaryCreep.toDeath(true,true)
-                else primaryCreep.toDeath(true,false)
+                primaryCreep.toDeath(true)
                 continue
             }
 
@@ -57,7 +56,7 @@ module.exports = function(){
                 if (feedback === FINISH) primaryCreep.finishTask()
                 else if (feedback === ERR_RENEW) primaryCreep.renewTask()
                 else if (feedback === ERR_DELETE) primaryCreep.deleteTask()
-            }
+            }else primaryCreep.Invisible()
         }
 
         for (var i = 1; i < groupRoles.length;i++){
@@ -65,9 +64,10 @@ module.exports = function(){
 
             for (var creep of creeps[servantCreepRole]){
                 const randomPrimaryCreep = randomElement(creeps[primaryCreepRole])
+                if (!randomPrimaryCreep) continue
 
                 if (creep.dying()){
-                    if (!primaryCreep.isIdle() || primaryCreep.getTask(true)) creep.toDeath(canGetTask = true)
+                    if (!primaryCreep.isIdle() || primaryCreep.getTask(dry = true)) creep.toDeath(canGetTask = true)
                     else creep.toDeath(canGetTask = false)
                     continue
                 }
@@ -77,7 +77,7 @@ module.exports = function(){
                         
                 if (creep.isIdle()){
                     var primaryTaskInfo = Game.rooms[this.memory.home].taskInfo(randomPrimaryCreep.memory.taskFingerprint)
-                    var taskList = utils.analyseTaskList(creepConfig.groupAcceptedTask[groupType][creep.memory.role])
+                    var taskList = utils.analyseTaskList(creepConfig.groupAcceptedTask[groupType][creep.memory.role][0])
                     var mainTask = taskList[0], subTask = taskList[1]
 
                     if (mainTask === "attack"){
@@ -113,7 +113,7 @@ module.exports = function(){
                     if (feedback === FINISH) creep.finishTask()
                     else if (feedback === ERR_RENEW) creep.renewTask()
                     else if (feedback === ERR_DELETE) creep.deleteTask()
-                }
+                }else creep.Invisible()
             }
         }
     }

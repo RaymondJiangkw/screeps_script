@@ -81,8 +81,10 @@ const utilsCollection = {
         }
         return result
     },
-    getClosetSuitableRoom:function(roomName,controllerLevel){
+    getClosetSuitableRoom:function(roomName,controllerLevel,haveStorage = false){
         var homes = _.filter(global.rooms.my,(r)=>Game.rooms[r].controller.level >= controllerLevel)
+        if (haveStorage) homes = _.filter(homes,(h)=>h.storage)
+        homes = _.map(homes,h => h.name)
         homes.sort((roomName1,roomName2)=>Game.map.getRoomLinearDistance(roomName1,roomName) - Game.map.getRoomLinearDistance(roomName2,roomName))
         return homes[0]
     },
@@ -159,7 +161,11 @@ const utilsCollection = {
         return dx + dy;
     },
     canGetObjectById:function(targetID,targetPos,currentPos){
-        if (currentPos.roomName !== targetPos.roomName && !Game.rooms[targetPos.roomName]) return "unsure"
+        try {
+            if (currentPos.roomName !== targetPos.roomName && !Game.rooms[targetPos.roomName]) return "unsure"
+        } catch (error) {
+            return false
+        }
         if (Game.getObjectById(targetID)) return true
         else return false
     },
@@ -168,6 +174,6 @@ const utilsCollection = {
         if (_taskList[1]) _taskList[1] = _taskList[1].split('|')
         else _taskList[1] = _default
         return _taskList
-    }
+    },
 }
 module.exports = utilsCollection

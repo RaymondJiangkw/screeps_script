@@ -17,7 +17,7 @@ module.exports = function(){
             if (!creepsCollection[role]) creepsCollection[role] = []
         }
         // Harvest Task
-        if (Game.rooms[roomName].memory.task["harvest"] && creepsCollection["harvester"].length < Game.rooms[roomName].memory.task["harvest"].length){
+        if (Game.rooms[roomName].memory.task["harvest"] && creepsCollection["harvester"].length < Game.rooms[roomName].memory.task["_harvest"].length){
             for (var fingerprint of Game.rooms[roomName].memory.task["harvest"]){
                 var groupType = undefined
                 if (subTaskType(roomName,fingerprint) === "remote") groupType = "remoteHarvest"
@@ -34,7 +34,7 @@ module.exports = function(){
         if (Game.rooms[roomName].memory.task["upgrade"] && creepsCollection["upgrader"].length === 0) generateSpawnTask(roomName,"pureUpgrader");
         
         // Defend Task
-        if (Game.rooms[roomName].memory.task["defend"] && creepsCollection["defender"].length < Game.rooms[roomName].memory.task["defend"].length) generateSpawnTask(roomName,"Defend");
+        if (Game.rooms[roomName].memory.task["defend"] && creepsCollection["defender"].length < Game.rooms[roomName].memory.task["_defend"].length) generateSpawnTask(roomName,"Defend");
         
         // Build Task
         if (Game.rooms[roomName].memory.task["build"] && Game.rooms[roomName].memory.task["build"].length > 0 && creepsCollection["worker"].length === 0) generateSpawnTask(roomName,"pureWorker");
@@ -54,8 +54,11 @@ module.exports = function(){
             if (localRepairCnt > 0 && pureRepairer.length === 0) generateSpawnTask(roomName,"pureRepairer");
         }
 
+        // Travel Task
+        if (Game.rooms[roomName].memory.task["travel"] && creepsCollection["traveler"].length < Game.rooms[roomName].memory.task["_travel"].length) generateSpawnTask(roomName,"Travel")
+
         // Attack Task
-        if (Game.rooms[roomName].memory.task["attack"] && creepsCollection["attacker"].length < Game.rooms[roomName].memory.task["attack"].length){
+        if (Game.rooms[roomName].memory.task["attack"] && creepsCollection["attacker"].length < Game.rooms[roomName].memory.task["_attack"].length){
             for (var fingerprint of Game.rooms[roomName].memory.task["attack"]){
                 var groupType = undefined
                 if (subTaskType(roomName,fingerprint) === "attack") groupType = "Attack"

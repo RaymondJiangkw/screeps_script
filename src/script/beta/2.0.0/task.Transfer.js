@@ -128,6 +128,7 @@ module.exports = function() {
     for (var roomName of global.rooms.observed){
         if (Game.rooms[roomName].controller && Game.rooms[roomName].owner) continue
         const home = utils.getClosetSuitableRoom(roomName,7)
+        if (!home) continue
         for (var container of Game.rooms[roomName].containers){
             if (container.store.getUsedCapacity() >= 1000){
                 Game.rooms[home].AddTransferTask("advanced",container.id,Game.rooms[home].storage.id,"exhaust",fromRoom = roomName)

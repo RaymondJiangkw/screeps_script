@@ -1,13 +1,15 @@
 const utils = require('utils')
+const observerConfig = require('configuration.Observer')
 module.exports = function() {
     if (!global.task.build) global.task.build = {}
     for (var roomName of global.rooms.my){
         if (Game.rooms[roomName].buildTargets.length > 0) Game.rooms[roomName].AddBuildTask("build")
     }
-    for (var roomName of global.rooms.observed){
+    for (var roomName of observerConfig.dominance){
         if (Game.rooms[roomName].controller && Game.rooms[roomName].owner) continue
         if (!global.task.build[roomName]) global.task.build[roomName] = []
         var home = utils.getClosetSuitableRoom(roomName,7)
+        if (!home) continue
         const constructionSites = Game.rooms[roomName].find(FIND_CONSTRUCTION_SITES)
         for (var constructionSite of constructionSites){
             if (global.task.build[roomName].indexOf(constructionSite.id) >= 0) continue

@@ -125,13 +125,18 @@ const roomTaskExtension = {
         const data = {target}
         return this.AddTask("defend","default",data,groupsNum,changeable,silence,getRepeat)
     },
-    AddAttackTask(subTaskType,targetRoom,target,routes,groupsNum = Infinity,changeable = false,silence = false,getRepeat = false){
+    AddAttackTask(subTaskType,targetRoom,target = undefined,routes = [],groupsNum = Infinity,changeable = false,silence = false,getRepeat = false){
         const data = {targetRoom,target,routes}
         return this.AddTask("attack",subTaskType,data,groupsNum,changeable,silence,getRepeat)
     },
     AddPickUpTask(targetID,targetPos,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
+        if (!this.storage || this.storage.store.getFreeCapacity() == 0) return undefined
         const data = {targetID,targetPos}
         return this.AddTask("pickup","default",data,groupsNum,changeable,silence,getRepeat)
+    },
+    AddTravelTask(targetRoom,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
+        const data = {targetRoom,roomList:[]}
+        return this.AddTask("travel","default",data,groupsNum,changeable,silence,getRepeat)
     },
     AddSpawnTask(role,components,groupType,groupName,boostCompounds,subTaskType = "default",silence = false,getRepeat = false){
         const data = {
