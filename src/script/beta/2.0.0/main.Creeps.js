@@ -28,12 +28,12 @@ module.exports = function(){
         if (creeps[primaryCreepRole].length === 0) continue
 
         for (var primaryCreep of creeps[primaryCreepRole]){
-
+            if (primaryCreep.spawning) continue
             if (primaryCreep.dying()){
                 primaryCreep.toDeath(true)
                 continue
             }
-
+            
             if (primaryCreep.isIdle()) primaryCreep.getTask()
 
             if (primaryCreep._boost() === OK) continue
@@ -63,6 +63,7 @@ module.exports = function(){
             const servantCreepRole = groupRoles[i]
 
             for (var creep of creeps[servantCreepRole]){
+                if (creep.spawning) continue
                 const randomPrimaryCreep = randomElement(creeps[primaryCreepRole])
                 if (!randomPrimaryCreep) continue
 

@@ -2,6 +2,7 @@ const utils = require('utils')
 module.exports = function() {
     for (var roomName of global.rooms.my) {
         var cachedResources = Object.keys(global.containers[roomName].map)
+        // console.log(cachedResources)
         if (cachedResources.length > 0){
             for (var resourceId of cachedResources){
                 var cachedResource = Game.getObjectById(resourceId)
@@ -20,6 +21,7 @@ module.exports = function() {
         }
     }
     for (var roomName of global.rooms.observed) {
+        // console.log("observed",roomName)
         const deposits = ["mists","biomasss","metals","silicons"]
         for (var depositType of deposits){
             var home = utils.getClosetSuitableRoom(roomName,4,haveStorage = true)

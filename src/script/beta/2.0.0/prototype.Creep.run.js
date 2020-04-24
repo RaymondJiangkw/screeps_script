@@ -55,7 +55,7 @@ const getVacantPlace = function(pos,adjPos = undefined) {
 
 const hasEnergy = function(object,amount = 0){
     if (!object) return false
-    return object.store.getUsedCapacity(RESOURCE_ENERGY) >= amount
+    return object.store.getUsedCapacity(RESOURCE_ENERGY) > amount
 }
 const getLab = function(roomName,resourceType) {
 
@@ -185,7 +185,6 @@ const creepRunExtensions = {
                     if (activeSources) chosenObject = activeSources
                 }
             }
-
             if (chosenObject) {this.memory.get.getTarget = chosenObject.id;this.memory.get.getTargetPos = chosenObject.pos}
         }
         if (this.memory.get.getTarget && this.memory.get.getTargetPos) {
@@ -363,6 +362,7 @@ const creepRunExtensions = {
                             return ERR_DELETE
                         }
                     }else this.memory.get.getTarget = taskInfo.data.from
+                    if (!Game.getObjectById(this.memory.get.getTarget)) return ERR_DELETE
                     this.memory.get.getTargetPos = Game.getObjectById(this.memory.get.getTarget).pos
                 }
                 if (!utils.canGetObjectById(this.memory.get.getTarget,this.memory.get.getTargetPos,this.pos)) {
@@ -383,7 +383,7 @@ const creepRunExtensions = {
                     else feedback = this._withdraw(this.memory.get.getTarget,taskInfo.data.resourceType,taskInfo.data.amount)
 
                     if (typeof(taskInfo.data.amount) === "number") {taskInfo.data.amount -= feedback[1];feedback = feedback[0]}
-
+                    
                     if (feedback === OK || feedback === ERR_FULL) {
                         this.memory.working = true;
                         this.memory.get.getTarget = undefined
@@ -407,14 +407,19 @@ const creepRunExtensions = {
                     if (potentialTargets.length > 0) taskInfo.targetID = potentialTargets[0].id
                     else return ERR_DELETE
                 }else taskInfo.targetID = taskInfo.data.to
+                if (!Game.getObjectById(taskInfo.targetID)) return ERR_DELETE
                 taskInfo.targetPos = Game.getObjectById(taskInfo.targetID).pos
             }
+            
+            var target = Game.getObjectById(taskInfo.targetID)
+            if (target.store.getFreeCapacity() == 0) return ERR_DELETE
+            
             var moveFeedback =  this["_adjMove"](taskInfo.targetPos)
             if (moveFeedback === ERR_NOT_IN_RANGE) return OK
 
             var feedback = undefined;
-            if (taskInfo.data.resourceType) feedback = this.transfer(Game.getObjectById(taskInfo.targetID),taskInfo.data.resourceType)
-            else for (var carry in this.store) feedback = this.transfer(Game.getObjectById(taskInfo.targetID),carry)
+            if (taskInfo.data.resourceType) feedback = this.transfer(target,taskInfo.data.resourceType)
+            else for (var carry in this.store) feedback = this.transfer(target,carry)
 
             if (feedback === OK){
                 taskInfo.targetID = undefined
@@ -461,6 +466,8 @@ const creepRunExtensions = {
         return this._work("upgradeController",subTaskType,signals)
     },
     _travel(subTaskType,signals){
+        if(this.hits < this.hitsMax) this.heal(this)
+        
         const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
         if (!taskInfo.data.roomList) taskInfo.data.roomList = []
         if (!taskInfo.targetPos){
@@ -597,8 +604,12 @@ const creepRunExtensions = {
     },
     toDeath(primary = false,canGetTask = false){
         if (!this.isIdle()) {
-            if (primary) this.renewTask()
-            else this.finishTask()
+//            console.log(this,this.memory.taskFingerprint)
+            const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
+            if (primary) {
+                if (taskInfo.taskType == "harvest" && taskInfo.subTaskType == "local") this.deleteTask()
+                else this.renewTask()
+            }else this.finishTask()
         }
         if (!this.memory.reSpawn && (this.getTask(dry = true) || canGetTask)) {
             this.memory.reSpawn = true
@@ -618,16 +629,20 @@ const creepRunExtensions = {
         }
     },
     dying(){
-        if (this.isIdle()) return this.ticksToLive <= 3
+        const TRANSFER_DYING_TICK = 20
+        const COMMON_DYING_TICK = 5
         if (this.memory.role === "transferer"){
+            if (this.isIdle()) return this.ticksToLive <= TRANSFER_DYING_TICK
             const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
-            if (taskInfo.subTaskType === "local") return this.ticksToLive <= 10
-            if (taskInfo.subTaskType === "remote") {
-                const TICKS_PER_ROOM = 38
-                const distance = utils.calcRoomsDistance(this.memory.home,taskInfo.data.fromRoom)
-                return this.ticksToLive <= distance * TICKS_PER_ROOM
+            if (taskInfo.taskType === "transfer"){
+                if (taskInfo.subTaskType === "remote") {
+                    const TICKS_PER_ROOM = 38
+                    const distance = utils.calcRoomsDistance(this.memory.home,taskInfo.data.fromRoom)
+                    return this.ticksToLive <= distance * TICKS_PER_ROOM
+                }
             }
-        }else return this.ticksToLive <= 5
+            return this.ticksToLive <= TRANSFER_DYING_TICK
+        }else return this.ticksToLive <= COMMON_DYING_TICK
     },
     run(signals = {}){
         if (!this.memory.get) this.memory.get = {}

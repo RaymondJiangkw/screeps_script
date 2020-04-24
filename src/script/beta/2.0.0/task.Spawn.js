@@ -28,7 +28,9 @@ module.exports = function(){
         
         // Transfer Task
         const pureTransferer = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "pureTransfer")
-        if (Game.rooms[roomName].memory.task["transfer"] && pureTransferer.length === 0) generateSpawnTask(roomName,"pureTransfer");
+        var transferTaskLength = 0
+        if (Game.rooms[roomName].memory.task["_transfer"]) transferTaskLength = Game.rooms[roomName].memory.task["_transfer"].length
+        if (Game.rooms[roomName].memory.task["transfer"] && (pureTransferer.length === 0 || pureTransferer.length < Math.floor(Math.log(transferTaskLength)))) generateSpawnTask(roomName,"pureTransfer");
         
         // Upgrade Task
         if (Game.rooms[roomName].memory.task["upgrade"] && creepsCollection["upgrader"].length === 0) generateSpawnTask(roomName,"pureUpgrader");

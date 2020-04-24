@@ -27,12 +27,14 @@ const creepTaskExtension = {
         }
     },
     getTask(dry = false){
+//        console.log(this,"get",dry)
         const groupType = this.memory.group.type
         const acceptedTasks = creepConfig.groupAcceptedTask[groupType][this.memory.role]
+//        console.log(this,groupType,acceptedTasks)
         var majorTasks = _.filter(acceptedTasks,(t)=>t.charAt(0) != "-" && t.charAt(0) != "*")
         var auxiliaryTasks = _.filter(acceptedTasks,(t)=>t.charAt(0) == "*")
-        majorTasks = _.shuffle(majorTasks)
-        auxiliaryTasks = _.shuffle(auxiliaryTasks)
+//        majorTasks = _.shuffle(majorTasks)
+//        auxiliaryTasks = _.shuffle(auxiliaryTasks)
         for (var majorTask of majorTasks){
             var taskList = utils.analyseTaskList(majorTask,"all")
             var fingerprint = Game.rooms[this.memory.home].getTask(taskList[0],taskList[1],dry = dry)
@@ -57,10 +59,12 @@ const creepTaskExtension = {
         return false
     },
     renewTask(){
+//        console.log(this,"renew",this.memory.taskFingerprint)
         Game.rooms[this.memory.home].renewTask(this.memory.taskFingerprint)
         this.memory.taskFingerprint = null
     },
     finishTask(){
+//        console.log(this,"finish",this.memory.taskFingerprint)
         Game.rooms[this.memory.home].finishTask(this.memory.taskFingerprint)
         this.memory.taskFingerprint = null
     },

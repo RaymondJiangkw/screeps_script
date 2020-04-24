@@ -142,10 +142,8 @@ module.exports = function() {
             var roomLevel = Game.rooms[roomName].controller.level.toString()
             global.towerRepairs[roomName].common = [].concat(roads,containers)
             global.towerRepairs[roomName].ramparts = _.filter(Game.rooms[roomName].ramparts,(rampart)=>rampart.hits/rampart.hitsMax <= configTower.rampart[roomLevel])
-            global.towerRepairs[roomName].walls = _.filter(Game.rooms[roomName].walls,(wall)=>wall.hits/wall.hitsMax <= configTower.wall[roomLevel])
-            global.towerRepairs[roomName].common.sort(hitsCompare)
-            global.towerRepairs[roomName].walls.sort(hitsCompare)
-            global.towerRepairs[roomName].ramparts.sort(hitsCompare)
+            global.towerRepairs[roomName].walls = _.filter(Game.rooms[roomName].constructedWalls,(wall)=>wall.hits/wall.hitsMax <= configTower.wall[roomLevel])
+            // console.log(global.towerRepairs[roomName].walls,Game.rooms[roomName].walls)
         }
     }
 

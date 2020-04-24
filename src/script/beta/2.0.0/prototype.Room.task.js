@@ -98,7 +98,7 @@ const roomTaskExtension = {
         }
         return fingerprint
     },
-    AddTransferTask(subTaskType,from,to,resourceType,amount = "full",fromRoom = undefined,toRoom = undefined,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
+    AddTransferTask(subTaskType,from,to,resourceType = undefined,amount = "full",fromRoom = undefined,toRoom = undefined,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
         var toTarget = Game.getObjectById(to)
         if (toTarget && toTarget.store.getFreeCapacity() == 0) return undefined
         const data = {from,fromRoom,to,toRoom,resourceType,amount}

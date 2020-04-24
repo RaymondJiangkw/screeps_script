@@ -9,7 +9,7 @@ const creepConfiguration = {
         "attacker":{move:10,attack:40},
         "healer":{move:10,heal:30,move:10},
         "claimer":{move:1,claim:1},
-        "traveler":{move:1}
+        "traveler":{move:1,heal:1}
     },
     boosts:{
         "transferer":["KH","KH2O"],
@@ -19,7 +19,7 @@ const creepConfiguration = {
         "remoteHarvest":{"harvester":["harvest-remote"],"transferer":["-transfer-remote"]},
         "powerHarvest":{"attacker":["attack-harvest"],"healer":["-attack-heal"],"transferer":["-transfer-remote"]},
         "localHarvest":{"harvester":["harvest-local"]},
-        "pureTransfer":{"transferer":["pickup","transfer-core|defense|advanced"]},
+        "pureTransfer":{"transferer":["transfer-core","transfer-defense","pickup","transfer-advanced"]},
         "pureWorker":{"worker":["build","*repair-local","*upgrade"]},
         "pureRepairer":{"repairer":["repair-local","*upgrade"]},
         "remoteRepairer":{"repairer":["repair-remote"]},

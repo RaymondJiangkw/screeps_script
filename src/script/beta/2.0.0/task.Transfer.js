@@ -120,9 +120,9 @@ module.exports = function() {
 
         if (Game.rooms[roomName].storage && (!global.task.transfer[roomName]["tombExpirationTime"] || global.task.transfer[roomName]["tombExpirationTime"] <= Game.time)){
             global.task.transfer[roomName]["tombExpirationTime"] = Game.time + utils.getCacheExpiration()
-            var tombStones = Game.rooms[roomName].find(FIND_TOMBSTONES)
+            var tombStones = _.filter(Game.rooms[roomName].find(FIND_TOMBSTONES),(t)=>t.store.getUsedCapacity() > 0)
             tombStones.sort((a,b)=>b.store.getUsedCapacity() - a.store.getUsedCapacity())
-            for (var tombStone of tombStones) Game.rooms[roomName].AddTransferTask("advanced",tombStone.id,Game.rooms[roomName].storage.id,"exhaust")
+            for (var tombStone of tombStones) Game.rooms[roomName].AddTransferTask("advanced",tombStone.id,Game.rooms[roomName].storage.id,undefined,amount = "exhaust")
         }
     }
     for (var roomName of global.rooms.observed){
@@ -131,7 +131,7 @@ module.exports = function() {
         if (!home) continue
         for (var container of Game.rooms[roomName].containers){
             if (container.store.getUsedCapacity() >= 1000){
-                Game.rooms[home].AddTransferTask("advanced",container.id,Game.rooms[home].storage.id,"exhaust",fromRoom = roomName)
+                Game.rooms[home].AddTransferTask("advanced",container.id,Game.rooms[home].storage.id,amount = "exhaust",fromRoom = roomName)
             }
         }
     }
