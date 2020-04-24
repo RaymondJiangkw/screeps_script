@@ -150,6 +150,7 @@ const task = {
         if (!this.checkTask(taskType,roomName)) return undefined
         if (pos === undefined) pos = Game.spawns['Origin'].memory.task[taskType][roomName].ptr
         for (let i = pos; i >= 0;i--){
+            if (!Game.spawns['Origin'].memory.task[taskType][roomName].taskList[i]) continue
             if (Game.spawns['Origin'].memory.task[taskType][roomName].taskList[i].id === id){
                 return i
             }

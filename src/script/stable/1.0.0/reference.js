@@ -173,7 +173,8 @@ const referenceModule = {
             "W22N25":{
                 "travelW23N25":{
                     targetRoom:"W23N25",
-                    standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_ENERGY) >= 0.5 * 1000000",
+                    standard:"false",
+                    //standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_ENERGY) >= 0.5 * 1000000",
                     trigger:{
                         call:["Spawn","W22N25","spawnTraveler"],
                         condition:"Game.spawns['Origin'].memory.assess.access.creeps[hostRoom].travelers < Game.spawns['Origin'].memory.task.travel[hostRoom].taskList.length - 1"
@@ -218,7 +219,8 @@ const referenceModule = {
             "W21N24":{
                 "travelK":{
                     targetRoom:"W22N25",
-                    standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_KEANIUM) >= 30000",
+                    standard:"false",
+                    //standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_KEANIUM) >= 30000",
                     trigger:{
                         call:["Spawn","W21N24","spawnMineralTraveler"],
                         condition:"Game.spawns['Origin'].memory.assess.access.creeps[hostRoom].travelers < Game.spawns['Origin'].memory.task.travel[hostRoom].taskList.length - 1"
@@ -228,6 +230,23 @@ const referenceModule = {
                         structureType:STRUCTURE_STORAGE,
                         resourceType:RESOURCE_KEANIUM,
                         stopAmount:10000
+                    }
+                }
+            },
+            "W19N22":{
+                "travelEnergy":{
+                    targetRoom:"W21N24",
+                    //standard:"false",
+                    standard:"Game.rooms[targetRoom].storage && Game.rooms[targetRoom].storage.store.getUsedCapacity(RESOURCE_ENERGY) >= 600000",
+                    trigger:{
+                        call:["Spawn","W19N22","spawnEnergyTraveler"],
+                        condition:"Game.spawns['Origin'].memory.assess.access.creeps[hostRoom].travelers < Game.spawns['Origin'].memory.task.travel[hostRoom].taskList.length - 1"
+                    },
+                    params:{
+                        targetRoomName:"W21N24",
+                        structureType:STRUCTURE_STORAGE,
+                        resourceType:RESOURCE_ENERGY,
+                        stopAmount:400000
                     }
                 }
             }
@@ -314,6 +333,22 @@ const referenceModule = {
 					params:{
                         role:"traveler",
                         components:{carry:5,move:5},
+                        "_memory":{
+                            acceptedTask:["travel"],
+                            group:undefined
+                        }
+					}
+                },
+                "spawnEnergyTraveler":{
+					targetRoom:"W19N22",
+					standard:"false",
+					trigger:{
+						condition:"false",
+						call:["","",""]
+					},
+					params:{
+                        role:"traveler",
+                        components:{carry:10,move:10},
                         "_memory":{
                             acceptedTask:["travel"],
                             group:undefined
@@ -421,7 +456,7 @@ const referenceModule = {
         },
         normalJob:{
             harvester:"12-13-0-3-4-1-20-2-3",
-            builder:"12-15-13-1-0-4-20-2-12-13-15",
+            builder:"12-13-1-0-4-20-3-2-12-13-15",
             transferer:"13-11-13",
             upgrader:"16-12-13-2-16",
             repairer:"12-13-5-4-0-1-2-12-13",
@@ -434,21 +469,21 @@ const referenceModule = {
         },
         economyJob:{
             harvester:"15-12-13-0-4-3-1-2-15-12-13",
-            builder:"12-13-0-1-4-2-12-15-13",
+            builder:"12-13-0-1-4-3-2-12-15-13",
             repairer:"12-13-0-4-5-1-2-12-13",
             pickuper:"15-18-7-21-25-28-24-26-22-0-3",
             tower:"6-5",
         },
         repairJob:{
             harvester:"12-13-0-4-5-3-1-2-12-13",
-            builder:"12-13-4-1-0-5-2-12-13",
+            builder:"12-13-4-1-0-5-3-2-12-13",
             repairer:"15-12-13-5-4-0-1-2-12-13",
             pickuper:"18-7-21-25-15-28-24-26-22-4-3",
             tower:"6-5",
         },
         warJob:{
             harvester:"15-12-13-4-0-3-1-2-15-12-13",
-            builder:"12-13-4-1-0-2-12-15-13",
+            builder:"12-13-4-1-0-3-2-12-15-13",
             repairer:"12-13-4-0-5-1-2-12-13",
             pickuper:"15-18-7-21-25-28-24-26-22-4-3",
             tower:"6",
@@ -468,7 +503,7 @@ const referenceModule = {
             reservedEnergy:0.2, // Energy should not be automatically sold in case of buying energy
         },
         sell:{ // transaction
-            sellingMineral:0.1,
+            sellingMineral:0.8,
             reservedEnergy:0.2,
             // These two are ordered, the former one will be sold first, the after ones will be sold 
             // when and only when the former ones have all been sold to a propriate degree
@@ -511,7 +546,10 @@ const referenceModule = {
                 "5":{},
                 "6":{
                     "pickuper":{
-                        "KH":3000
+                        "KH":1500
+                    },
+                    "traveler":{
+                        "KH":1500
                     }
                 },
                 "7":{

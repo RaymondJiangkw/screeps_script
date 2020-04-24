@@ -9,6 +9,16 @@ const roleJob = require('role.job')
 const roleLab = require('role.lab')
 const roleFactory = require('role.factory')
 const roleNuker = require('role.nuker')
+const stateScanner = function () {
+    if (Game.time % 20) return 
+    if (!Memory.stats) Memory.stats = {}
+    Memory.stats.gcl = (Game.gcl.progress / Game.gcl.progressTotal) * 100
+    Memory.stats.gclLevel = Game.gcl.level
+    Memory.stats.gpl = (Game.gpl.progress / Game.gpl.progressTotal) * 100
+    Memory.stats.gplLevel = Game.gpl.level
+    Memory.stats.cpu = Game.cpu.getUsed()
+    Memory.stats.bucket = Game.cpu.bucket
+}
 module.exports.loop = function () {
     console.log("")
     mountModule()
@@ -105,5 +115,6 @@ module.exports.loop = function () {
             roleNuker.run(roomName)
         }
     }
+    stateScanner()
 }
 

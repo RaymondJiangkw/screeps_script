@@ -82,7 +82,7 @@ const roleJob = {
             }
         }
         if (feedBack === JobOK && 
-            (creep.memory.hasBoosted.length === creep.memory.neededBoosted.length ||
+            (creep.memory.hasBoosted.length === creep.memory.neededBoosted.length || !Game.spawns['Origin'].memory.init.infoCompounds[roomName][creep.memory.boostDiffArr[0]]  ||
              Game.spawns['Origin'].memory.init.infoCompounds[roomName][creep.memory.boostDiffArr[0]].lab < 
               reference.production.lab.minBoostCompound * creep.memory.bodyParts[reference.production.lab.effect[creep.memory.boostDiffArr[0] ] ] ) ){
             feedBack = JobERR
