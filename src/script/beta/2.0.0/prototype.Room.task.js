@@ -1,5 +1,7 @@
 const utils = require('utils')
 const tailInsertTask = ["repair"]
+const taskPriority = require('configuration.taskPriority')
+const INFINITY = 32767
 module.exports = function () {
     _.assign(Room.prototype,roomTaskExtension)
 }
@@ -9,6 +11,19 @@ const roomTaskExtension = {
         if (!this.memory.task.info) this.memory.task.info = {}
         if (!this.memory.task[taskType]) this.memory.task[taskType] = []
         if (!this.memory.task["_" + taskType]) this.memory.task["_" + taskType] = []
+    },
+    refreshTask(){
+        /*if (!this.memory.task) this.memory.task = {}
+        for (var taskType in this.memory.task){
+            if (taskType == "spawn" || taskType == "_spawn" || taskType == "info") continue
+            for (var taskFingerprint of this.memory.task[taskType]){
+                if (this.memory.task.info[taskFingerprint]) delete this.memory.task.info[taskFingerprint]
+            }
+            delete this.memory.task[taskType]
+        }*/
+        this.memory.task = {}
+        for (var creep of Game.rooms[this.name].creeps) creep.memory.taskFingerprint = null
+        for (var spawn of Game.rooms[this.name].spawns) spawn.memory.taskFingerPrint = null
     },
     renewTask(fingerprint){
         if (!this.checkTaskExistence(fingerprint)) return
@@ -40,10 +55,11 @@ const roomTaskExtension = {
         if (this.memory.task.info[fingerprint]) return true
         return false
     },
-    searchTask(taskType,subTaskType){
+    searchTask(taskType,subTaskType = "all"){
+        if (!this.memory.task[taskType]) return []
         var result = []
         for (var fingerprint of this.memory.task[taskType]){
-            if (this.memory.task.info[fingerprint].subTaskType === subTaskType) result.push(fingerprint)
+            if (subTaskType == "default" || subTaskType == "all" || this.memory.task.info[fingerprint].subTaskType === subTaskType) result.push(fingerprint)
         }
         return result
     },
@@ -56,25 +72,41 @@ const roomTaskExtension = {
         if (pos1 >= 0) this.memory.task[taskType].splice(pos1,1)
         if (pos2 >= 0) this.memory.task["_" + taskType].splice(pos2,1)
     },
-    sortTask(taskType,subTaskType){
-
-    },
-    getTask(taskType,subTaskType = "all",dry = false){
-        if (!this.memory.task[taskType] || this.memory.task[taskType].length == 0) return undefined
-        this.sortTask(taskType,subTaskType)
-        var i = 0;
-        if (subTaskType !== "all"){
-            for (i = 0; i < this.memory.task[taskType].length; i++){
-                const taskInfo = this.memory.task.info[this.memory.task[taskType][i]]
-                if (subTaskType.indexOf(taskInfo.subTaskType) >= 0) break
+    sortTask(taskType,taskList,priority_limit = INFINITY){
+        if (taskType === "spawn"){
+            taskList = _.filter(taskList,(f)=>{
+                const taskInfo = this.taskInfo(f)
+                return taskPriority["spawn"][taskInfo.data.memory.role][taskInfo.data.memory.group.type] <= priority_limit
+            })
+            const cmp = (f1,f2) => {
+                const taskInfo1 = this.taskInfo(f1)
+                const taskInfo2 = this.taskInfo(f2)
+                return taskPriority["spawn"][taskInfo1.data.memory.role][taskInfo1.data.memory.group.type] - taskPriority["spawn"][taskInfo2.data.memory.role][taskInfo2.data.memory.group.type]
             }
-            if (i === this.memory.task[taskType].length) return undefined
+            taskList.sort(cmp)
         }
+        return taskList
+    },
+    getTask(subject,taskType,subTaskType = "all",dry = false,priority_limit = INFINITY){
+        if (!this.memory.task[taskType] || this.memory.task[taskType].length == 0) return undefined
+        var potentialTaskList = _.filter(this.memory.task[taskType],(t)=>subTaskType == "all" || subTaskType.indexOf(this.memory.task.info[t].subTaskType) >= 0)
+        if (potentialTaskList.length === 0) return undefined
         if (dry) return true
-        const fingerprint = this.memory.task[taskType][i]
+        potentialTaskList.sort((t1,t2)=>{
+            const taskInfo1 = this.memory.task.info[t1]
+            const taskInfo2 = this.memory.task.info[t2]
+            var targetPos1 = taskInfo1.data.targetPos
+            var targetPos2 = taskInfo2.data.targetPos
+            var range1 = 0,range2 = 0
+            try {const pos = new RoomPosition(targetPos1.x,targetPos1.y,targetPos1.roomName);range1 = pos.getRangeTo(subject)} catch (error) {}
+            try {const pos = new RoomPosition(targetPos2.x,targetPos2.y,targetPos2.roomName);range2 = pos.getRangeTo(subject)} catch (error) {}
+            return range1 - range2
+        })
+        potentialTaskList = this.sortTask(taskType,potentialTaskList,priority_limit)
+        const fingerprint = potentialTaskList[0]
         this.memory.task.info[fingerprint].settings.receivedGroupsNum--;
         this.memory.task.info[fingerprint].settings.workingGroupsNum++;
-        if (this.memory.task.info[fingerprint].settings.receivedGroupsNum <= 0) this.memory.task[taskType].splice(i,1);
+        if (this.memory.task.info[fingerprint].settings.receivedGroupsNum <= 0) this.memory.task[taskType].splice(this.memory.task[taskType].indexOf(fingerprint),1);
         return fingerprint
     },
     AddTask(taskType,subTaskType,data,groupsNum,changeable,silence = false,getRepeat = false){
@@ -85,6 +117,7 @@ const roomTaskExtension = {
             if (getRepeat) return fingerprint
             else return false
         }
+        if (taskType === "spawn") console.log("AddTask",JSON.stringify(data))
         if (!silence) {this.memory.task[taskType].push(fingerprint);this.memory.task["_" + taskType].push(fingerprint);}
         this.memory.task.info[fingerprint] = {
             taskType,subTaskType,targetID:null,targetPos:null,
@@ -109,9 +142,9 @@ const roomTaskExtension = {
         return this.AddTask("harvest",subTaskType,data,groupsNum,changeable,silence,getRepeat)
     },
     // The priority of building is reflected by the order to create the constructionSites.
-    AddBuildTask(targetID,targetPos = undefined,groupsNum = Infinity,silence = false,getRepeat = false){
+    AddBuildTask(subTaskType,targetID,targetPos = undefined,groupsNum = Infinity,silence = false,getRepeat = false){
         const data = {targetID,targetPos}
-        return this.AddTask("build","default",data,groupsNum,true,silence,getRepeat)
+        return this.AddTask("build",subTaskType,data,groupsNum,true,silence,getRepeat)
     },
     AddRepairTask(subTaskType,targetID,targetPos = undefined,groupsNum = 1,silence = false,getRepeat = false){
         const data = {targetID,targetPos}
@@ -121,18 +154,18 @@ const roomTaskExtension = {
         const data = {targetID:this.controller.id}
         return this.AddTask("upgrade","default",data,Infinity,true,silence,getRepeat)
     },
-    AddDefendTask(target,groupsNum = Infinity,changeable = true,silence = false,getRepeat = false){
+    AddDefendTask(subTaskType,target,groupsNum = Infinity,changeable = true,silence = false,getRepeat = false){
         const data = {target}
-        return this.AddTask("defend","default",data,groupsNum,changeable,silence,getRepeat)
+        return this.AddTask("defend",subTaskType,data,groupsNum,changeable,silence,getRepeat)
     },
     AddAttackTask(subTaskType,targetRoom,target = undefined,routes = [],groupsNum = Infinity,changeable = false,silence = false,getRepeat = false){
         const data = {targetRoom,target,routes}
         return this.AddTask("attack",subTaskType,data,groupsNum,changeable,silence,getRepeat)
     },
-    AddPickUpTask(targetID,targetPos,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
+    AddPickUpTask(subTaskType,targetID,targetPos,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
         if (!this.storage || this.storage.store.getFreeCapacity() == 0) return undefined
         const data = {targetID,targetPos}
-        return this.AddTask("pickup","default",data,groupsNum,changeable,silence,getRepeat)
+        return this.AddTask("pickup",subTaskType,data,groupsNum,changeable,silence,getRepeat)
     },
     AddTravelTask(targetRoom,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
         const data = {targetRoom,roomList:[]}

@@ -1,4 +1,5 @@
 const Constants = {
+    username:"BoosterKevin",
     labFormula:{
         "OH":["H","O"],
         "ZK":["Z","K"],

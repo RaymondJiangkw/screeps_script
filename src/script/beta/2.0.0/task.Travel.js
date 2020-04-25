@@ -1,3 +1,4 @@
+const utils = require('utils')
 const observeConfig = require('configuration.Observer')
 module.exports = function() {
     for (var roomName of global.rooms.my){
@@ -6,7 +7,17 @@ module.exports = function() {
             if (observeConfig[roomName] && observeConfig[roomName].length > 0) Game.rooms[roomName].AddTravelTask("observerRooms")   
         }
         if (observeConfig["travel"][roomName]){
-            for (var rooms of observeConfig["travel"][roomName]) Game.rooms[roomName].AddTravelTask(rooms)
+            for (var rooms of observeConfig["travel"][roomName]) {
+                var roomList = utils.divideRoomList(rooms)
+                var isTravelNeeded = false
+                for (var room of roomList) {
+                    if (!Game.rooms[room]){
+                        isTravelNeeded = true;
+                        break;
+                    }
+                }
+                if (isTravelNeeded) Game.rooms[roomName].AddTravelTask(rooms)
+            }
         }
     }
 }

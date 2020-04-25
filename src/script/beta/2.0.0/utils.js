@@ -1,5 +1,7 @@
 const CACHE_TIMEOUT = 50;
 const CACHE_OFFSET  = 4;
+const constants = require('constants')
+const acceptableDepositCooldownTime = require('configuration.Deposit').acceptableLastCoolDown
 const SHA1 = require('fingerprint.Algorithm.sha1')
 const MD5 = require('fingerprint.Algorithm.md5')
 const utilsCollection = {
@@ -72,7 +74,15 @@ const utilsCollection = {
         }
         return result
     },
-    getComponentsList:function(availableEnergy,componentsObj){
+    getComponentsList:function(roomName,role,groupType,availableEnergy,componentsObj){
+        if (Game.rooms[roomName].energys.length < 2 && role === "upgrader"){
+            for (var component in componentsObj) componentsObj[component] = Math.ceil(componentsObj[component] * 0.5)
+        }
+        if (role === "harvester" && groupType === "remoteHarvest"){
+            componentsObj["work"] += 15
+            componentsObj["carry"] += 1
+            componentsObj["move"] += 8
+        }
         const energyDisCom = this._getComponentRatio(componentsObj)
         var result = []
         for (var component in componentsObj){
@@ -81,10 +91,10 @@ const utilsCollection = {
         }
         return result
     },
-    getClosetSuitableRoom:function(roomName,controllerLevel,haveStorage = false){
+    getClosetSuitableRoom:function(roomName,controllerLevel,haveStorage = false,binary_energy = false){
         var homes = _.filter(global.rooms.my,(r)=>Game.rooms[r].controller.level >= controllerLevel)
-        if (haveStorage) homes = _.filter(homes,(h)=>h.storage)
-        homes = _.map(homes,h => h.name)
+        if (haveStorage) homes = _.filter(homes,(h)=>Game.rooms[h].storage)
+        if (binary_energy) homes = _.filter(homes,(h)=>Game.rooms[h].energys.length == 2)
         homes.sort((roomName1,roomName2)=>Game.map.getRoomLinearDistance(roomName1,roomName) - Game.map.getRoomLinearDistance(roomName2,roomName))
         return homes[0]
     },
@@ -170,10 +180,29 @@ const utilsCollection = {
         else return false
     },
     analyseTaskList:function(taskList, _default = undefined){
+        if (taskList.charAt(0) == '-') taskList = taskList.slice(1)
         var _taskList = taskList.split('-')
         if (_taskList[1]) _taskList[1] = _taskList[1].split('|')
         else _taskList[1] = _default
         return _taskList
     },
+    ownRoom:function(roomName){
+        if (!Game.rooms[roomName]) return "unsure"
+        if (!Game.rooms[roomName].controller) return "neutral"
+        if (Game.rooms[roomName].controller.my) return true
+        if (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.username == constants.username) return "reserved"
+        if (Game.rooms[roomName].controller.owner && Game.rooms[roomName].controller.owner.username != constants.username) return false
+        return "neutral"
+    },
+    divideRoomList:function(roomName){
+        if (roomName.indexOf(',') >= 0) return roomName.split(",")
+        else if (roomName.charAt(0) == "W" || roomName.charAt(0) == "w" ||
+                 roomName.charAt(0) == "E" || roomName.charAt(0) == "e") return [roomName]
+        return undefined
+    },
+    getAcceptableCoolTime:function(home,targetRoom){
+        var dist = this.calcRoomsDistance(home,targetRoom)
+        return Math.ceil(acceptableDepositCooldownTime / dist)
+    }
 }
 module.exports = utilsCollection

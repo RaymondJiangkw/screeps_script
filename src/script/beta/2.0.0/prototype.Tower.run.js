@@ -3,7 +3,7 @@ const hitsCompare = function(objectA,objectB) {
     return objectA.hits/objectA.hitsMax - objectB.hits/objectB.hitsMax
 }
 module.exports = function (){
-    _.assign(Structure.prototype,towerExtension)
+    _.assign(StructureTower.prototype,towerExtension)
 }
 const towerExtension = {
     _repair(){
@@ -34,7 +34,7 @@ const towerExtension = {
             return true
         }
     },
-    towerRun(){
+    run(){
         if (!this._attack()) this._repair()
     }
 }

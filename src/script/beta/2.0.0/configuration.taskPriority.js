@@ -1,4 +1,41 @@
 const taskPriorityConfiguration = {
-    
+    "spawn":{
+        "transferer":{
+            "pureTransfer":0,
+            "remoteHarvest":6,
+            "powerHarvest":6,
+        },
+        "harvester":{
+            "remoteHarvest":6,
+            "localHarvest":1,
+        },
+        "upgrader":{
+            "pureUpgrader":2
+        },
+        "worker":{
+            "pureWorker":4
+        },
+        "repairer":{
+            "pureRepairer":5,
+            "remoteRepairer":9,
+        },
+        "defender":{
+            "Defend":3
+        },
+        "attacker":{
+            "Attack":7,
+            "powerHarvest":6,
+        },
+        "healer":{
+            "Attack":7,
+            "powerHarvest":6,
+        },
+        "claimer":{
+            "Claim":7,
+        },
+        "traveler":{
+            "Travel":8,
+        }
+    }
 }
 module.exports = taskPriorityConfiguration

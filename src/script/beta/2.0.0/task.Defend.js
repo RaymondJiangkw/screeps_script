@@ -1,12 +1,8 @@
-/*
- * Module code goes here. Use 'module.exports' to export things:
- * module.exports.thing = 'a thing';
- *
- * You can import it from another modules like this:
- * var mod = require('task.Defend');
- * mod.thing == 'a thing'; // true
- */
+module.exports = function(){
+    for (var roomName of global.rooms.my){
 
-module.exports = {
-
+    }
+    for (var roomName of global.rooms.reserved){
+        
+    }
 };

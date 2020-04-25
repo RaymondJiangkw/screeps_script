@@ -1,8 +1,8 @@
 const utils = require('utils')
+const remoteEnergyRooms = require('configuration.Observer').utilsEnergy
 module.exports = function() {
     for (var roomName of global.rooms.my) {
         var cachedResources = Object.keys(global.containers[roomName].map)
-        // console.log(cachedResources)
         if (cachedResources.length > 0){
             for (var resourceId of cachedResources){
                 var cachedResource = Game.getObjectById(resourceId)
@@ -21,22 +21,26 @@ module.exports = function() {
         }
     }
     for (var roomName of global.rooms.observed) {
-        // console.log("observed",roomName)
         const deposits = ["mists","biomasss","metals","silicons"]
         for (var depositType of deposits){
             var home = utils.getClosetSuitableRoom(roomName,4,haveStorage = true)
             if (!home) break
             for (var deposit of Game.rooms[roomName][depositType]){
+                if (deposit.lastCooldown >= utils.getAcceptableCoolTime(home,roomName)) continue
                 Game.rooms[home].AddHarvestTask("remote",deposit.id,deposit.pos)
-            //    Game.rooms[home].AddTransferTask("remote","creep",Game.rooms[home].storage.id,depositType.substring(0,depositType.length-1),Infinity,1,false)
             }
         }
         for (var powerBank of Game.rooms[roomName]["powerBanks"]){
             var home = utils.getClosetSuitableRoom(roomName,6,haveStorage = true)
             if (!home) break
             Game.rooms[home].AddAttackTask("harvest",roomName,powerBank.id,1)
-        //    Game.rooms[home].AddAttackTask("heal",roomName,"creep",1)
-        //    Game.rooms[home].AddTransferTask("remote","creep",Game.rooms[home].storage.id,RESOURCE_POWER,powerBank.power,5,false)
         }
+    }
+    for (var roomName of remoteEnergyRooms) {
+        if (utils.ownRoom(roomName) !== "reserved") continue
+        var home = utils.getClosetSuitableRoom(roomName,4,haveStorage = true)
+        if (!home) continue
+        var sources = Game.rooms[roomName].find(FIND_SOURCES_ACTIVE)
+        for (var source of sources) Game.rooms[home].AddHarvestTask("remote",source.id,source.pos)
     }
 }

@@ -7,20 +7,27 @@ const taskTravel = require('task.Travel')
 const taskDefend = require('task.Defend')
 const taskAttack = require('task.Attack')
 const taskSpawn = require('task.Spawn')
-module.exports = function(){
-    if (!global.task) global.task = {}
-    if (!global.task.upgrade){
-        global.task.upgrade = true
-        for (var roomName of global.rooms.my){
-            Game.rooms[roomName].AddUpgradeTask()
+const utils = require('utils')
+module.exports = {
+    init:function(){
+        if (!global.task) global.task = {}
+        for (var roomName of global.rooms.my) {
+            if (!Game.rooms[roomName].memory.taskExpiration || Game.rooms[roomName].memory.taskExpiration <= Game.time){
+                Game.rooms[roomName].memory.taskExpiration = Game.time + utils.getCacheExpiration(1500)
+                Game.rooms[roomName].refreshTask()
+                Game.rooms[roomName].AddUpgradeTask()
+            }
         }
+        taskHarvest()
+        taskBuild()
+        taskRepair()
+        taskTransfer()
+        taskPickup()
+        taskAttack()
+        taskDefend()
+        taskTravel()
+    },
+    spawn:function(){
+        taskSpawn()
     }
-    taskHarvest()
-    taskBuild()
-    taskRepair()
-    taskTransfer()
-    taskPickup()
-    taskAttack()
-    taskTravel()
-    taskSpawn()
 }

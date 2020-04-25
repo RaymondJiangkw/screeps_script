@@ -1,20 +1,19 @@
 const utils = require('utils')
 const observerConfig = require('configuration.Observer')
 module.exports = function() {
-    if (!global.task.build) global.task.build = {}
     for (var roomName of global.rooms.my){
-        if (Game.rooms[roomName].buildTargets.length > 0) Game.rooms[roomName].AddBuildTask("build")
-    }
-    for (var roomName of observerConfig.dominance){
-        if (Game.rooms[roomName].controller && Game.rooms[roomName].owner) continue
-        if (!global.task.build[roomName]) global.task.build[roomName] = []
-        var home = utils.getClosetSuitableRoom(roomName,7)
-        if (!home) continue
-        const constructionSites = Game.rooms[roomName].find(FIND_CONSTRUCTION_SITES)
-        for (var constructionSite of constructionSites){
-            if (global.task.build[roomName].indexOf(constructionSite.id) >= 0) continue
-            Game.rooms[home].AddBuildTask(constructionSite.id,constructionSite.pos)
-            global.task.build[roomName].push(constructionSite.id)
+        if (Game.rooms[roomName].buildTargets.length > 0) {
+            if (Game.rooms[roomName].controller.level > 3) Game.rooms[roomName].AddBuildTask("local","build")
+            else{
+                var home = utils.getClosetSuitableRoom(roomName,4)
+                if (!home) continue
+                Game.rooms[home].AddBuildTask("remote","build",{x:25,y:25,roomName:roomName,fake:true})
+            } 
         }
+    }
+    for (var roomName of global.rooms.reserved){
+        var home = utils.getClosetSuitableRoom(roomName,4,true)
+        if (!home) continue
+        if (Game.rooms[roomName].buildTargets.length > 0) Game.rooms[home].AddBuildTask("remote","build",{x:25,y:25,roomName:roomName,fake:true})
     }
 }

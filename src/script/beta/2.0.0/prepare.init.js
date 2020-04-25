@@ -6,53 +6,48 @@ const hitsCompare = function(objectA,objectB) {
 module.exports = function() {
     global.rooms = {}
     global.rooms.my = _.filter(Game.rooms,(room) => room.controller && room.controller.my).map(r => r.name)
-    global.rooms.observed = _.filter(Game.rooms,(room) => !room.controller || !room.controller.my).map(r => r.name)
+    global.rooms.reserved = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) == "reserved").map(r => r.name)
+    global.rooms.observed = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) == "neutral").map(r => r.name)
 
-//    if (!global.links || global.links["_expirationTime"] <= Game.time) {
-        var roomName
-        global.links = {}
-//        global.links["_expirationTime"] = Game.time + utils.getCacheExpiration()
-        for (roomName of global.rooms.my) {
-            global.links[roomName] = {
-                resources:[],
-                upgrade:[],
-                charges:[],
-                map:{}
-            }
-            var link
-            for (link of Game.rooms[roomName]["links"]){
-                var adjacentEnergy = utils.Adjacent(link.id,Game.rooms[roomName]["energys"].map(r => r.id),2)
-                var adjacentSpawn = utils.Adjacent(link.id,Game.rooms[roomName]["spawns"].map(s => s.id))
-                if (utils.adjacent(link.id,Game.rooms[roomName].controller.id,3)) global.links[roomName].upgrade.push(link)
-                else if (adjacentEnergy) {global.links[roomName].resources.push(link);global.links[roomName].map[adjacentEnergy] = link.id;}
-                else if (adjacentSpawn) {global.links[roomName].charges.push(link);global.links[roomName].map[adjacentSpawn] = link.id;}
-            }
+    var roomName
+    global.links = {}
+    for (roomName of global.rooms.my) {
+        global.links[roomName] = {
+            resources:[],
+            upgrade:[],
+            charges:[],
+            map:{}
         }
-//    }
-    const usedEnergyCompare = (linkA,linkB)=>linkB.store.getUsedCapacity(RESOURCE_ENERGY) - linkA.store.getUsedCapacity(RESOURCE_ENERGY)
-    global.links[roomName]["resources"].sort(usedEnergyCompare)
-    global.links[roomName]["upgrade"].sort(usedEnergyCompare)
-    global.links[roomName]["charges"].sort(usedEnergyCompare)
-
-//    if (!global.containers || global.containers["_expirationTime"] <= Game.time) {
-        var roomName
-        global.containers = {}
-//        global.containers["_expirationTime"] = Game.time + utils.getCacheExpiration()
-        for (roomName of global.rooms.my) {
-            global.containers[roomName] = {
-                resources:[],
-                mineral:undefined,
-                map:{}
-            }
-            var container
-            for (container of Game.rooms[roomName]["containers"]){
-                var adjacentEnergy = utils.Adjacent(container.id,Game.rooms[roomName]["energys"].map(r => r.id))
-                if (adjacentEnergy) {global.containers[roomName].resources.push(container);global.containers[roomName].map[adjacentEnergy] = container.id;}
-                else if (utils.adjacent(container.id,Game.rooms[roomName]["mineral"].id)) {global.containers[roomName].mineral = container;global.containers[roomName].map[Game.rooms[roomName]["mineral"].id] = container.id;}
-            }
+        var link
+        for (link of Game.rooms[roomName]["links"]){
+            var adjacentEnergy = utils.Adjacent(link.id,Game.rooms[roomName]["energys"].map(r => r.id),2)
+            var adjacentSpawn = utils.Adjacent(link.id,Game.rooms[roomName]["spawns"].map(s => s.id))
+            if (utils.adjacent(link.id,Game.rooms[roomName].controller.id,3)) global.links[roomName].upgrade.push(link)
+            else if (adjacentEnergy) {global.links[roomName].resources.push(link);global.links[roomName].map[adjacentEnergy] = link.id;}
+            else if (adjacentSpawn) {global.links[roomName].charges.push(link);global.links[roomName].map[adjacentSpawn] = link.id;}
         }
-//    }
-    global.containers[roomName]["resources"].sort((containerA,containerB)=>containerB.store.getUsedCapacity() - containerA.store.getUsedCapacity())
+        const usedEnergyCompare = (linkA,linkB)=>linkB.store.getUsedCapacity(RESOURCE_ENERGY) - linkA.store.getUsedCapacity(RESOURCE_ENERGY)
+        global.links[roomName]["resources"].sort(usedEnergyCompare)
+        global.links[roomName]["upgrade"].sort(usedEnergyCompare)
+        global.links[roomName]["charges"].sort(usedEnergyCompare)
+    }
+    
+    var roomName
+    global.containers = {}
+    for (roomName of [].concat(global.rooms.my,global.rooms.reserved)) {
+        global.containers[roomName] = {
+            resources:[],
+            mineral:undefined,
+            map:{}
+        }
+        var container
+        for (container of Game.rooms[roomName]["containers"]){
+            var adjacentEnergy = utils.Adjacent(container.id,Game.rooms[roomName]["energys"].map(r => r.id))
+            if (adjacentEnergy) {global.containers[roomName].resources.push(container);global.containers[roomName].map[adjacentEnergy] = container.id;}
+            else if (utils.adjacent(container.id,Game.rooms[roomName]["mineral"].id)) {global.containers[roomName].mineral = container;global.containers[roomName].map[Game.rooms[roomName]["mineral"].id] = container.id;}
+        }
+        global.containers[roomName]["resources"].sort((containerA,containerB)=>containerB.store.getUsedCapacity() - containerA.store.getUsedCapacity())
+    }
 
     global.labs = {}
     for (var roomName of global.rooms.my) {
@@ -143,7 +138,6 @@ module.exports = function() {
             global.towerRepairs[roomName].common = [].concat(roads,containers)
             global.towerRepairs[roomName].ramparts = _.filter(Game.rooms[roomName].ramparts,(rampart)=>rampart.hits/rampart.hitsMax <= configTower.rampart[roomLevel])
             global.towerRepairs[roomName].walls = _.filter(Game.rooms[roomName].constructedWalls,(wall)=>wall.hits/wall.hitsMax <= configTower.wall[roomLevel])
-            // console.log(global.towerRepairs[roomName].walls,Game.rooms[roomName].walls)
         }
     }
 

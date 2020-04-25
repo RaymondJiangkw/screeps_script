@@ -28,7 +28,7 @@ module.exports = function () {
         }
         if (Game.rooms[roomName].towers !== []) {
             for (var tower of Game.rooms[roomName].towers) {
-                tower.towerRun()
+                tower.run()
             }
         }
         if (Game.rooms[roomName].labs !== []){
