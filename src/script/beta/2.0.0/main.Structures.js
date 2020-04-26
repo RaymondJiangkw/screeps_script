@@ -49,16 +49,17 @@ module.exports = function () {
         }
         if (Game.rooms[roomName].factory && Game.rooms[roomName].factory.cooldown == 0) {
             if (configFactory[roomName]){
-                for (var production of configFactory[roomName]){
+                for (var productionInfo of configFactory[roomName]){
+                    var production = productionInfo[0]
                     var componentComplete = true
                     for (var component in COMMODITIES[production].components){
-                        if (Game.rooms[roomName].factory.store.getUsedCapacity(component) >= COMMODITIES[production].components[component]){
+                        if (Game.rooms[roomName].factory.store.getUsedCapacity(component) < COMMODITIES[production].components[component]){
                             componentComplete = false
                             break
                         }
                     }
                     if (!componentComplete) continue
-                    Game.rooms[roomName].factory.produce(production)
+                    if (productionInfo[1] === "greedy" || Game.rooms[roomName].factory.store.getUsedCapacity(production) < productionInfo[1]) Game.rooms[roomName].factory.produce(production)
                     break
                 }
             }

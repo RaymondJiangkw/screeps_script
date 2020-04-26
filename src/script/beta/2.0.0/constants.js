@@ -1,5 +1,9 @@
 const Constants = {
     username:"BoosterKevin",
+    emoji:{
+        redFlag:"🚩",
+        hunt:"🏹",
+    },
     labFormula:{
         "OH":["H","O"],
         "ZK":["Z","K"],

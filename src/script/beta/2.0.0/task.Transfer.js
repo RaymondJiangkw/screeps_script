@@ -4,6 +4,7 @@ const towerConfig = require('configuration.Tower')
 const terminalConfig = require('configuration.Terminal')
 const labConfig = require('configuration.Lab')
 const powerSpawnConfig = require('configuration.PowerSpawn')
+const aidConfig = require('configuration.Aid')
 const Constants = require('constants')
 const needEnergy = function(object){
     return object.store.getFreeCapacity(RESOURCE_ENERGY) > 0
@@ -97,6 +98,27 @@ module.exports = function() {
                 }
             }
 
+            // Transfer Factory
+            if (Game.rooms[roomName].factory && factoryConfig[roomName]){
+                for (var productionInfo of factoryConfig[roomName]){
+                    var production = productionInfo[0]
+                    var existingAmount = Game.rooms[roomName].factory.store[production]
+                    var diffAmount = Infinity
+                    if (productionInfo[1] !== "greedy") diffAmount = productionInfo[1] - existingAmount
+                    for (var component in COMMODITIES[production].components){
+                        if (Game.rooms[roomName].factory.store[component] < COMMODITIES[production].components[component] * diffAmount){
+                            var checkOrders = ["storage","terminal"]
+                            for (var retrievedStructure of checkOrders){
+                                if (!global.resources[roomName][resourceType][retrievedStructure]) continue
+                                var amount = Math.min(COMMODITIES[production].components[component] * diffAmount - Game.rooms[roomName].factory.store[component],
+                                                      global.resources[roomName][component][retrievedStructure])
+                                if (amount > 0) Game.rooms[roomName].AddTransferTask("advanced",Game.rooms[roomName][retrievedStructure].id,Game.rooms[roomName].factory.id,component,amount)
+                            }
+                        }
+                    }
+                }
+            }
+
             // Sell Commodities
             if (terminalConfig.sellingGoods[roomName] && Game.rooms[roomName].terminal){
                 for (var info of terminalConfig.sellingGoods[roomName]){
@@ -125,6 +147,19 @@ module.exports = function() {
             for (var tombStone of tombStones) Game.rooms[roomName].AddTransferTask("defense",tombStone.id,Game.rooms[roomName].storage.id,undefined,amount = "exhaust")
         }
     }
+ 
+    for (var hostRoom in aidConfig){
+        if (global.rooms.my.indexOf(hostRoom) < 0) continue
+        for (var aidInfo of aidConfig[hostRoom]){
+            var fromRoom = aidInfo.fromRoom
+            if (global.rooms.my.indexOf(fromRoom) < 0) continue
+            var from = aidInfo.from, to = aidInfo.to
+            if (!Game.rooms[hostRoom][to] || !Game.rooms[fromRoom][from]) continue
+            if (Game.rooms[fromRoom][from].store[aidInfo.resourceType] < aidInfo.beginAmount) continue
+            Game.rooms[hostRoom].AddAidTask(Game.rooms[fromRoom][from].id,fromRoom,Game.rooms[hostRoom][to].id,toRoom,aidInfo.resourceType,aidInfo.endAmount)
+        }
+    }
+
     for (var roomName of global.rooms.observed){
         const home = utils.getClosetSuitableRoom(roomName,7)
         if (!home) continue

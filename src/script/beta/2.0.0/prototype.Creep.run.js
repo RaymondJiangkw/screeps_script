@@ -160,7 +160,7 @@ const creepRunExtensions = {
     },
     _harvestEnergy(targetID){
         const target = Game.getObjectById(targetID)
-        var amount = Math.min(target.energy,this.memory["_tmp"]["bodyAnalysis"]["work"][1] * 2)
+        var amount = Math.min(target.energy,this.getActiveBodyparts(WORK) * 2)
         var ret = this.harvest(target)
         return [ret, amount]
     },
@@ -176,7 +176,7 @@ const creepRunExtensions = {
                 _hasEnergyContainers.sort((a,b)=>b.store["energy"] - a.store["energy"])
                 if (droppedEnergys) chosenObject = droppedEnergys
                 else if (_hasEnergyContainers.length > 0) chosenObject = _hasEnergyContainers[0] 
-                else if (this.memory["_tmp"]["bodyAnalysis"]["work"] && this.memory["_tmp"]["bodyAnalysis"]["work"][1] > 0){
+                else if (this.getActiveBodyparts(WORK) > 0){
                     var activeSources = this.pos.findClosestByRange(FIND_SOURCES_ACTIVE)
                     if (activeSources) chosenObject = activeSources
                 }
@@ -332,8 +332,11 @@ const creepRunExtensions = {
                 var moveFeedback = this["_adjMove"](this.memory.get.getTargetPos)
                 if (moveFeedback === ERR_NOT_IN_RANGE) return OK
                 
-                var droppedResources = Game.rooms[this.memory.get.getTargetPos.roomName].lookForAt(LOOK_RESOURCES,this.memory.get.getTargetPos.x,this.memory.get.getTargetPos.y)
-                for (var droppedResource of droppedResources) this.pickup(droppedResource)
+                var _dx = [0,0,1,0,-1],_dy=[0,1,0,-1,0];
+                for (var i = 0; i < 5;i++){
+                    var droppedResources = Game.rooms[this.memory.get.getTargetPos.roomName].lookForAt(LOOK_RESOURCES,this.memory.get.getTargetPos.x+_dx[i],this.memory.get.getTargetPos.y+_dy[i])
+                    for (var droppedResource of droppedResources) this.pickup(droppedResource)
+                }
                 
                 var containerCached = _.filter(Game.rooms[this.memory.get.getTargetPos.roomName].lookForAt(LOOK_STRUCTURES,this.memory.get.getTargetPos.x,this.memory.get.getTargetPos.y),(s)=>s.structureType === STRUCTURE_CONTAINER)
                 var tombStones = _.filter(Game.rooms[this.memory.get.getTargetPos.roomName].lookForAt(LOOK_TOMBSTONES,this.memory.get.getTargetPos.x,this.memory.get.getTargetPos.y),(t)=>t.store.getUsedCapacity() > 0)
@@ -395,6 +398,11 @@ const creepRunExtensions = {
                     return ERR_DELETE
                 }
                 if (this.memory.get.getTarget && this.memory.get.getTargetPos){
+                    if (subTaskType === "aid"){
+                        if (!Game.getObjectById(this.memory.get.getTarget)) return ERR_DELETE
+                        if (Game.getObjectById(this.memory.get.getTarget).store[taskInfo.data.resourceType] < taskInfo.data.stopAmount) return ERR_DELETE
+                    }
+
                     var moveFeedback =  this["_adjMove"](this.memory.get.getTargetPos)
                     if (moveFeedback === ERR_NOT_IN_RANGE) return OK
 
@@ -556,7 +564,60 @@ const creepRunExtensions = {
         }
     },
     _defend(subTaskType,signals){
+        const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
+        if (subTaskType == "reserved"){
+            if (this.hits < this.hitsMax) {
+                this.heal(this)
+                if (!this.memory.attackTarget || !Game.getObjectById(this.memory.attackTarget)) {
+                    const target = this.pos.findClosestByRange(FIND_HOSTILE_CREEPS,{filter:(o)=>o.getActiveBodyparts(ATTACK) > 0 || o.getActiveBodyparts(RANGED_ATTACK) > 0})
+                    if (target) this.memory.attackTarget = target
+                }
+            }
+            
+            if (this.memory.healTarget) {
+                var target = Game.getObjectById(this.memory.healTarget)
+                if (!target) {
+                    try {
+                        global.unexpectedDeath[this.memory.healTargetHome]++;
+                    } catch (error) {
+                        global.unexpectedDeath[this.memory.healTargetHome]=1;
+                    }
+                    this.memory.healTarget = undefined
+                    this.memory.healTargetHome = undefined
+                }else if (target.hits === target.hitsMax){
+                        this.memory.healTarget = undefined
+                        this.memory.healTargetHome = undefined
+                }
+            }
 
+            if (this.memory.attackTarget && Game.getObjectById(this.memory.attackTarget)){
+                var target = Game.getObjectById(this.memory.attackTarget)
+                if (this.pos.inRangeTo(target,1)) this.attack(target)
+                if (this.pos.inRangeTo(target,3)) {
+                    var hostileCreep = this.pos.findInRange(FIND_HOSTILE_CREEPS,3)
+                    if (hostileCreep.length > 1) this.rangedMassAttack()
+                    else this.rangedAttack(target)
+                }else this.moveTo(target)
+            }else if (this.memory.healTarget && Game.getObjectById(this.memory.healTarget)){
+                var target = Game.getObjectById(this.memory.healTarget)
+                if (this.pos.inRangeTo(target,1)) this.heal(target)
+                if (this.pos.inRangeTo(target,3)) this.rangedHeal(target)
+                else this.moveTo(target)
+            }else if (this.room.name != taskInfo.data.targetRoom) {this["_Move"](new RoomPosition(25,25,taskInfo.data.targetRoom))}
+            else{
+                const posNear = (a,b) => a.pos.getRangeTo(this) - b.pos.getRangeTo(this)
+                var enemies = _.filter(Game.rooms[taskInfo.data.targetRoom].enemies,(e)=>utils.analyseCreep(e.id,false,true) != "harmless")
+                enemies.sort(posNear)
+                var neededHealer = _.filter(Game.rooms[taskInfo.data.targetRoom].inCreeps,(c)=>c.hits < c.hitsMax)
+                neededHealer.sort(posNear)
+                if (enemies.length > 0) this.memory.attackTarget = enemies[0].id
+                else if (neededHealer.length > 0) {
+                    this.memory.healTarget = neededHealer[0].id
+                    this.memory.healTargetHome = neededHealer[0].pos.roomName
+                }else this.say(constants.emoji.hunt)
+            }
+        }
+        return OK
     },
     _attack(subTaskType,signals){
         const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
@@ -590,7 +651,8 @@ const creepRunExtensions = {
         }else if (subTaskType === "claim"){
             if (!Game.rooms[taskInfo.data.targetRoom].controller) return OK
             const controller = Game.rooms[taskInfo.data.targetRoom].controller
-            if (controller.my) {this.signController(controller,"");return ERR_DELETE;}
+            const reservedText = "Reserved by @BoosterKevin."
+            if (controller.my) {if (controller.sign.text !== "") this.signController(controller,"");return ERR_DELETE;}
             
             if (this["_adjMove"](controller.pos) === ERR_NOT_IN_RANGE) return OK
             
@@ -599,8 +661,8 @@ const creepRunExtensions = {
             }else{
                 if (claimRoomConfig.indexOf(taskInfo.data.targetRoom) >= 0){
                     var feedback = this.claimController(controller)
-                    if (feedback === ERR_GCL_NOT_ENOUGH) {this.reserveController(controller);this.signController(controller,"Reserved by @BoosterKevin.")}
-                }else {this.reserveController(controller);this.signController(controller,"Reserved by @BoosterKevin.");}
+                    if (feedback === ERR_GCL_NOT_ENOUGH) {this.reserveController(controller);if (controller.sign.text !== reservedText) this.signController(controller,reservedText);}
+                }else {this.reserveController(controller);if (controller.sign.text !== reservedText) this.signController(controller,reservedText);}
             }
             return OK
         }else if (subTaskType === "attack"){
@@ -627,7 +689,6 @@ const creepRunExtensions = {
         return OK
     },
     toDeath(primary = false,canGetTask = false){
-        console.log(this,primary,canGetTask,this.memory.taskFingerprint)
         if (!this.isIdle()) {
             const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
             if (primary) {

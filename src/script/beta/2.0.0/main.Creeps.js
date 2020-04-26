@@ -20,11 +20,10 @@ module.exports = function(){
     var creep_Groups = _.groupBy(creepGroups[groupType],(c)=>c.memory.group.name)
     for (var groupName in creep_Groups){
         const creeps = _.groupBy(creep_Groups[groupName],(c)=>c.memory.role)
+        // console.log(groupName,JSON.stringify(creep_Groups[groupName]))
         const groupRoles = Object.keys(creepConfig.groupAcceptedTask[groupType])
         const primaryCreepRole = groupRoles[0]
         for (var groupRole of groupRoles) if (!creeps[groupRole]) creeps[groupRole] = []
-        
-        if (creeps[primaryCreepRole].length === 0) continue
 
         for (var primaryCreep of creeps[primaryCreepRole]){
             if (primaryCreep.dying()){
@@ -66,10 +65,10 @@ module.exports = function(){
                     else creep.toDeath(false,canGetTask = false)
                     continue
                 }
-                
-                if (!randomPrimaryCreep) continue
+
+                if (!randomPrimaryCreep) {creep.deleteTask();creep.Invisible();continue;}
                 if (creep._boost() === OK) continue
-                if (creep.isIdle() && randomPrimaryCreep.isIdle()) continue
+                if (creep.isIdle() && randomPrimaryCreep.isIdle()) {creep.Invisible();continue;}
                         
                 if (creep.isIdle()){
                     var primaryTaskInfo = Game.rooms[creep.memory.home].taskInfo(randomPrimaryCreep.memory.taskFingerprint)

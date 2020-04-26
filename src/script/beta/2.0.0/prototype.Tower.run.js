@@ -1,4 +1,5 @@
 const configTower = require('configuration.Tower')
+const utils = require('utils')
 const hitsCompare = function(objectA,objectB) {
     return objectA.hits/objectA.hitsMax - objectB.hits/objectB.hitsMax
 }
@@ -30,7 +31,9 @@ const towerExtension = {
     },
     _attack(){
         if (Game.rooms[this.room.name].enemies.length > 0) {
-            this.attack(Game.rooms[this.room.name].enemies[0])
+            var target = _.shuffle(_.filter(Game.rooms[this.room.name].enemies,(e)=>utils.analyseCreep(e,false,true) != "harmless"))[0]
+            if (!target) target = _.shuffle(Game.rooms[this.room.name].enemies)[0]
+            this.attack(target)
             return true
         }
     },

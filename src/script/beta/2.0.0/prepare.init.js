@@ -130,11 +130,12 @@ module.exports = function() {
     if (!global.towerRepairs || global.towerRepairs["_expirationTime"] <= Game.time){
         global.towerRepairs = {}
         global.towerRepairs["_expirationTime"] = Game.time + utils.getCacheExpiration()
-        for (var roomName of global.rooms.my){
+        for (var roomName of global.rooms.my){ 
             if (!global.towerRepairs[roomName]) global.towerRepairs[roomName] = {}
             var roads = _.filter(Game.rooms[roomName].roads,(road)=>road.hits/road.hitsMax <= configTower.road)
             var containers = _.filter(Game.rooms[roomName].containers,(container)=>container.hits/container.hitsMax <= configTower.container)
             var roomLevel = Game.rooms[roomName].controller.level.toString()
+            global.towerRepairs[roomName].common = []
             global.towerRepairs[roomName].common = [].concat(roads,containers)
             global.towerRepairs[roomName].ramparts = _.filter(Game.rooms[roomName].ramparts,(rampart)=>rampart.hits/rampart.hitsMax <= configTower.rampart[roomLevel])
             global.towerRepairs[roomName].walls = _.filter(Game.rooms[roomName].constructedWalls,(wall)=>wall.hits/wall.hitsMax <= configTower.wall[roomLevel])

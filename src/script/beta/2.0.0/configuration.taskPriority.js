@@ -4,6 +4,7 @@ const taskPriorityConfiguration = {
             "pureTransfer":0,
             "remoteHarvest":6,
             "powerHarvest":6,
+            "remoteTransfer":6
         },
         "harvester":{
             "remoteHarvest":6,

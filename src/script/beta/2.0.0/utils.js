@@ -53,10 +53,6 @@ const utilsCollection = {
                     arg = JSON.parse(JSON.stringify(arg))
                     delete arg["amount"]
                 }
-                if (arg['memory'] && arg['memory']['group']['name']){
-                    arg = JSON.parse(JSON.stringify(arg))
-                    delete arg["memory"]["group"]["name"]
-                }
                 str = str + JSON.stringify(arg)
             }else str = str + arg.toString()
         }
@@ -98,8 +94,13 @@ const utilsCollection = {
         homes.sort((roomName1,roomName2)=>Game.map.getRoomLinearDistance(roomName1,roomName) - Game.map.getRoomLinearDistance(roomName2,roomName))
         return homes[0]
     },
-    analyseCreep:function(creepID,analysis = false){
+    analyseCreep:function(creepID,analysis = false,simplified_version = false){
         const creep = Game.getObjectById(creepID)
+        if (simplified_version) {
+            if (creep.getActiveBodyparts(ATTACK) || creep.getActiveBodyparts(RANGED_ATTACK)) return "attacker"
+            if (creep.getActiveBodyparts(HEAL)) return "healer"
+            return "harmless"
+        }
         var bodyAnalysis = {}
         var hits = 0
         const bodyNum = creep.body.length

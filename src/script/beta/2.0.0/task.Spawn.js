@@ -3,11 +3,13 @@ const subTaskType = function(roomName,fingerprint){
     return Game.rooms[roomName].memory.task.info[fingerprint].subTaskType
 }
 const generateSpawnTask = function(roomName,groupType){
-    var groupName = groupType + "_" + roomName + "_" + Game.time
+    if (!Game.rooms[roomName].memory.spawnCnt) Game.rooms[roomName].memory.spawnCnt = {}
+    if (!Game.rooms[roomName].memory.spawnCnt[groupType]) Game.rooms[roomName].memory.spawnCnt[groupType] = 0
+    var groupName = groupType + "_" + roomName + "_" + Game.rooms[roomName].memory.spawnCnt[groupType]
     for (var role in creepConfig.groupAcceptedTask[groupType]){
         var boostCompounds = creepConfig.boosts[role]
         if (!boostCompounds) boostCompounds = []
-        Game.rooms[roomName].AddSpawnTask(role,creepConfig.components[role],groupType,groupName,boostCompounds)
+        if (Game.rooms[roomName].AddSpawnTask(role,creepConfig.components[role],groupType,groupName,boostCompounds)) Game.rooms[roomName].memory.spawnCnt[groupType]++;
     }
 }
 module.exports = function(){
@@ -22,10 +24,12 @@ module.exports = function(){
         
         // Transfer Task
         const pureTransferer = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "pureTransfer")
-        var transferTaskLength = 0
-        if (Game.rooms[roomName].memory.task["_transfer"]) transferTaskLength = Game.rooms[roomName].memory.task["_transfer"].length
+        const remoteTransfer = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "remoteTransfer")
+        var transferTaskLength = Game.rooms[roomName].countTask("_transfer",["core","defense","advanced"])
+        var aidTaskLength = Game.rooms[roomName].countTask("_transfer",["aid"])
         if (Game.rooms[roomName].memory.task["transfer"] && (pureTransferer.length === 0 || pureTransferer.length < Math.floor(Math.log(transferTaskLength)))) generateSpawnTask(roomName,"pureTransfer");
-        
+        if (remoteTransfer.length < aidTaskLength) generateSpawnTask(roomName,"remoteTransfer")
+
         // Harvest Task
         if (Game.rooms[roomName].memory.task["harvest"] && creepsCollection["harvester"].length < Game.rooms[roomName].memory.task["_harvest"].length){
             for (var fingerprint of Game.rooms[roomName].memory.task["harvest"]){
@@ -40,20 +44,16 @@ module.exports = function(){
         if (Game.rooms[roomName].memory.task["upgrade"] && creepsCollection["upgrader"].length === 0) generateSpawnTask(roomName,"pureUpgrader");
         
         // Defend Task
-        if (Game.rooms[roomName].memory.task["defend"] && creepsCollection["defender"].length < Game.rooms[roomName].memory.task["_defend"].length) generateSpawnTask(roomName,"Defend");
+        const roomDefendCnt = Game.rooms[roomName].countTask("_defend",["local","reserved"])
+        if (creepsCollection["defender"].length < roomDefendCnt) generateSpawnTask(roomName,"Defend");
         
         // Build Task
         if (Game.rooms[roomName].memory.task["build"] && Game.rooms[roomName].memory.task["build"].length > 0 && creepsCollection["worker"].length === 0) generateSpawnTask(roomName,"pureWorker");
         
         // Repair Task
         if (Game.rooms[roomName].memory.task["repair"]){
-            var remoteRepairCnt = 0;
-            var localRepairCnt = 0;
-            for (var fingerprint of Game.rooms[roomName].memory.task["_repair"]){
-                var _subTaskType = subTaskType(roomName,fingerprint)
-                if (_subTaskType === "remote") remoteRepairCnt++;
-                if (_subTaskType === "local") localRepairCnt++;
-            }
+            var remoteRepairCnt = Game.rooms[roomName].countTask("_repair",["remote"])
+            var localRepairCnt = Game.rooms[roomName].countTask("_repair",["local"])
             const pureRepairer = _.filter(creepsCollection["repairer"],(c)=>c.memory.group.type === "pureRepairer")
             const remoteRepairer = _.filter(creepsCollection["repairer"],(c)=>c.memory.group.type === "remoteRepairer")
             if (remoteRepairer.length < remoteRepairCnt) generateSpawnTask(roomName,"remoteRepairer");
