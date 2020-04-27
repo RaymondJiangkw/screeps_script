@@ -1,9 +1,6 @@
 const utils = require('utils')
 const spawnConfig = require('configuration.Spawn')
 const INFINITY = 32767
-module.exports = function() {
-    _.assign(Spawn.prototype,spawnTaskExtension)
-}
 const spawnTaskExtension = {
     activateProtection(){
         this.memory.protection = Game.time + utils.getCacheExpiration(Math.ceil(spawnConfig.spawnIntervalTick * (1 + Math.random())))
@@ -27,7 +24,7 @@ const spawnTaskExtension = {
         const taskInfo = Game.rooms[roomName].taskInfo(this.memory.taskFingerPrint)
         const name = taskInfo.data.memory.role + "_" + this.room.name + "_" + Game.time
         const availableEnergy = Game.rooms[roomName].energyAvailable
-        const components = utils.getComponentsList(this.room.name,taskInfo.data.memory.role,taskInfo.data.memory.group.type,availableEnergy,taskInfo.data.components)
+        var components = utils.getComponentsList(this.room.name,taskInfo.data.memory.role,taskInfo.data.memory.group.type,availableEnergy,taskInfo.data.components)
         var feedback = this.spawnCreep(components,name,{memory:taskInfo.data.memory})
         if (feedback === OK) {
             Game.rooms[this.room.name].finishTask(this.memory.taskFingerPrint)
@@ -35,3 +32,4 @@ const spawnTaskExtension = {
         }
     }
 }
+_.assign(Spawn.prototype,spawnTaskExtension)

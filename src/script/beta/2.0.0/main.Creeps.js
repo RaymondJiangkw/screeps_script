@@ -38,6 +38,7 @@ module.exports = function(){
                 if (groupType === "remoteHarvest"){
                     const transferCreeps = treatedPorters(creeps["transferer"])
                     if (transferCreeps.length > 0) signals["transfer"] = transferCreeps[0].id
+                    signals["transferers"] = transferCreeps
                 }
                 var feedback = primaryCreep.run(signals)
                 var cnt = 1

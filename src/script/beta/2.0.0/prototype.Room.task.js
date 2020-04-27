@@ -2,9 +2,6 @@ const utils = require('utils')
 const tailInsertTask = ["repair"]
 const taskPriority = require('configuration.taskPriority')
 const INFINITY = 32767
-module.exports = function () {
-    _.assign(Room.prototype,roomTaskExtension)
-}
 const roomTaskExtension = {
     initTaskMemory(taskType){
         if (!this.memory.task) this.memory.task = {}
@@ -21,7 +18,11 @@ const roomTaskExtension = {
             }
             delete this.memory.task[taskType]
         }
-        // this.memory.task = {}
+        for (var creep of Game.rooms[this.name].creeps) creep.memory.taskFingerprint = null
+        for (var spawn of Game.rooms[this.name].spawns) spawn.memory.taskFingerPrint = null
+    },
+    clearTask(){
+        this.memory.task = {}
         for (var creep of Game.rooms[this.name].creeps) creep.memory.taskFingerprint = null
         for (var spawn of Game.rooms[this.name].spawns) spawn.memory.taskFingerPrint = null
     },
@@ -117,7 +118,7 @@ const roomTaskExtension = {
         if (this.memory.task.info[fingerprint].settings.receivedGroupsNum <= 0) this.memory.task[taskType].splice(this.memory.task[taskType].indexOf(fingerprint),1);
         return fingerprint
     },
-    AddTask(taskType,subTaskType,data,groupsNum,changeable,silence = false,getRepeat = false){
+    AddTask(taskType,subTaskType,data,groupsNum,changeable,silence = false,getRepeat = false,salt = undefined){
         this.initTaskMemory(taskType)
         if (!Number.isFinite(groupsNum)) groupsNum = 32767
         const _getRepeat = getRepeat
@@ -148,10 +149,10 @@ const roomTaskExtension = {
         const data = {from,fromRoom,to,toRoom,resourceType,amount}
         return this.AddTask("transfer",subTaskType,data,groupsNum,changeable,silence,getRepeat)
     },
-    AddAidTask(from,fromRoom,to,toRoom,resourceType,stopAmount,groupsNum = 1,changeable = false,silence = false,getRepeat = false){
+    AddAidTask(from,fromRoom,to,toRoom,resourceType,stopAmount,toStopAmount,groupsNum = 1,changeable = false,silence = false,getRepeat = false){
         var toTarget = Game.getObjectById(to)
-        if (toTarget && toTarget.store.getFreeCapacity() == 0) return undefined
-        const data = {from,fromRoom,to,toRoom,resourceType,stopAmount}
+        if (toTarget && toTarget.store.getUsedCapacity() > toStopAmount) return undefined
+        const data = {from,fromRoom,to,toRoom,resourceType,stopAmount,toStopAmount}
         return this.AddTask("transfer","aid",data,groupsNum,changeable,silence,getRepeat)
     },
     AddHarvestTask(subTaskType,targetID,targetPos = undefined,groupsNum = 1,changeable = false,silence = false,getRepeat = false){
@@ -167,9 +168,9 @@ const roomTaskExtension = {
         const data = {targetID,targetPos}
         return this.AddTask("repair",subTaskType,data,groupsNum,true,silence,getRepeat)
     },
-    AddUpgradeTask(silence = false,getRepeat = false){
+    AddUpgradeTask(salt = undefined,silence = false,getRepeat = false){
         const data = {targetID:this.controller.id}
-        return this.AddTask("upgrade","default",data,Infinity,true,silence,getRepeat)
+        return this.AddTask("upgrade","default",data,Infinity,true,silence,getRepeat,salt)
     },
     AddDefendTask(subTaskType,target,targetRoom,groupsNum = Infinity,changeable = false,silence = false,getRepeat = false){
         const data = {target,targetRoom}
@@ -188,7 +189,7 @@ const roomTaskExtension = {
         const data = {targetRoom,roomList:[]}
         return this.AddTask("travel","default",data,groupsNum,changeable,silence,getRepeat)
     },
-    AddSpawnTask(role,components,groupType,groupName,boostCompounds,subTaskType = "default",silence = false,getRepeat = false){
+    AddSpawnTask(role,components,groupType,groupName,boostCompounds,subTaskType = "default",salt = undefined){
         const data = {
             components,
             memory:{
@@ -199,9 +200,12 @@ const roomTaskExtension = {
                     name:groupName
                 },
                 taskFingerprint:null,
-                boostCompounds
+                boostCompounds,
+                salt
             }
         }
-        return this.AddTask("spawn","default",data,1,false,silence,getRepeat)
+        return this.AddTask("spawn","default",data,1,false,false,false,salt)
     }
 }
+
+_.assign(Room.prototype,roomTaskExtension)

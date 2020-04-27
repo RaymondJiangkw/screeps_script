@@ -1,8 +1,5 @@
 const creepConfig = require('configuration.Creep')
 const utils = require('utils')
-module.exports = function(){
-    _.assign(Creep.prototype,creepTaskExtension)
-}
 const creepTaskExtension = {
     isIdle(){
         if (!this.memory.taskFingerprint) return true
@@ -77,3 +74,4 @@ const creepTaskExtension = {
         this.memory.taskFingerprint = null
     }
 }
+_.assign(Creep.prototype,creepTaskExtension)

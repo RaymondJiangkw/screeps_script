@@ -11,12 +11,5 @@ const prototype_creep_task = require('prototype.Creep.task')
 const prototype_creep_run = require('prototype.Creep.run')
 const prototype_powerCreep_run = require('prototype.PowerCreep.run')
 module.exports = function(){
-    prototype_lab_run()
-    prototype_tower_run()
-    prototype_market_run()
-    prototype_room_task()
-    prototype_spawn_task()
-    prototype_creep_task()
-    prototype_creep_run()
-    prototype_powerCreep_run()
+    
 }

@@ -3,9 +3,6 @@ const utils = require('utils')
 const hitsCompare = function(objectA,objectB) {
     return objectA.hits/objectA.hitsMax - objectB.hits/objectB.hitsMax
 }
-module.exports = function (){
-    _.assign(StructureTower.prototype,towerExtension)
-}
 const towerExtension = {
     _repair(){
         if (this.store.getUsedCapacity(RESOURCE_ENERGY) >= configTower.reservedEnergy) {
@@ -31,7 +28,7 @@ const towerExtension = {
     },
     _attack(){
         if (Game.rooms[this.room.name].enemies.length > 0) {
-            var target = _.shuffle(_.filter(Game.rooms[this.room.name].enemies,(e)=>utils.analyseCreep(e,false,true) != "harmless"))[0]
+            var target = _.shuffle(_.filter(Game.rooms[this.room.name].enemies,(e)=>utils.analyseCreep(e.id,false,true) != "harmless"))[0]
             if (!target) target = _.shuffle(Game.rooms[this.room.name].enemies)[0]
             this.attack(target)
             return true
@@ -41,3 +38,4 @@ const towerExtension = {
         if (!this._attack()) this._repair()
     }
 }
+_.assign(StructureTower.prototype,towerExtension)

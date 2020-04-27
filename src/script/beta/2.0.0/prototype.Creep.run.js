@@ -13,9 +13,6 @@ const ERR_REPEAT = "repeat"
 const ERR_PENDING = "pending"
 const TRANSFER_DYING_TICK = 20
 const COMMON_DYING_TICK = 5
-module.exports = function() {
-    _.assign(Creep.prototype,creepRunExtensions)
-}
 const reachBoundary = function(x){
     return x < 1 || x > 48
 }
@@ -443,6 +440,12 @@ const creepRunExtensions = {
                 taskInfo.targetPos = Game.getObjectById(taskInfo.targetID).pos
             }
             
+            if (!Game.getObjectById(taskInfo.targetID)) return ERR_DELETE
+
+            if (subTaskType === "aid"){
+                if (Game.getObjectById(taskInfo.targetID).store[taskInfo.data.resourceType] >= taskInfo.data.toStopAmount) return ERR_DELETE    
+            }
+            
             var target = Game.getObjectById(taskInfo.targetID)
             if (target.store.getFreeCapacity() == 0) return ERR_DELETE
             
@@ -473,7 +476,7 @@ const creepRunExtensions = {
             if (!taskInfo.targetID && (!taskInfo.targetPos || this.room.name == taskInfo.targetPos.roomName)) return ERR_DELETE
 
             if (this.room.name == taskInfo.targetPos.roomName && !utils.canGetObjectById(taskInfo.targetID,taskInfo.targetPos,this.pos)) return ERR_DELETE
-            if (this.room.name != taskInfo.targetPos.roomName) {this["_adjMove"](taskInfo.targetPos,avoidBarrior = true);return OK;}
+            if (this.room.name != taskInfo.targetPos.roomName) {this["_adjMove"](taskInfo.targetPos,true);return OK;}
 
             var target = Game.getObjectById(taskInfo.targetID)
             
@@ -481,7 +484,7 @@ const creepRunExtensions = {
             
             var feedback = this[taskType](target)
             
-            if (feedback === ERR_NOT_IN_RANGE) this["_adjMove"](taskInfo.targetPos,avoidBarrior = true)
+            if (feedback === ERR_NOT_IN_RANGE) this["_adjMove"](taskInfo.targetPos,true)
             else if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
             else if (feedback === ERR_NOT_ENOUGH_RESOURCES && taskInfo.settings.changeable) {
                 taskInfo.targetID = undefined
@@ -631,15 +634,30 @@ const creepRunExtensions = {
         if (subTaskType === "harvest"){
             if (!taskInfo.targetID) taskInfo.targetID = taskInfo.data.target
             const target = Game.getObjectById(taskInfo.targetID)
+            if (!target) return ERR_DELETE
             if (!taskInfo.targetPos) taskInfo.targetPos = target.pos
+
+            if (target.hits <= 5000){
+                var existingCapacity = _.reduce(signals["transferers"],(result,item)=>result+=item.store.getCapacity(),0)
+                if (target.power - existingCapacity >= creepConfig.components["transferer"]["carry"]){
+                    var saltList = utils.getSaltList(this.memory.home.this.group.type,this.group.name,"transferer")
+                    Game.rooms[this.memory.home].AddSpawnTask("transferer",creepConfig.components["transferer"],this.memory.group.type,this.memory.group.name,[],"default",saltList.length)
+                }
+            }
 
             if (this["_adjMove"](taskInfo.targetPos) === ERR_NOT_IN_RANGE) return OK
             
             const bodySituation = utils.analyseCreep(this.id)
-            if (bodySituation["move"][1] === 0 && bodySituation["attack"][1] / bodySituation["attack"][0] <= 0.5) return OK
+            if (bodySituation["move"][1] === 0 && bodySituation["attack"][1] / bodySituation["attack"][0] <= 0.5) {
+                this.memory.waitingHeal = true
+                return OK
+            }
+            if (this.memory.waitingHeal) if (bodySituation["attack"][2] === false) this.memory.waitingHeal = false
             
-            var feedback = this.attack(target)
-            if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
+            if (!this.memory.waitingHeal){
+                var feedback = this.attack(target)
+                if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
+            }
         }else if (subTaskType === "heal"){
             if (!Game.getObjectById(taskInfo.targetID)) taskInfo.targetID = signals["creep"]
             var target = Game.getObjectById(taskInfo.targetID)
@@ -647,7 +665,7 @@ const creepRunExtensions = {
 
             const masterSituation = utils.analyseCreep(taskInfo.targetID)
             if (masterSituation["attack"][2] === true || masterSituation["move"][2] === true) this.heal(target)
-            else this.heal(this)
+            else if (this.hits < this.hitsMax) this.heal(this)
         }else if (subTaskType === "claim"){
             if (!Game.rooms[taskInfo.data.targetRoom].controller) return OK
             const controller = Game.rooms[taskInfo.data.targetRoom].controller
@@ -706,12 +724,13 @@ const creepRunExtensions = {
                     else this.renewTask()
                 }else this.renewTask()
             }else this.finishTask()
+            return undefined
         }
         if (!this.memory.reSpawn && (this.getTask(dry = true) || canGetTask)) {
             this.memory.reSpawn = true
             var boostCompounds = creepConfig.boosts[this.memory.role]
             if (!boostCompounds) boostCompounds = []
-            Game.rooms[this.memory.home].AddSpawnTask(this.memory.role,creepConfig.components[this.memory.role],this.memory.group.type,this.memory.group.name,boostCompounds)
+            Game.rooms[this.memory.home].AddSpawnTask(this.memory.role,creepConfig.components[this.memory.role],this.memory.group.type,this.memory.group.name,boostCompounds,"default",this.memory.salt)
         }
         if (this.memory.role === "transferer" ||
             this.memory.role === "worker"     ||
@@ -748,3 +767,5 @@ const creepRunExtensions = {
         return this["_" + taskInfo.taskType](taskInfo.subTaskType,signals)
     }
 }
+
+_.assign(Creep.prototype,creepRunExtensions)

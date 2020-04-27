@@ -6,7 +6,7 @@ const creepConfiguration = {
         "worker":{work:3,carry:3,move:3},
         "repairer":{work:5,carry:3,move:4},
         "defender":{tough:5,move:20,attack:5,"ranged_attack":5,heal:5},
-        "attacker":{move:10,attack:40},
+        "attacker":{move:15,attack:30},
         "healer":{move:10,heal:30,move:10},
         "claimer":{move:1,claim:1},
         "traveler":{move:1,heal:1}
@@ -29,6 +29,9 @@ const creepConfiguration = {
         "Attack":{"attacker":["attack-attack"],"healer":["-attack-heal"]},
         "Claim":{"claimer":["attack-claim"]},
         "Travel":{"traveler":["travel"]}
+    },
+    groupSpawnConfig:{
+        "powerHarvest":{"healer":2,"transferer":0}
     }
 }
 module.exports = creepConfiguration

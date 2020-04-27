@@ -7,10 +7,15 @@ module.exports = function(){
                 global.unexpectedDeath[roomName] = 0
                 spawn.activateProtection()
             }
-            if (!spawn.isIdle()) spawn.run()
+            var lock = false
             if (spawn.memory.lastSpawningTick + spawnConfig.spawnIntervalTick <= Game.time){
-                if (spawn.isIdle()) if(spawn.getTask()) spawn.memory.lastSpawningTick = Game.time
+                if (spawn.isIdle()) if(spawn.getTask()) {
+                    spawn.memory.lastSpawningTick = Game.time
+                    lock = true
+                }
             }
+            if (!spawn.isIdle()) spawn.run()
+            if (lock) break
         }
     }
 }

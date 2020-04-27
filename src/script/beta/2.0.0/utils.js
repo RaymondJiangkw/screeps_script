@@ -1,9 +1,11 @@
 const CACHE_TIMEOUT = 50;
 const CACHE_OFFSET  = 4;
 const constants = require('constants')
+const creepConfig = require('configuration.Creep')
 const acceptableDepositCooldownTime = require('configuration.Deposit').acceptableLastCoolDown
 const SHA1 = require('fingerprint.Algorithm.sha1')
 const MD5 = require('fingerprint.Algorithm.md5')
+var SaltList = {}
 const utilsCollection = {
     dis:function(_object_1_id,_object_2_id){
         const _object_1 = Game.getObjectById(_object_1_id)
@@ -48,6 +50,7 @@ const utilsCollection = {
         var str = ""
         for (var key in args) {
             var arg = args[key]
+            if (arg === undefined || arg === null) continue;
             if (typeof arg === "object"){
                 if (arg['amount']){
                     arg = JSON.parse(JSON.stringify(arg))
@@ -204,6 +207,35 @@ const utilsCollection = {
     getAcceptableCoolTime:function(home,targetRoom){
         var dist = this.calcRoomsDistance(home,targetRoom)
         return Math.ceil(acceptableDepositCooldownTime / dist)
+    },
+    isRolePrimary:function(groupType,role){
+        return role == Object.keys(creepConfig.groupAcceptedTask[groupType])[0]
+    },
+    getSaltList:function(roomName,groupType,groupName,role){
+        if (!SaltList[roomName]) {
+            SaltList[roomName] = {}
+            const groupTypeCreeps = _.groupBy(Game.rooms[roomName].creeps,(c)=>c.memory.group.type)
+            for (var groupType in groupTypeCreeps){
+                SaltList[roomName][groupType] = {}
+                const groupNameCreeps = _.groupBy(groupTypeCreeps[groupType],(c)=>c.memory.group.name)
+                for (var groupName in groupNameCreeps){
+                    const creeps = _.groupBy(groupNameCreeps[groupName],(c)=>c.memory.role)
+                    const groupRoles = Object.keys(creepConfig.groupAcceptedTask[groupType])
+                    var saltList = {}
+                    for (var waitingSpawnTask of Game.rooms[roomName].searchTask("_spawn","default")) {
+                        const taskInfo = Game.rooms[roomName].taskInfo(waitingSpawnTask)
+                        if (!saltList[taskInfo.data.memory.role]) saltList[taskInfo.data.memory.role] = []
+                        saltList[taskInfo.data.memory.role].push(taskInfo.data.memory.salt)
+                    }
+                    for (var role of groupRoles){
+                        if (!saltList[role]) saltList[role] = []
+                        if (creeps[role]) saltList[role] = saltList[role].concat(_.map(creeps[role],(c)=>c.memory.salt))
+                    }
+                    SaltList[roomName][groupType][groupName] = saltList
+                }
+            }
+        }
+        try {return SaltList[roomName][groupType][groupName][role]} catch (error) {return []}
     }
 }
 module.exports = utilsCollection

@@ -1,40 +1,40 @@
 const taskPriorityConfiguration = {
     "spawn":{
         "transferer":{
-            "pureTransfer":0,
-            "remoteHarvest":6,
-            "powerHarvest":6,
-            "remoteTransfer":6
+            "pureTransfer":0,   // Primary
+            "remoteHarvest":106,
+            "powerHarvest":106,
+            "remoteTransfer":106
         },
-        "harvester":{
+        "harvester":{           // Primary
             "remoteHarvest":6,
             "localHarvest":1,
         },
-        "upgrader":{
+        "upgrader":{            // Primary
             "pureUpgrader":2
         },
-        "worker":{
+        "worker":{              // Primary
             "pureWorker":4
         },
-        "repairer":{
+        "repairer":{            // Primary
             "pureRepairer":5,
             "remoteRepairer":9,
         },
-        "defender":{
+        "defender":{            // Primary
             "Defend":3
         },
-        "attacker":{
+        "attacker":{            // Primary
             "Attack":7,
             "powerHarvest":6,
         },
         "healer":{
-            "Attack":7,
-            "powerHarvest":6,
+            "Attack":107,
+            "powerHarvest":106,
         },
-        "claimer":{
+        "claimer":{             // Primary
             "Claim":7,
         },
-        "traveler":{
+        "traveler":{            // Primary
             "Travel":8,
         }
     }

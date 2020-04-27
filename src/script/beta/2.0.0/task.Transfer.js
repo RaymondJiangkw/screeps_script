@@ -155,8 +155,9 @@ module.exports = function() {
             if (global.rooms.my.indexOf(fromRoom) < 0) continue
             var from = aidInfo.from, to = aidInfo.to
             if (!Game.rooms[hostRoom][to] || !Game.rooms[fromRoom][from]) continue
+            if (Game.rooms[hostRoom][to].store[aidInfo.resourceType] > aidInfo.toBeginAmount) continue
             if (Game.rooms[fromRoom][from].store[aidInfo.resourceType] < aidInfo.beginAmount) continue
-            Game.rooms[hostRoom].AddAidTask(Game.rooms[fromRoom][from].id,fromRoom,Game.rooms[hostRoom][to].id,toRoom,aidInfo.resourceType,aidInfo.endAmount)
+            Game.rooms[hostRoom].AddAidTask(Game.rooms[fromRoom][from].id,fromRoom,Game.rooms[hostRoom][to].id,toRoom,aidInfo.resourceType,aidInfo.endAmount,aidInfo.toEndAmount)
         }
     }
 
