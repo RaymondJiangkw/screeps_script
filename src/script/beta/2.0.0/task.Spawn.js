@@ -8,9 +8,8 @@ const generateSpawnTask = function(roomName,groupType){
     for (var role in creepConfig.groupAcceptedTask[groupType]){
         var saltArr = utils.getSaltList(roomName,groupType,groupName,role)
         var roleNum = 1
-        var boostCompounds = creepConfig.boosts[role]
+        var boostCompounds = utils.getBoosts(role,groupType)
         if (creepConfig.groupSpawnConfig[groupType] && creepConfig.groupSpawnConfig[groupType][role]) roleNum = creepConfig.groupSpawnConfig[groupType][role]
-        if (!boostCompounds) boostCompounds = []
         for (var _ = 0; _ < roleNum;_++){
             if (saltArr.indexOf(_) >= 0) continue
             if (!Game.rooms[roomName].AddSpawnTask(role,creepConfig.components[role],groupType,groupName,boostCompounds,"default",_)) executable = false;

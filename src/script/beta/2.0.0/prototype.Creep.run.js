@@ -5,12 +5,12 @@ const terminalConfig = require('configuration.Terminal')
 const claimRoomConfig = require('configuration.targetRooms')
 const observerConfig = require("configuration.Observer")
 const buildConfig = require('configuration.Build')
+const labConfig = require('configuration.Lab')
 const ERR_SWITCH = "switch"
 const FINISH = "finish"
 const ERR_DELETE = "delete"
 const ERR_RENEW = "renew"
 const ERR_REPEAT = "repeat"
-const ERR_PENDING = "pending"
 const TRANSFER_DYING_TICK = 20
 const COMMON_DYING_TICK = 5
 const reachBoundary = function(x){
@@ -51,13 +51,9 @@ const getVacantPlace = function(pos,adjPos = undefined) {
     }
     return undefined
 }
-
 const hasEnergy = function(object,amount = 0){
     if (!object) return false
     return object.store.getUsedCapacity(RESOURCE_ENERGY) > amount
-}
-const getLab = function(roomName,resourceType) {
-
 }
 const creepRunExtensions = {
     Invisible(){
@@ -98,6 +94,7 @@ const creepRunExtensions = {
             const ENERGY_UNIT = 20
             for (var i = 0;i < this.memory.boostCompounds.length;i++){
                 const boostCompound = this.memory.boostCompounds[i]
+                if (!labConfig[this.room.name] || labConfig[this.room.name].allowedCompounds.indexOf(boostCompound) < 0) continue
                 if (!global.resources[this.room.name][boostCompound]) continue
                 //const NEED_COMPOUND = COMPOUND_UNIT * this.memory["_tmp"]["bodyAnalysis"][constants.compoundEffect[boostCompound]][0]
                 //const NEED_ENERGY = ENERGY_UNIT * this.memory["_tmp"]["bodyAnalysis"][constants.compoundEffect[boostCompound]][0]
@@ -168,7 +165,7 @@ const creepRunExtensions = {
             var hasEnoughEnergyContainers = _.filter(global.containers[this.memory.home].resources,c=>c.store.getUsedCapacity(RESOURCE_ENERGY) >= this.store.getFreeCapacity())
             hasEnoughEnergyContainers.sort((containerA,containerB)=>utils.distancePos(this.pos,containerA.pos) - utils.distancePos(this.pos,containerB.pos))
             const getDropOrHarvest = () => {
-                var droppedEnergys = this.pos.findClosestByRange(FIND_DROPPED_RESOURCES,(r)=>r.resourceType === RESOURCE_ENERGY)
+                var droppedEnergys = this.pos.findClosestByRange(FIND_DROPPED_RESOURCES,{filter:{resourceType:RESOURCE_ENERGY}})
                 var _hasEnergyContainers = _.filter(Game.rooms[this.room.name].containers,(c)=>c.store["energy"] > 0)
                 _hasEnergyContainers.sort((a,b)=>b.store["energy"] - a.store["energy"])
                 if (droppedEnergys) chosenObject = droppedEnergys
@@ -349,8 +346,8 @@ const creepRunExtensions = {
                 if (!this.memory.get.getTarget || !this.memory.get.getTargetPos){
                     if (!Game.rooms[taskInfo.data.fromRoom]) this["_Move"](new RoomPosition(15,15,taskInfo.data.fromRoom))
                     else{
-                        var ruins = Game.rooms[taskInfo.data.fromRoom].find(FIND_RUINS,(r)=>r.store.getUsedCapacity(RESOURCE_POWER) > 0)
-                        var droppedPower = Game.rooms[taskInfo.data.fromRoom].find(FIND_DROPPED_RESOURCES,(r) => r.resourceType === RESOURCE_POWER)
+                        var ruins = Game.rooms[taskInfo.data.fromRoom].find(FIND_RUINS,{filter:(r)=>r.store.getUsedCapacity(RESOURCE_POWER) > 0})
+                        var droppedPower = Game.rooms[taskInfo.data.fromRoom].find(FIND_DROPPED_RESOURCES,{filter:{resourceType:RESOURCE_POWER}})
                         if (ruins.length + droppedPower.length === 0){
                             return FINISH
                         }else{
@@ -548,7 +545,7 @@ const creepRunExtensions = {
             var target = Game.getObjectById(taskInfo.targetID)
             var feedback = this.pickup(target)
 
-            if (feedback === OK) this.memory.working = true
+            if (feedback === OK || feedback === ERR_FULL) this.memory.working = true
             else if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
         }
         if (this.memory.working) {
@@ -641,7 +638,7 @@ const creepRunExtensions = {
                 var existingCapacity = _.reduce(signals["transferers"],(result,item)=>result+=item.store.getCapacity(),0)
                 if (target.power - existingCapacity >= creepConfig.components["transferer"]["carry"]){
                     var saltList = utils.getSaltList(this.memory.home.this.group.type,this.group.name,"transferer")
-                    Game.rooms[this.memory.home].AddSpawnTask("transferer",creepConfig.components["transferer"],this.memory.group.type,this.memory.group.name,[],"default",saltList.length)
+                    Game.rooms[this.memory.home].AddSpawnTask("transferer",creepConfig.components["transferer"],this.memory.group.type,this.memory.group.name,utils.getBoosts("transferer",this.memory.group.type),"default",saltList.length)
                 }
             }
 
@@ -728,9 +725,7 @@ const creepRunExtensions = {
         }
         if (!this.memory.reSpawn && (this.getTask(dry = true) || canGetTask)) {
             this.memory.reSpawn = true
-            var boostCompounds = creepConfig.boosts[this.memory.role]
-            if (!boostCompounds) boostCompounds = []
-            Game.rooms[this.memory.home].AddSpawnTask(this.memory.role,creepConfig.components[this.memory.role],this.memory.group.type,this.memory.group.name,boostCompounds,"default",this.memory.salt)
+            Game.rooms[this.memory.home].AddSpawnTask(this.memory.role,creepConfig.components[this.memory.role],this.memory.group.type,this.memory.group.name,utils.getBoosts(this.memory.role,this.memory.group.type),"default",this.memory.salt)
         }
         if (this.memory.role === "transferer" ||
             this.memory.role === "worker"     ||

@@ -142,7 +142,7 @@ module.exports = function() {
 
         if (Game.rooms[roomName].storage && (!global.task.transfer[roomName]["tombExpirationTime"] || global.task.transfer[roomName]["tombExpirationTime"] <= Game.time)){
             global.task.transfer[roomName]["tombExpirationTime"] = Game.time + utils.getCacheExpiration()
-            var tombStones = _.filter(Game.rooms[roomName].find(FIND_TOMBSTONES),(t)=>t.store.getUsedCapacity() > 0)
+            var tombStones = Game.rooms[roomName].find(FIND_TOMBSTONES,{filter:(t)=>t.store.getUsedCapacity() > 0})
             tombStones.sort((a,b)=>b.store.getUsedCapacity() - a.store.getUsedCapacity())
             for (var tombStone of tombStones) Game.rooms[roomName].AddTransferTask("defense",tombStone.id,Game.rooms[roomName].storage.id,undefined,amount = "exhaust")
         }

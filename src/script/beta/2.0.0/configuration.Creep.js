@@ -12,7 +12,9 @@ const creepConfiguration = {
         "traveler":{move:1,heal:1}
     },
     boosts:{
-        "transferer":["KH","KH2O"],
+        "transferer":{
+            "remoteTransfer":["KH","KH2O"],
+        },
     },
     groupAcceptedTask:{
         // PRIMARY KEY PRINCIPLE

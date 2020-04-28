@@ -1,4 +1,5 @@
 const powerCreepConfiguration = {
-    "default":[]
+    "default":[],
+    renewRemainingTicks:50,
 }
 module.exports = powerCreepConfiguration

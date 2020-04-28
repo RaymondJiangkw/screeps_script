@@ -149,12 +149,6 @@ const roomTaskExtension = {
         const data = {from,fromRoom,to,toRoom,resourceType,amount}
         return this.AddTask("transfer",subTaskType,data,groupsNum,changeable,silence,getRepeat)
     },
-    AddAidTask(from,fromRoom,to,toRoom,resourceType,stopAmount,toStopAmount,groupsNum = 1,changeable = false,silence = false,getRepeat = false){
-        var toTarget = Game.getObjectById(to)
-        if (toTarget && toTarget.store.getUsedCapacity() > toStopAmount) return undefined
-        const data = {from,fromRoom,to,toRoom,resourceType,stopAmount,toStopAmount}
-        return this.AddTask("transfer","aid",data,groupsNum,changeable,silence,getRepeat)
-    },
     AddHarvestTask(subTaskType,targetID,targetPos = undefined,groupsNum = 1,changeable = false,silence = false,getRepeat = false){
         const data = {targetID,targetPos}
         return this.AddTask("harvest",subTaskType,data,groupsNum,changeable,silence,getRepeat)
@@ -204,7 +198,7 @@ const roomTaskExtension = {
                 salt
             }
         }
-        return this.AddTask("spawn","default",data,1,false,false,false,salt)
+        return this.AddTask("spawn",subTaskType,data,1,false,false,false,salt)
     }
 }
 

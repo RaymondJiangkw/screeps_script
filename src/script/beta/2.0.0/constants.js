@@ -3,6 +3,9 @@ const Constants = {
     emoji:{
         redFlag:"🚩",
         hunt:"🏹",
+        money:"💰",
+        number:"🔟",
+        face:"😀"
     },
     labFormula:{
         "OH":["H","O"],

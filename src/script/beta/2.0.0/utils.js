@@ -236,6 +236,10 @@ const utilsCollection = {
             }
         }
         try {return SaltList[roomName][groupType][groupName][role]} catch (error) {return []}
+    },
+    getBoosts:function(role,groupType){
+        if (!creepConfig.boosts[role]) return []
+        return creepConfig.boosts[role][groupType] || []
     }
 }
 module.exports = utilsCollection
