@@ -5,7 +5,9 @@ const Constants = {
         hunt:"🏹",
         money:"💰",
         number:"🔟",
-        face:"😀"
+        bigSmile:"😀",
+        slightSmile:"🙂",
+        neutralFace:"😐"
     },
     labFormula:{
         "OH":["H","O"],

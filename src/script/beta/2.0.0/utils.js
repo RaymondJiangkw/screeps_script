@@ -130,6 +130,7 @@ const utilsCollection = {
         else damageSituatioin = "severe"
         if (bodyAnalysis["attack"] || bodyAnalysis["ranged_attack"]) role = "attacker"
         else if (bodyAnalysis["heal"]) role = "healer"
+        else if (!bodyAnalysis["attack"] && !bodyAnalysis["ranged_attack"] && !bodyAnalysis["heal"]) role = "harmless"
         else{
             var attackNum = 0, rangedAttackNum = 0,healNum = 0;
             if (bodyAnalysis["attack"]) attackNum = bodyAnalysis["attack"][0]
@@ -142,6 +143,17 @@ const utilsCollection = {
             }else role = "advancedHealer"
         }
         return [role,damageSituatioin]
+    },
+    getCreepsRange:function(creepArr){
+        var result = []
+        for (var i = 0; i < creepArr.length; i++){
+            var distance = 0
+            for (var j = 0; j < creepArr.length;j++){
+                if (i != j) distance+=creepArr[i].pos.getRangeTo(creepArr[j])
+            }
+            result.push(distance / (creepArr.length - 1));
+        }
+        return result
     },
     roomNameToXY:function(name) {
         let xx = parseInt(name.substr(1), 10);
@@ -209,7 +221,8 @@ const utilsCollection = {
         return Math.ceil(acceptableDepositCooldownTime / dist)
     },
     isRolePrimary:function(groupType,role){
-        return role == Object.keys(creepConfig.groupAcceptedTask[groupType])[0]
+        if (role == Object.keys(creepConfig.groupAcceptedTask[groupType])[0]) return true
+        else return Object.keys(creepConfig.groupAcceptedTask[groupType])[0]
     },
     getSaltList:function(roomName,groupType,groupName,role){
         if (!SaltList[roomName]) {

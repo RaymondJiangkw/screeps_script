@@ -392,7 +392,7 @@ const creepRunExtensions = {
                     return ERR_DELETE
                 }
                 if (this.memory.get.getTarget && this.memory.get.getTargetPos){
-                    if (subTaskType === "aid"){
+                    if (subTaskType === "aid" || subTaskType === "limit"){
                         if (!Game.getObjectById(this.memory.get.getTarget)) return ERR_DELETE
                         if (Game.getObjectById(this.memory.get.getTarget).store[taskInfo.data.resourceType] < taskInfo.data.stopAmount) return ERR_DELETE
                     }
@@ -439,7 +439,7 @@ const creepRunExtensions = {
             
             if (!Game.getObjectById(taskInfo.targetID)) return ERR_DELETE
 
-            if (subTaskType === "aid"){
+            if (subTaskType === "aid" || subTaskType === "limit"){
                 if (Game.getObjectById(taskInfo.targetID).store[taskInfo.data.resourceType] >= taskInfo.data.toStopAmount) return ERR_DELETE    
             }
             
@@ -504,7 +504,6 @@ const creepRunExtensions = {
         return this._work("upgradeController",subTaskType,signals)
     },
     _travel(subTaskType,signals){
-        if(this.hits < this.hitsMax) this.heal(this)
         const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
         if (!taskInfo.data.roomList) taskInfo.data.roomList = []
         if (!taskInfo.targetPos){
@@ -699,7 +698,13 @@ const creepRunExtensions = {
                 var feedback = this.attack(target)
                 if (feedback === ERR_NOT_IN_RANGE) this.moveTo(target)
                 else if (feedback === ERR_INVALID_TARGET) taskInfo.targetID = undefined
-            }else return FINISH
+            }else {
+                if (Game.rooms[taskInfo.data.targetRoom].droppedResources.length > 0){
+                    var home = utils.getClosetSuitableRoom(taskInfo.data.targetRoom,4,true)
+                    Game.rooms[home].AddPickUpTask("remote","pickUp",new RoomPosition(25,25,taskInfo.data.targetRoom))
+                }
+                return OK
+            }
         }
         return OK
     },
@@ -721,9 +726,8 @@ const creepRunExtensions = {
                     else this.renewTask()
                 }else this.renewTask()
             }else this.finishTask()
-            return undefined
         }
-        if (!this.memory.reSpawn && (this.getTask(dry = true) || canGetTask)) {
+        if (!this.memory.reSpawn && ((this.ticksToLive <= 3 && this.getTask(dry = true)) || canGetTask)) {
             this.memory.reSpawn = true
             Game.rooms[this.memory.home].AddSpawnTask(this.memory.role,creepConfig.components[this.memory.role],this.memory.group.type,this.memory.group.name,utils.getBoosts(this.memory.role,this.memory.group.type),"default",this.memory.salt)
         }

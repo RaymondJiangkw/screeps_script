@@ -35,6 +35,11 @@ module.exports = function() {
                 var terminalEnergy = terminalConfig.baseReservedEnergy
                 if (terminalConfig["sellingEnergy"][roomName]) terminalEnergy += terminalConfig["sellingEnergy"][roomName]
                 if (Game.rooms[roomName].terminal.store.getUsedCapacity(RESOURCE_ENERGY) <= terminalEnergy) Game.rooms[roomName].AddTransferTask("advanced","energy",Game.rooms[roomName].terminal.id,RESOURCE_ENERGY)
+
+                var thisMineralType = Game.rooms[roomName].mineral.mineralType
+                if (global.resources[roomName][thisMineralType] && global.resources[roomName][thisMineralType]["storage"] >= terminalConfig.baseReservedMineral){
+                    Game.rooms[roomName].AddLimitTransferTask(Game.rooms[roomName].storage.id,Game.rooms[roomName].terminal.id,terminalConfig.baseReservedMineral)
+                }
             }
             
             // Charge Nuker

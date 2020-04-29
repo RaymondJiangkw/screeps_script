@@ -9,7 +9,7 @@ const creepConfiguration = {
         "attacker":{move:15,attack:30},
         "healer":{move:10,heal:30,move:10},
         "claimer":{move:1,claim:1},
-        "traveler":{move:1,heal:1}
+        "traveler":{move:1}
     },
     boosts:{
         "transferer":{
@@ -21,11 +21,12 @@ const creepConfiguration = {
         "remoteHarvest":{"harvester":["harvest-remote"],"transferer":["-transfer-remote"]},
         "powerHarvest":{"attacker":["attack-harvest"],"healer":["-attack-heal"],"transferer":["-transfer-remote"]},
         "localHarvest":{"harvester":["harvest-local"]},
-        "pureTransfer":{"transferer":["transfer-core","transfer-defense","pickup","transfer-advanced"]},
+        "pureTransfer":{"transferer":["transfer-core","transfer-defense","pickup-local","transfer-advanced|limit"]},
         "pureWorker":{"worker":["build-local","build-remote","*transfer-core","*repair-local","*upgrade"]},
         "pureRepairer":{"repairer":["repair-local","*transfer-core","*upgrade"]},
         "remoteRepairer":{"repairer":["repair-remote","build-remote"]},
         "remoteTransfer":{"transfer":["transfer-aid"]},
+        "remotePickUper":{"transfer":["pickup-remote"]},
         "pureUpgrader":{"upgrader":["upgrade"]},
         "Defend":{"defender":["defend-local|reserved"]},
         "Attack":{"attacker":["attack-attack"],"healer":["-attack-heal"]},

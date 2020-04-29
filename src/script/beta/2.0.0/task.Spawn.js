@@ -30,7 +30,7 @@ module.exports = function(){
         // Transfer Task
         const pureTransferer = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "pureTransfer")
         const remoteTransferer = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "remoteTransfer")
-        var transferTaskLength = Game.rooms[roomName].countTask("_transfer",["core","defense","advanced"])
+        var transferTaskLength = Game.rooms[roomName].countTask("_transfer",["core","defense","advanced","limit"])
         var aidTaskLength = Game.rooms[roomName].countTask("_transfer",["aid"])
         if (Game.rooms[roomName].memory.task["transfer"] && (pureTransferer.length === 0 || pureTransferer.length < Math.floor(Math.log(transferTaskLength)))) generateSpawnTask(roomName,"pureTransfer");
         if (remoteTransferer.length < aidTaskLength) generateSpawnTask(roomName,"remoteTransfer");
@@ -86,5 +86,10 @@ module.exports = function(){
             if (attackerHarvest.length < harvestTaskLength) generateSpawnTask(roomName,"powerHarvest")
             if (Math.floor(creepsCollection["claimer"].length / 2) < claimTaskLength) generateSpawnTask(roomName,"Claim")
         }
+
+        // PickUp Task
+        const remotePickUper = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "remotePickUper")
+        const remotePickUpTaskLength = Game.rooms[roomName].countTask("_pickup",["remote"])
+        if (remotePickUper.length < remotePickUpTaskLength) generateSpawnTask(roomName,"remotePickUper")
     }
 }

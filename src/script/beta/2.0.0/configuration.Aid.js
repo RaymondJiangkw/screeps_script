@@ -11,12 +11,9 @@ class transferInfo{
     }
 }
 module.exports = {
-    "W19N22":[new transferInfo("W21N24","energy",500000,300000,100000,600000),
-             ],
-    "W22N25":[new transferInfo("W23N25","K",30000,10000,10000,30000),
-             ],
-    "W23N25":[new transferInfo("W22N25","H",30000,10000,10000,30000),
-             ],
-    "W21N24":[new transferInfo("W22N25","K",30000,10000,10000,30000),
-             ]
+    "W18N22":[],
+    "W19N22":[],
+    "W22N25":[],
+    "W23N25":[],
+    "W21N24":[]
 }
