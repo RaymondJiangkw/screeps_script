@@ -4,8 +4,8 @@ const reservedRooms = require('configuration.Observer').dominance
 module.exports = function(){
     for (var reservedRoom of reservedRooms){
         var coordi = utils.roomNameToXY(reservedRoom)
-        if (coordi[0] % 10 == 0 || coordi[1] % 10 == 0 || utils.ownRoom(reservedRoom) == "reserved") continue
+        if (coordi[0] % 10 == 0 || coordi[1] % 10 == 0) continue
         var home = utils.getClosetSuitableRoom(reservedRoom,4,true)
-        if (home) Game.rooms[home].AddAttackTask("claim",reservedRoom,undefined,[],2,false)
+        if (home) Game.rooms[home].AddAttackTask("claim",reservedRoom,[],2,false)
     }
 };

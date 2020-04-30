@@ -10,14 +10,14 @@ module.exports = function() {
                 var resourceMineralType = cachedResource.mineralType
                 if (resourceMineralType && !Game.rooms[roomName].extractor) continue
 
-                Game.rooms[roomName].AddHarvestTask("local",cachedResource.id,cachedResource.pos,)
+                Game.rooms[roomName].AddHarvestTask("local",cachedResource.id,cachedResource.pos)
             }
         }else{
             var homeTarget = Game.rooms[roomName].controller
             if (Game.rooms[roomName].spawns.length > 0) homeTarget = Game.rooms[roomName].spawns[0]
 
             var energyTarget = homeTarget.pos.findClosestByRange(FIND_SOURCES_ACTIVE)
-            if (energyTarget) Game.rooms[roomName].AddHarvestTask("local",energyTarget.id,energyTarget.pos,)
+            if (energyTarget) Game.rooms[roomName].AddHarvestTask("local",energyTarget.id,energyTarget.pos)
         }
     }
     for (var roomName of global.rooms.observed) {
@@ -31,7 +31,7 @@ module.exports = function() {
             }
         }
         for (var powerBank of Game.rooms[roomName]["powerBanks"]){
-            var home = utils.getClosetSuitableRoom(roomName,6,true)
+            var home = utils.getClosetSuitableRoom(roomName,7,true)
             if (!home) break
             Game.rooms[home].AddAttackTask("harvest",roomName,powerBank.id,1)
         }

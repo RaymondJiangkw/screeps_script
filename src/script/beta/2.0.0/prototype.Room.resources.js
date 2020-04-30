@@ -1,16 +1,18 @@
-var roomResources = {};
-var roomResourcesExpiration = {};
+var roomResources                   = {};
+var roomResourcesExpiration         = {};
 
-var roomDroppedResources = {};
-var roomDroppedResourcesExpiration = {};
+var roomDroppedResources            = {};
+var roomDroppedResourcesExpiration  = {};
 
 const multipleList = [
-    RESOURCE_ENERGY,RESOURCE_MIST,RESOURCE_BIOMASS,RESOURCE_METAL,RESOURCE_SILICON,
+    RESOURCE_ENERGY,    RESOURCE_MIST,      RESOURCE_BIOMASS,   RESOURCE_METAL,
+    RESOURCE_SILICON,
 ];
 const singleList = [
-    RESOURCE_HYDROGEN,RESOURCE_OXYGEN,RESOURCE_UTRIUM,RESOURCE_LEMERGIUM,
-    RESOURCE_KEANIUM,RESOURCE_ZYNTHIUM,RESOURCE_CATALYST,
+    RESOURCE_HYDROGEN,  RESOURCE_OXYGEN,    RESOURCE_UTRIUM,    RESOURCE_LEMERGIUM,
+    RESOURCE_KEANIUM,   RESOURCE_ZYNTHIUM,  RESOURCE_CATALYST,
 ];
+
 function getCacheExpiration(CACHE_TIMEOUT = 50,CACHE_OFFSET = 4) {
     return CACHE_TIMEOUT + Math.round((Math.random()*CACHE_OFFSET*2)-CACHE_OFFSET);
 }
@@ -21,9 +23,8 @@ Room.prototype._checkRoomResourceCache = function _checkRoomResourceCache(){
         const sources = this.find(FIND_SOURCES_ACTIVE)
         const minerals = this.find(FIND_MINERALS)
         const deposits = this.find(FIND_DEPOSITS)
-        var _sets = [].concat(sources,minerals,deposits)
-        _sets = _.filter(_sets,s=>s)
-        roomResources[this.name] = _.groupBy(_sets,s=>{
+        var resources = [].concat(sources,minerals,deposits)
+        roomResources[this.name] = _.groupBy(resources,s=>{
             if (s.mineralType) return s.mineralType
             if (s.depositType) return s.depositType
             return "energy"
@@ -39,7 +40,6 @@ Room.prototype._checkRoomDroppedResourcesCache = function _checkRoomDroppedResou
     if (!roomDroppedResourcesExpiration[this.name] || !roomDroppedResources[this.name] || roomDroppedResourcesExpiration[this.name] < Game.time){
         roomDroppedResourcesExpiration[this.name] = Game.time + getCacheExpiration(10,3)
         roomDroppedResources[this.name] = this.find(FIND_DROPPED_RESOURCES)
-        roomDroppedResources[this.name].sort((a,b)=>b.amount - a.amount)
         roomDroppedResources[this.name] = _.map(roomDroppedResources[this.name],r => r.id)
     }
 }
@@ -73,7 +73,7 @@ singleList.forEach(function(type){
             }else{
                 this._checkRoomResourceCache();
                 if (roomResources[this.name][type]){
-                    this["_"+type+"_ts"] = Game.time;
+                    this["_" + type + "_ts"] = Game.time;
                     return this["_" + type] = Game.getObjectById(roomResources[this.name][type][0]);
                 }else{
                     this["_" + type + "_ts"] = Game.time;
@@ -88,14 +88,11 @@ singleList.forEach(function(type){
 })
 Object.defineProperty(Room.prototype,"mineral",{
     get:function(){
-        if (this["_mineral"]) return this["_mineral"]
+        if (this["_mineral"] && this["_mineral_ts"] === Game.time) return this["_mineral"]
         else{
-            var mineralType
-            for (mineralType of singleList){
-                if (roomResources[this.name][mineralType]){
-                    return this["_mineral"] = Game.getObjectById(roomResources[this.name][mineralType][0]);
-                    break
-                }
+            this["_mineral_ts"] = Game.time;
+            for (var mineralType of singleList){
+                if (this[mineralType]) return this["_mineral"] = Game.getObjectById(this[mineralType]);
             }
             return this["_mineral"] = undefined;
         }
@@ -112,6 +109,7 @@ Object.defineProperty(Room.prototype,"droppedResources",{
         }else{
             this._checkRoomDroppedResourcesCache();
             roomDroppedResources[this.name] = _.filter(roomDroppedResources[this.name],s=>Game.getObjectById(s))
+            roomDroppedResources[this.name].sort((a,b)=>Game.getObjectById(b).amount - Game.getObjectById(a).amount)
             if (roomDroppedResources[this.name].length > 0){
                 this["_droppedResources_ts"] = Game.time;
                 return this["_droppedResources"] = _.map(roomDroppedResources[this.name],Game.getObjectById);
@@ -129,7 +127,7 @@ Object.defineProperty(Room.prototype,"droppedEnergys",{
     get:function(){
         if (this["_droppedEnergys"] && this["_droppedEnergys_ts"] === Game.time) return this["_droppedEnergys"]
         else{
-            const _droppedEnergys = _.filter(this.droppedResources,(r)=>r.resourceType == RESOURCE_ENERGY)
+            const _droppedEnergys = _.filter(this.droppedResources,(r)=>r.resourceType === RESOURCE_ENERGY)
             this["_droppedEnergys_ts"] = Game.time;
             return this["_droppedEnergys"] = _droppedEnergys;
         }

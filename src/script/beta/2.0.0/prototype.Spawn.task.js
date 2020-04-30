@@ -20,10 +20,9 @@ const spawnTaskExtension = {
     },
     run(){
         if (this.spawning) return OK
-        const roomName = this.room.name
-        const taskInfo = Game.rooms[roomName].taskInfo(this.memory.taskFingerPrint)
+        const taskInfo = this.room.taskInfo(this.memory.taskFingerPrint)
         const name = taskInfo.data.memory.role + "_" + this.room.name + "_" + Game.time
-        const availableEnergy = Game.rooms[roomName].energyAvailable
+        const availableEnergy = this.room.energyAvailable
         var components = utils.getComponentsList(this.room.name,taskInfo.data.memory.role,taskInfo.data.memory.group.type,availableEnergy,taskInfo.data.components)
         var feedback = this.spawnCreep(components,name,{memory:taskInfo.data.memory})
         if (feedback === OK) {

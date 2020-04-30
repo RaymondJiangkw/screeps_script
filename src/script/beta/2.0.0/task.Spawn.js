@@ -12,7 +12,7 @@ const generateSpawnTask = function(roomName,groupType){
         if (creepConfig.groupSpawnConfig[groupType] && creepConfig.groupSpawnConfig[groupType][role]) roleNum = creepConfig.groupSpawnConfig[groupType][role]
         for (var _ = 0; _ < roleNum;_++){
             if (saltArr.indexOf(_) >= 0) continue
-            if (!Game.rooms[roomName].AddSpawnTask(role,creepConfig.components[role],groupType,groupName,boostCompounds,"default",_)) executable = false;
+            if (!Game.rooms[roomName].AddSpawnTask(role,creepConfig.components[role],groupType,groupName,boostCompounds,_)) executable = false;
         }
     }
     if (executable) Game.rooms[roomName].memory.spawnCnt[groupType]++;
@@ -90,6 +90,7 @@ module.exports = function(){
         // PickUp Task
         const remotePickUper = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "remotePickUper")
         const remotePickUpTaskLength = Game.rooms[roomName].countTask("_pickup",["remote"])
-        if (remotePickUper.length < remotePickUpTaskLength) generateSpawnTask(roomName,"remotePickUper")
+        const remoteTransferTaskLength = Game.rooms[roomName].countTask("_transfer",["remote"])
+        if (remotePickUper.length < remotePickUpTaskLength + remoteTransferTaskLength) generateSpawnTask(roomName,"remotePickUper")
     }
 }

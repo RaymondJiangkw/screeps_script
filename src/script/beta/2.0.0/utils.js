@@ -2,6 +2,7 @@ const CACHE_TIMEOUT = 50;
 const CACHE_OFFSET  = 4;
 const constants = require('constants')
 const creepConfig = require('configuration.Creep')
+const labConfig = require('configuration.Lab')
 const acceptableDepositCooldownTime = require('configuration.Deposit').acceptableLastCoolDown
 const SHA1 = require('fingerprint.Algorithm.sha1')
 const MD5 = require('fingerprint.Algorithm.md5')
@@ -27,9 +28,8 @@ const utilsCollection = {
         const dist = this.disPos(pos1,pos2)
         return dist[0] <= distance && dist[1] <= distance && pos1.roomName === pos2.roomName
     },
-    adjacent:function(_object_1_id,_object_2_id, distance = 1){
-        const dist = this.dis(_object_1_id,_object_2_id)
-        return dist[0] <= distance && dist[1] <= distance
+    adjacent:function(object,subject, distance = 1){
+        return object.pos.inRangeTo(subject,distance)
     },
     AdjacentPos:function(pos1,posArr,distance = 1){
         for (var pos2 of posArr){
@@ -37,9 +37,9 @@ const utilsCollection = {
         }
         return false
     },
-    Adjacent:function(_object_1_id,_arr_id,distance = 1){
-        for (var _object_2_id of _arr_id){
-            if (this.adjacent(_object_1_id,_object_2_id,distance)) return _object_2_id
+    Adjacent:function(Object,objectArr,distance = 1){
+        for (var object of objectArr){
+            if (object.pos.inRangeTo(Object,distance)) return object.id
         }
         return false
     },
@@ -196,7 +196,7 @@ const utilsCollection = {
         else return false
     },
     analyseTaskList:function(taskList, _default = undefined){
-        if (taskList.charAt(0) == '-') taskList = taskList.slice(1)
+        if (taskList.charAt(0) === '-' || taskList.charAt(0) === '*') taskList = taskList.slice(1)
         var _taskList = taskList.split('-')
         if (_taskList[1]) _taskList[1] = _taskList[1].split('|')
         else _taskList[1] = _default
@@ -227,25 +227,43 @@ const utilsCollection = {
     getSaltList:function(roomName,groupType,groupName,role){
         if (!SaltList[roomName]) {
             SaltList[roomName] = {}
-            const groupTypeCreeps = _.groupBy(Game.rooms[roomName].creeps,(c)=>c.memory.group.type)
-            for (var groupType in groupTypeCreeps){
-                SaltList[roomName][groupType] = {}
-                const groupNameCreeps = _.groupBy(groupTypeCreeps[groupType],(c)=>c.memory.group.name)
-                for (var groupName in groupNameCreeps){
-                    const creeps = _.groupBy(groupNameCreeps[groupName],(c)=>c.memory.role)
-                    const groupRoles = Object.keys(creepConfig.groupAcceptedTask[groupType])
-                    var saltList = {}
-                    for (var waitingSpawnTask of Game.rooms[roomName].searchTask("_spawn","default")) {
-                        const taskInfo = Game.rooms[roomName].taskInfo(waitingSpawnTask)
-                        if (!saltList[taskInfo.data.memory.role]) saltList[taskInfo.data.memory.role] = []
-                        saltList[taskInfo.data.memory.role].push(taskInfo.data.memory.salt)
-                    }
-                    for (var role of groupRoles){
-                        if (!saltList[role]) saltList[role] = []
-                        if (creeps[role]) saltList[role] = saltList[role].concat(_.map(creeps[role],(c)=>c.memory.salt))
-                    }
-                    SaltList[roomName][groupType][groupName] = saltList
+            var spawningCreepSalts = {}
+            for (var spawnTask of Game.rooms[roomName].searchTask("_spawn","default")) {
+                const taskInfo = Game.rooms[roomName].taskInfo(spawnTask)
+                const groupType = taskInfo.data.memory.group.type
+                const groupName = taskInfo.data.memory.group.name
+                const role = taskInfo.data.memory.role
+                if (!spawningCreepSalts[groupType]) spawningCreepSalts[groupType] = {}
+                if (!spawningCreepSalts[groupType][groupName]) spawningCreepSalts[groupType][groupName] = {}
+                if (!spawningCreepSalts[groupType][groupName][role]) spawningCreepSalts[groupType][groupName][role] = []
+                spawningCreepSalts[groupType][groupName][role].push(taskInfo.data.memory.salt)
+            }
+
+            var liveCreepSalts = {}
+            const groupTypes = Object.keys(creepConfig.groupAcceptedTask)
+            for (var groupType of groupTypes){
+                liveCreepSalts[groupType] = {}
+                for (var groupName in Game.rooms[roomName][groupType]){
+                    liveCreepSalts[groupType][groupName] = {}
+                    for (var role in Game.rooms[roomName][groupType][groupName]) liveCreepSalts[groupType][groupName][role] = _.map(Game.rooms[roomName][groupType][groupName][role],(c)=>c.memory.salt)
                 }
+            }
+
+            for (var groupType of groupTypes){
+                SaltList[roomName][groupType] = {};
+                for (var groupName in liveCreepSalts){
+                    SaltList[roomName][groupType][groupName] = {};
+                    for (var role in liveCreepSalts[groupType][groupName]){
+                        SaltList[roomName][groupType][groupName][role] = liveCreepSalts[groupType][groupName][role]
+                    }
+                }
+                for (var groupName in spawningCreepSalts[groupType]){
+                    if (!SaltList[roomName][groupType][groupName]) SaltList[roomName][groupType][groupName] = {};
+                    for (var role in spawningCreepSalts[groupType][groupName]){
+                        if (!SaltList[roomName][groupType][groupName][role]) SaltList[roomName][groupType][groupName][role] = []
+                        SaltList[roomName][groupType][groupName][role] = SaltList[roomName][groupType][groupName][role].concat(spawningCreepSalts[groupType][groupName][role])
+                    }
+                }   
             }
         }
         try {return SaltList[roomName][groupType][groupName][role]} catch (error) {return []}
@@ -253,6 +271,18 @@ const utilsCollection = {
     getBoosts:function(role,groupType){
         if (!creepConfig.boosts[role]) return []
         return creepConfig.boosts[role][groupType] || []
+    },
+    getLabTarget:function(roomName,mode){
+        const resourceTypes = labConfig[roomName][mode]
+        let resourceType = undefined
+        if (mode !== "focus"){
+            if (!Game.rooms[roomName].memory.labCur) Game.rooms[roomName].memory.labCur = {};
+            if (resourceTypes.length > 0) {
+                if (!Game.rooms[roomName].memory.labCur[mode]) Game.rooms[roomName].memory.labCur[mode] = 0;
+                resourceType = resourceTypes[Game.rooms[roomName].memory.labCur[mode] % resourceTypes.length];
+            }else Game.rooms[roomName].memory.labCur[mode] = 0;
+        }else resourceType = resourceTypes
+        return resourceType
     }
 }
 module.exports = utilsCollection

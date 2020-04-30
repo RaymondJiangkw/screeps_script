@@ -26,7 +26,7 @@ const creepConfiguration = {
         "pureRepairer":{"repairer":["repair-local","*transfer-core","*upgrade"]},
         "remoteRepairer":{"repairer":["repair-remote","build-remote"]},
         "remoteTransfer":{"transfer":["transfer-aid"]},
-        "remotePickUper":{"transfer":["pickup-remote"]},
+        "remotePickUper":{"transfer":["pickup-remote","transfer-remote"]},
         "pureUpgrader":{"upgrader":["upgrade"]},
         "Defend":{"defender":["defend-local|reserved"]},
         "Attack":{"attacker":["attack-attack"],"healer":["-attack-heal"]},

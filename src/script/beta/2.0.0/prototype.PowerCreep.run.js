@@ -11,6 +11,8 @@ const runExtension = {
     init(){
         if (!this.memory.home) this.memory.home = this.room.name
         if (!this.memory.task) this.memory.task = PLACE_HOLDER
+        if (!this.memory.taskCur) this.memory.taskCur = 0
+        if (!this.memory.lock) this.memory.lock = false
     },
     _opsCheck(powerType){
         if (!this.powers[powerType]) return [INVALID_TASK,NOT_USE_POWER]
@@ -113,6 +115,11 @@ const runExtension = {
         this.init()
         if (this.ticksToLive <= configPC.renewRemainingTicks) this._renew()
         else{
+            if (this.memory.task === PLACE_HOLDER && Game.time % configPC.getTaskInterval === 0 && !this.memory.lock){
+                var taskList = configPC.taskList[this.name] || configPC.taskList["default"]
+                this.memory.task = taskList[this.memory.taskCur % taskList.length]
+                this.memory.taskCur = (this.memory.taskCur + 1) % taskList.length
+            }
             var feedback = this[this.memory.task]()
             if (feedback[1] !== USE_POWER && this.className === POWER_CLASS.OPERATOR) this.usePower(PWR_GENERATE_OPS);
             if (feedback[0] === ERR_NOT_ENOUGH_RESOURCES) if (this["_withdrawOps"]) return;

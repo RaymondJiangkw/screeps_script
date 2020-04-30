@@ -1,4 +1,6 @@
-const profiler = require('screeps-profiler')
+// Lab
+// Change the memory
+const profiler = require('tool.profiler')
 const death = require('main.Death')
 const mount = require('mount')
 const mountMarket = require('prototype.Market.run')
@@ -11,7 +13,7 @@ const spawnRun = require('main.Spawns')
 profiler.enable();
 module.exports.loop = function() {
     profiler.wrap(function(){
-        mountMarket.mount();
+//      mountMarket.mount();
         death();
         init();
         task.init();

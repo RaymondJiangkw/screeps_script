@@ -1,7 +1,10 @@
 const labConfiguration = {
+    leastRefillAmount:5,
+    leastTransferAmount:50,
     "W22N25":{
         mode:"default",
         allowedCompounds:[],
+        reverse:[],
         default:[],
         focus:undefined,
         clear:undefined
@@ -9,6 +12,7 @@ const labConfiguration = {
     "W23N25":{
         mode:"default",
         allowedCompounds:[],
+        reverse:[],
         default:[],
         focus:undefined,
         clear:undefined
@@ -16,6 +20,7 @@ const labConfiguration = {
     "W21N24":{
         mode:"default",
         allowedCompounds:[],
+        reverse:[],
         default:[],
         focus:undefined,
         clear:undefined
@@ -23,6 +28,7 @@ const labConfiguration = {
     "W19N22":{
         mode:"default",
         allowedCompounds:[],
+        reverse:[],
         default:[],
         focus:undefined,
         clear:undefined

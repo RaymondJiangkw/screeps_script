@@ -35,6 +35,9 @@ var roomRepairsExpiration    = {};
 var roomBuilds               = {};
 var roomBuildsExpiration     = {};
 
+var roomRuins                = {};
+var roomRuinsExpiration      = {};
+
 const CACHE_TIMEOUT = 50;
 const CACHE_OFFSET  = 4;
 
@@ -48,10 +51,8 @@ const multipleList = [
 
 const singleList = [
     STRUCTURE_OBSERVER,     STRUCTURE_POWER_SPAWN,  STRUCTURE_EXTRACTOR,	STRUCTURE_NUKER,
-    STRUCTURE_TERMINAL,     STRUCTURE_CONTROLLER,   STRUCTURE_STORAGE,
+    STRUCTURE_TERMINAL,     STRUCTURE_CONTROLLER,   STRUCTURE_STORAGE,      STRUCTURE_FACTORY,
 ];
-
-if(global.STRUCTURE_FACTORY !== undefined) singleList.push(STRUCTURE_FACTORY);
 
 function getCacheExpiration(){
     return CACHE_TIMEOUT + Math.round((Math.random()*CACHE_OFFSET*2)-CACHE_OFFSET);
@@ -77,11 +78,40 @@ Room.prototype._checkRoomCache = function _checkRoomCache(){
         }
     }
 }
+
+Room.prototype._checkRuinCache = function _checkRuinCache(){
+    if (!roomRuinsExpiration[this.name] || !roomRuins[this.name] || roomRuinsExpiration[this.name] < Game.time) {
+        roomRuinsExpiration[this.name] = Game.time + getCacheExpiration();
+        roomRuins[this.name] = this.find(FIND_RUINS);
+        roomRuins[this.name] = _.map(roomRuins[this.name],(r)=>r.id);
+    }
+}
+
 Room.prototype._checkBuildCache = function _checkBuildCache(){
     if (!roomBuildsExpiration[this.name] || !roomBuilds[this.name] || roomBuildsExpiration[this.name] < Game.time){
         roomBuildsExpiration[this.name] = Game.time + getCacheExpiration();
         roomBuilds[this.name] = this.find(FIND_CONSTRUCTION_SITES);
         roomBuilds[this.name] = _.map(roomBuilds[this.name],s=>s.id);
+    }
+}
+
+Room.prototype._checkRepairCache = function _checkRepairCache(){
+    if (!roomRepairsExpiration[this.name] || !roomRepairs[this.name] || roomRepairsExpiration[this.name] < Game.time){
+        roomRepairsExpiration[this.name] = Game.time + getCacheExpiration();
+        const hitsCMP = (a,b)=>a.hits/a.hitsMax - b.hits/b.hitsMax
+        var cores = _.map((_.filter([].concat(this.spawns,
+                                              this.powerSpawn,
+                                              this.extensions,
+                                              this.towers,
+                                              this.storage,
+                                              this.terminal,
+                                              this.factory,
+                                              this.labs,
+                                              this.extractor,
+                                              this.observer,
+                                              this.links), s => s)).sort(hitsCMP), s => s.id)
+        var commons = _.map(([].concat(this.roads,this.containers)).sort(hitsCMP), s => s.id)
+        roomRepairs[this.name] = [cores,commons]
     }
 }
 
@@ -150,45 +180,43 @@ Object.defineProperty(Room.prototype,"buildTargets",{
     configurable:true
 })
 
-Room.prototype._checkRepairCache = function _checkRepairCache(){
-    if (!roomRepairsExpiration[this.name] || !roomRepairs[this.name] || roomRepairsExpiration[this.name] < Game.time){
-        roomRepairsExpiration[this.name] = Game.time + getCacheExpiration();
-        var cores = [].concat(this.spawns,
-                    this.powerSpawn,
-                    this.extensions,
-                    this.towers,
-                    this.storage,
-                    this.terminal,
-                    this.factory,
-                    this.labs,
-                    this.extractor,
-                    this.observer,
-                    this.links)
-        cores = _.filter(cores,(s)=>s)
-        cores = _.filter(cores,(s)=>s.hits < s.hitsMax)
-        var roads = _.filter(this.roads,(r)=>r.hits < r.hitsMax)
-        var containers = _.filter(this.containers,(c)=>c.hits < c.hitsMax)
-        var commons = [].concat(roads,containers)
-        commons = _.filter(commons,(s)=>s)
-        commons.sort((a,b)=>a.hits/a.hitsMax - b.hits/b.hitsMax)
-        var repairTargets = [].concat(cores,commons)
-        roomRepairs[this.name] = repairTargets.map(s => s.id)
-    }
-}
-
 Object.defineProperty(Room.prototype, "repairTargets",{
     get: function(){
         if(this["_repairTargets"] && this["_repairTargets_ts"] === Game.time) return this["_repairTargets"]
         else{
             this._checkRepairCache();
-            roomRepairs[this.name] = _.filter(roomRepairs[this.name],s=>Game.getObjectById(s))
-            roomRepairs[this.name] = _.filter(roomRepairs[this.name],s=>Game.getObjectById(s).hits < Game.getObjectById(s).hitsMax)
-            if (roomRepairs[this.name].length > 0){
+            var _ret = []
+            for (var i = 0; i < roomRepairs[this.name].length; i++){
+                roomRepairs[this.name][i] = _.filter(roomRepairs[this.name][i], s => Game.getObjectById(s).hits < Game.getObjectById(s).hitsMax)
+                _ret = _ret.concat(roomRepairs[this.name][i])
+            }
+            if (_ret.length > 0){
                 this["_repairTargets_ts"] = Game.time;
-                return this["_repairTargets"] = _.map(roomRepairs[this.name],Game.getObjectById)
+                return this["_repairTargets"] = _.map(_ret,Game.getObjectById)
             }else{
                 this["_repairTargets_ts"] = Game.time;
                 return this["_repairTargets"] = [];
+            }
+        }
+    },
+    set:function(){},
+    enumerable:false,
+    configurable:true
+})
+
+Object.defineProperty(Room.prototype,"ruins",{
+    get:function(){
+        if (this["_ruins"] && this["_ruins_ts"] === Game.time){
+            return this["_ruins"];
+        }else{
+            this._checkRuinCache();
+            roomRuins[this.name] = _.filter(roomRuins[this.name],r=>Game.getObjectById(r))
+            if (roomRuins[this.name].length > 0){
+                this["_ruins_ts"] = Game.time;
+                return this["_ruins"] = _.map(roomRuins[this.name],Game.getObjectById);
+            }else{
+                this["_ruins_ts"] = Game.time;
+                return this["_ruins"] = [];
             }
         }
     },

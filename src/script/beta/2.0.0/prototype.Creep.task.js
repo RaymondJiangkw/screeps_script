@@ -40,7 +40,7 @@ const creepTaskExtension = {
         var auxiliaryTasks = _.filter(acceptedTasks,(t)=>t.charAt(0) == "*")
         for (var majorTask of majorTasks){
             var taskList = utils.analyseTaskList(majorTask,"all")
-            var fingerprint = Game.rooms[this.memory.home].getTask(this,taskList[0],taskList[1],dry = dry)
+            var fingerprint = Game.rooms[this.memory.home].getTask(this,taskList[0],taskList[1],dry)
             if (fingerprint){
                 if (dry) return true
                 else this.memory.taskFingerprint = fingerprint
@@ -49,9 +49,8 @@ const creepTaskExtension = {
         }
         if (!this.memory.taskFingerprint){
             for (var auxiliaryTask of auxiliaryTasks){
-                auxiliaryTask = auxiliaryTask.slice(1)
                 var taskList = utils.analyseTaskList(auxiliaryTask,"all")
-                var fingerprint = Game.rooms[this.memory.home].getTask(this,taskList[0],taskList[1],dry = dry)
+                var fingerprint = Game.rooms[this.memory.home].getTask(this,taskList[0],taskList[1],dry)
                 if (fingerprint){
                     if (dry) return false
                     else this.memory.taskFingerprint = fingerprint

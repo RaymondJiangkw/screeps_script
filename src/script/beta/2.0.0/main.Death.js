@@ -11,7 +11,7 @@ module.exports = function() {
                 if (rolePrimary === true) Game.rooms[Memory.creeps[name].home].renewTask(Memory.creeps[name].taskFingerprint);
                 else {
                     if (_.filter(Game.rooms[Memory.creeps[name].home].creeps,(c)=>c.memory.group.type === Memory.creeps[name].group.type && c.memory.group.name === Memory.creeps[name].group.name && c.memory.role === rolePrimary).length > 0) {
-                        Game.rooms[Memory.creeps[name].home].AddSpawnTask(Memory.creeps[name].role,creepConfig.components[Memory.creeps[name].role],Memory.creeps[name].group.type,Memory.creeps[name].group.name,utils.getBoosts(Memory.creeps[name].role,Memory.creeps[name].group.type),"default",Memory.creeps[name].salt)
+                        Game.rooms[Memory.creeps[name].home].AddSpawnTask(Memory.creeps[name].role,creepConfig.components[Memory.creeps[name].role],Memory.creeps[name].group.type,Memory.creeps[name].group.name,utils.getBoosts(Memory.creeps[name].role,Memory.creeps[name].group.type),Memory.creeps[name].salt)
                     }
                     Game.rooms[Memory.creeps[name].home].deleteTask(Memory.creeps[name].taskFingerprint)
                 }

@@ -16,6 +16,7 @@ const roomAdvancedTaskExtension = {
         var toTarget = Game.getObjectById(to)
         if (toTarget && toTarget.store.getUsedCapacity() > settings.toStopAmount) return undefined
         if (fromTarget && fromTarget.store.getUsedCapacity(resourceType) < stopAmount) return undefined
+        
         const data = {from,to,resourceType,stopAmount,toStopAmount:settings.toStopAmount}
         return this.AddTask("transfer","limit",data,settings.groupsNum,settings.changeable,settings.silence,settings.getRepeat)
     }

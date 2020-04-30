@@ -1,7 +1,5 @@
 const utils = require('utils')
-const repairConfig = require('configuration.Repair')
 module.exports = function(){
-    if (!global.task.repair) global.task.repair = {}
     for (var roomName of global.rooms.my){
         if (Game.rooms[roomName].repairTargets.length > 0) Game.rooms[roomName].AddRepairTask("local","repair")
     }

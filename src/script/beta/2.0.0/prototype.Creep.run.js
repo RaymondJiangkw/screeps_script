@@ -344,7 +344,7 @@ const creepRunExtensions = {
                 }else return OK
             }else if (taskInfo.data.from === "power"){
                 if (!this.memory.get.getTarget || !this.memory.get.getTargetPos){
-                    if (!Game.rooms[taskInfo.data.fromRoom]) this["_Move"](new RoomPosition(15,15,taskInfo.data.fromRoom))
+                    if (!Game.rooms[taskInfo.data.fromRoom]) this["_Move"](new RoomPosition(25,25,taskInfo.data.fromRoom))
                     else{
                         var ruins = Game.rooms[taskInfo.data.fromRoom].find(FIND_RUINS,{filter:(r)=>r.store.getUsedCapacity(RESOURCE_POWER) > 0})
                         var droppedPower = Game.rooms[taskInfo.data.fromRoom].find(FIND_DROPPED_RESOURCES,{filter:{resourceType:RESOURCE_POWER}})
@@ -374,11 +374,48 @@ const creepRunExtensions = {
                     this.memory.get.getTargetPos = undefined
                     return OK
                 }
+            }else if (taskInfo.data.from === "ruin"){
+                if (!this.memory.get.getTarget || !this.memory.get.getTargetPos){
+                    if (!Game.rooms[taskInfo.data.fromRoom]) this["_Move"](new RoomPosition(25,25,taskInfo.data.fromRoom))
+                    else{
+                        var ruins = Game.rooms[this.memory.home].ruins
+                        if (ruins.length === 0) {
+                            if (this.store.getUsedCapacity() === 0) return FINISH
+                            else this.memory.working = true
+                        }else{
+                            ruins.sort((a,b)=>b.store.getUsedCapacity() - a.store.getUsedCapacity())
+                            this.memory.get.getTarget = ruins[0].id
+                            this.memory.get.getTargetPos = ruins[0].pos
+                        }
+                    }
+                }
+                if (this.memory.get.getTarget && this.memory.get.getTargetPos){
+                    if (this["_adjMove"](this.memory.get.getTargetPos) === ERR_NOT_IN_RANGE) return OK
+
+                    var target = Game.getObjectById(this.memory.get.getTarget)
+                    var feedback = undefined
+                    for (var carry in target.store) feedback = this.withdraw(target,carry)
+
+                    if (this.store.getFreeCapacity() === 0) this.memory.working = true
+                    if (feedback !== OK) {
+                        this.memory.get.getTarget = undefined
+                        this.memory.get.getTargetPos = undefined
+                    }
+                    return OK
+                }
             }else{
                 if (!this.memory.get.getTarget || !this.memory.get.getTargetPos){
-                    if (taskInfo.data.from === "lab"){
+                    if (taskInfo.data.from === "lab" || taskInfo.data.from === "labs"){
                         try {
-                            this.memory.get.getTarget = _.filter(Game.rooms[this.memory.home].labs,(lab)=>lab.mineralType == taskInfo.data.resourceType)[0].id
+                            var room = taskInfo.data.fromRoom || this.memory.home;
+                            this.memory.get.getTarget = _.filter(Game.rooms[room].labs,(lab)=>lab.mineralType == taskInfo.data.resourceType)[0].id
+                        } catch (error) {
+                            return ERR_DELETE
+                        }
+                    }else if (taskInfo.data.from === "terminal" || taskInfo.data.from === "storage" || taskInfo.data.from === "factory"){
+                        try {
+                            var room = taskInfo.data.fromRoom || this.memory.home;
+                            this.memory.get.getTarget = Game.rooms[room][taskInfo.data.from].id
                         } catch (error) {
                             return ERR_DELETE
                         }
@@ -637,7 +674,7 @@ const creepRunExtensions = {
                 var existingCapacity = _.reduce(signals["transferers"],(result,item)=>result+=item.store.getCapacity(),0)
                 if (target.power - existingCapacity >= creepConfig.components["transferer"]["carry"]){
                     var saltList = utils.getSaltList(this.memory.home.this.group.type,this.group.name,"transferer")
-                    Game.rooms[this.memory.home].AddSpawnTask("transferer",creepConfig.components["transferer"],this.memory.group.type,this.memory.group.name,utils.getBoosts("transferer",this.memory.group.type),"default",saltList.length)
+                    Game.rooms[this.memory.home].AddSpawnTask("transferer",creepConfig.components["transferer"],this.memory.group.type,this.memory.group.name,utils.getBoosts("transferer",this.memory.group.type),saltList.length)
                 }
             }
 
@@ -682,16 +719,14 @@ const creepRunExtensions = {
         }else if (subTaskType === "attack"){
             if (!taskInfo.targetID){
                 const targetRoom = taskInfo.data.targetRoom
-                if (!taskInfo.data.target){
-                    const targetCreeps = Game.rooms[targetRoom].find(FIND_HOSTILE_CREEPS)
-                    const targetSpawns = Game.rooms[targetRoom].find(FIND_HOSTILE_SPAWNS)
-                    const targetTowers = _.filter(targetStructures,(structure)=>structure.structureType === STRUCTURE_TOWER)
-                    let chosenTarget = undefined
-                    if (targetTowers.length > 0) chosenTarget = targetTowers[0]
-                    else if (targetCreeps.length > 0) chosenTarget = targetCreeps[0]
-                    else if (targetSpawns.length > 0) chosenTarget = targetSpawns[0]
-                    taskInfo.targetID = chosenTarget.id
-                }
+                const targetCreeps = Game.rooms[targetRoom].find(FIND_HOSTILE_CREEPS)
+                const targetSpawns = Game.rooms[targetRoom].find(FIND_HOSTILE_SPAWNS)
+                const targetTowers = _.filter(targetStructures,(structure)=>structure.structureType === STRUCTURE_TOWER)
+                let chosenTarget = undefined
+                if (targetTowers.length > 0) chosenTarget = targetTowers[0]
+                else if (targetCreeps.length > 0) chosenTarget = targetCreeps[0]
+                else if (targetSpawns.length > 0) chosenTarget = targetSpawns[0]
+                taskInfo.targetID = chosenTarget.id
             }
             if (taskInfo.targetID){
                 const target = Game.getObjectById(taskInfo.targetID)
@@ -702,6 +737,10 @@ const creepRunExtensions = {
                 if (Game.rooms[taskInfo.data.targetRoom].droppedResources.length > 0){
                     var home = utils.getClosetSuitableRoom(taskInfo.data.targetRoom,4,true)
                     Game.rooms[home].AddPickUpTask("remote","pickUp",new RoomPosition(25,25,taskInfo.data.targetRoom))
+                }
+                if (Game.rooms[taskInfo.data.targetRoom].ruins.length > 0){
+                    var home = utils.getClosetSuitableRoom(taskInfo.data.targetRoom,4,true)
+                    Game.rooms[home].AddTransferTask("remote","ruin",Game.rooms[home].storage.id,undefined,undefined,taskInfo.data.targetRoom,home)
                 }
                 return OK
             }
@@ -718,18 +757,16 @@ const creepRunExtensions = {
                     if (!target) this.renewTask()
                     else{
                         if (target.lastCooldown >= utils.getAcceptableCoolTime(this.memory.home,taskInfo.targetPos.roomName)) this.deleteTask()
-                        else if (target.energy && observerConfig.utilsEnergy.indexOf(taskInfo.targetPos.roomName) < 0) this.deleteTask()
+                        else if (target.energy) this.deleteTask()
                         else this.renewTask()
                     }
-                }else if (taskInfo.taskType == "attack" && taskInfo.subTaskType == "claim"){
-                    if (observerConfig.dominance.indexOf(taskInfo.data.targetRoom) < 0 && claimRoomConfig.indexOf(taskInfo.data.targetRoom) < 0) this.deleteTask()
-                    else this.renewTask()
-                }else this.renewTask()
-            }else this.finishTask()
+                }else if (taskInfo.taskType === "attack" || taskInfo.taskType === "defend") this.deleteTask()
+                else this.renewTask()
+            }else this.deleteTask()
         }
         if (!this.memory.reSpawn && ((this.ticksToLive <= 3 && this.getTask(dry = true)) || canGetTask)) {
             this.memory.reSpawn = true
-            Game.rooms[this.memory.home].AddSpawnTask(this.memory.role,creepConfig.components[this.memory.role],this.memory.group.type,this.memory.group.name,utils.getBoosts(this.memory.role,this.memory.group.type),"default",this.memory.salt)
+            Game.rooms[this.memory.home].AddSpawnTask(this.memory.role,creepConfig.components[this.memory.role],this.memory.group.type,this.memory.group.name,utils.getBoosts(this.memory.role,this.memory.group.type),this.memory.salt)
         }
         if (this.memory.role === "transferer" ||
             this.memory.role === "worker"     ||

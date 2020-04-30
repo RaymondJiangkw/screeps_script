@@ -1,5 +1,6 @@
 const terminalConfiguration = {
     terminalCheckInterval:20,
+    terminalSendInterval:30,
     baseReservedEnergy:30000,
     baseReservedMineral:10000,
     mineralDistributeMinAmount:2500,

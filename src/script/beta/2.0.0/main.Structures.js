@@ -4,6 +4,7 @@ const configTerminal = require('configuration.Terminal')
 const configSend = require('configuration.Send')
 const configLab = require('configuration.Lab')
 const configFactory = require('configuration.Factory')
+const constants = require('constants')
 const utils = require('utils')
 module.exports = function () {
     for (var roomName of global.rooms.my){
@@ -37,7 +38,7 @@ module.exports = function () {
             }else{
                 if (Game.rooms[roomName].enemies.length <= 2){
                     var enemies = _.shuffle(Game.rooms[roomName].enemies)
-                    for (var i = 0; i < Game.rooms[roomName].towers.length; i++) tower.attack(enemies[(i % enemies.length)])
+                    for (var i = 0; i < Game.rooms[roomName].towers.length; i++) Game.rooms[roomName].towers[i].attack(enemies[(i % enemies.length)])
                 }else{
                     var roles = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c.id,false,true))
                     if (roles.indexOf("attacker") >= 0){
@@ -79,7 +80,7 @@ module.exports = function () {
                             if (DSituation !== 0) return DSituation
                         })
                         priority = _.uniq(priority,true,"score")
-                        for (var i = 0; i < Game.rooms[roomName].towers.length; i++) tower.attack(Game.getObjectById(priority[Math.floor(i + Math.random()) % priority.length].id))
+                        for (var i = 0; i < Game.rooms[roomName].towers.length; i++) Game.rooms[roomName].towers[i].attack(Game.getObjectById(priority[Math.floor(i + Math.random()) % priority.length].id))
                     }
                 }
             }
@@ -92,7 +93,7 @@ module.exports = function () {
                     Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,desiredGoods,undefined,{basePrice:configTerminal[desiredGoods]["maxPrice"]})
                 }
 //            }
-            if (configSend[roomName]){
+            if (configSend[roomName] && Game.time % configTerminal.terminalSendInterval === 0){
                 for (var sendInfo of configSend[roomName]){
                     if (Game.rooms[roomName].terminal.cooldown > 0) break
                     if (!Game.rooms[sendInfo.targetRoom].terminal) continue
@@ -148,18 +149,24 @@ module.exports = function () {
                 }
             }
         }
-        if (Game.rooms[roomName].labs !== []){
-            if (configLab[roomName]){
-                const mode = configLab[roomName]["mode"]
-                if (mode === "focus" && configLab[roomName]["focus"]){
-                    const resourceType = configLab[roomName]["focus"]
-                    const core1 = global.labStructures[roomName].core[0]
-                    const core2 = global.labStructures[roomName].core[1]
-                    if (core1 && core2 && core1.mineralType && core2.mineralType && REACTIONS[core1.mineralType][core2.mineralType] === resourceType){
-                        for (var lab of Game.rooms[roomName].labs){
-                            if (lab === core1 || lab === core2) continue
-                            lab.runReaction(core1,core2)
-                        }
+        if (Game.rooms[roomName].labs !== [] && configLab[roomName]){
+            const mode = configLab[roomName]["mode"]
+            if (mode !== "clear" && global.labStructures[roomName].core.length === 2){
+                const resourceType = utils.getLabTarget(roomName,mode)
+                const core1 = global.labStructures[roomName].core[0]
+                const core2 = global.labStructures[roomName].core[1]
+                if ((mode === "focus" || mode === "default") && core1.mineralType && core2.mineralType && REACTIONS[core1.mineralType][core2.mineralType] === resourceType){
+                    for (var lab of Game.rooms[roomName].labs){
+                        if (lab === core1 || lab === core2) continue
+                        lab.runReaction(core1,core2)
+                    }
+                }else if (mode === "reverse"){
+                    var fromlabs = global.labs[roomName][resourceType];
+                    for (var lab of fromlabs){
+                        if (lab === core1 || lab === core2) break;
+                        if (lab.cooldown > 0) continue;
+                        lab.reverseReaction(core1,core2);
+                        lab.reverseReaction(core2,core1);
                     }
                 }
             }
