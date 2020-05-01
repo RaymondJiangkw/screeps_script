@@ -1,3 +1,4 @@
+const taskUpgrade = require('task.Upgrade')
 const taskHarvest = require('task.Harvest')
 const taskTransfer = require('task.Transfer')
 const taskPickup = require('task.Pickup')
@@ -15,19 +16,19 @@ module.exports = {
             if (!Game.rooms[roomName].memory.taskExpiration || Game.rooms[roomName].memory.taskExpiration <= Game.time){
                 Game.rooms[roomName].memory.taskExpiration = Game.time + utils.getCacheExpiration(1500)
                 Game.rooms[roomName].refreshTask()
-                Game.rooms[roomName].AddUpgradeTask()
+                taskUpgrade();
             }
         }
-        taskHarvest()
-        taskBuild()
-        taskRepair()
-        taskPickup()
-        taskTransfer()
-        taskAttack()
-        taskDefend()
-        taskTravel()
+        taskHarvest();
+        taskBuild();
+        taskRepair();
+        taskPickup();
+        taskTransfer();
+        taskAttack();
+        taskDefend();
+        taskTravel();
     },
     spawn:function(){
-        taskSpawn()
+        taskSpawn();
     }
 }

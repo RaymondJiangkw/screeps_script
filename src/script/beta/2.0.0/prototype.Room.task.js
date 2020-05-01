@@ -105,10 +105,12 @@ const roomTaskExtension = {
     },
     AddTask(taskType,subTaskType,data,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
         this.initTaskMemory(taskType)
-        if (!Number.isFinite(groupsNum)) groupsNum = INFINITY
+        if (!Number.isFinite(groupsNum)) groupsNum = INFINITY;
+        const _getRepeat = getRepeat;
+        getRepeat = false;
         const fingerprint = utils.getTaskFingerprint(arguments)
         if (this.checkTaskExistence(fingerprint)) {
-            if (getRepeat) return fingerprint
+            if (_getRepeat) return fingerprint
             else return false
         }
         if (taskType === "spawn") console.log("AddTask",JSON.stringify(data))
@@ -118,6 +120,7 @@ const roomTaskExtension = {
             settings:{
                 receivedGroupsNum:groupsNum,
                 workingGroupsNum:0,
+                allGroupsNum:groupsNum,
                 changeable
             },
             options:{},

@@ -84,33 +84,35 @@ module.exports = function() {
             }
 
             // Transfer Lab
-            if (Game.rooms[roomName].labs !== [] && labConfig[roomName]){
+            if (Game.rooms[roomName].labs.length > 0 && labConfig[roomName]){
                 const mode = labConfig[roomName]["mode"]
                 if ((mode === "focus" || mode === "default") && global.labStructures[roomName].core.length === 2){
                     const resourceType = utils.getLabTarget(roomName,mode)
                     if (resourceType){
                         var _components = Constants.labFormula[resourceType]
-
                         var coreLabs = []
-                        const coreLabA = {"id":global.labStructures[roomName].core[0],"mineralType":Game.getObjectById(global.labStructures[roomName].core[0]).mineralType}
-                        const coreLabB = {"id":global.labStructures[roomName].core[1],"mineralType":Game.getObjectById(global.labStructures[roomName].core[1]).mineralType}
-                        if (coreLabA.mineralType == _components[0] || coreLabB.mineralType == _components[1]) coreLabs.push(coreLabA,coreLabB)
-                        else coreLabs.push(coreLabB,coreLabA)
+                        const coreLabA = Game.getObjectById(global.labStructures[roomName].core[0]);
+                        const coreLabB = Game.getObjectById(global.labStructures[roomName].core[1]);
+                        if (coreLabA.mineralType == _components[0] || coreLabB.mineralType == _components[1]) coreLabs = [coreLabA,coreLabB]
+                        else coreLabs = [coreLabB,coreLabA]
 
                         var lackRefills = [false,false],skip = false
-                        for (var i = 0; i < coreLabs.length;i++){
+                        for (var i = 0; i < 2; i++){
                             var coreLab = coreLabs[i]
                             if (coreLab.mineralType !== _components[i] || coreLab.store[_components[i]] <= labConfig.leastRefillAmount) {
-                                if (global.resources[roomName][_components[i]]){
-                                    var resourceInfo = glboal.resources[roomName][_components[i]]
-                                    var existAmount = resourceInfo["storage"] + resourceInfo["terminal"] + resourceInfo["factory"]
-                                    if (existAmount <= 5) lackRefills[i] = true;
-                                }else lackRefills[i] = true;
+                                if (!global.resources[roomName][_components[i]] || global.resources[roomName][_components[i]]["utils"] <= 5) lackRefills[i] = true;
                             }
                         }
-                        if (mode === "default") skip = lackRefills[0] || lackRefills[1]
-                        if (skip) Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
-                        else{
+                        if (mode === "default") skip = lackRefills[0] || lackRefills[1];
+
+                        if (skip) {
+                            var allowable = labConfig[roomName].allowedCompounds.indexOf(resourceType) > 0;
+                            var necessary1 = global.labs[roomName][resourceType].length === 0 && global.labs[roomName]["vacant"].length > 0
+                            var necessary2 = global.labs[roomName][resourceType].length > 0 && global.labs[roomName][resourceType][0].store[resourceType] < 30
+                            var possible = global.resources[roomName][resourceType]["utils"] >= 30
+                            if (allowable && possible && (necessary1 || necessary2)) Game.rooms[roomName].AddTransferTask("advanced","resource","lab",resourceType,"full");
+                            else Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
+                        }else{
                             // Input Labs
                             for (var i = 0; i < coreLabs.length;i++){
                                 var coreLab = coreLabs[i]
@@ -121,19 +123,21 @@ module.exports = function() {
                                 }
                             }
 
-                                // Output Labs
+                            // Output Labs
                             if (Game.rooms[roomName].storage){
                                 var OutputLabs = [].concat(global.labStructures[roomName]["XGroup"],global.labStructures[roomName]["YGroup"])
                                 for (var groupLabs of OutputLabs){
-                                for (var lab of groupLabs){
+                                for (var labId of groupLabs){
+                                    var lab = Game.getObjectById(labId);
                                     var condition = false
                                     var duplicate = lab.mineralType && global.labs[roomName][lab.mineralType].indexOf(lab) > 0;
                                     var notConsistent = lab.mineralType && lab.mineralType !== resourceType;
                                     var notAllowed = lab.mineralType && labConfig[roomName].allowedCompounds.indexOf(lab.mineralType) < 0;
                                     var overDue = lab.mineralType && lab.store.getFreeCapacity(lab.mineralType) <= labConfig.leastTransferAmount;
+                                    var tooFew = lab.mineralType && lab.store[lab.mineralType] < 30;
 
-                                    if (mode === "focus") condition = notConsistent || overDue
-                                    else if (mode === "default") condition = (notAllowed && notConsistent) || (overDue && !notConsistent) || (!notAllowed && notConsistent && duplicate)
+                                    if (mode === "focus") condition = notConsistent || overDue || tooFew
+                                    else if (mode === "default") condition = (notAllowed && notConsistent) || (overDue && !notConsistent) || (!notAllowed && notConsistent && duplicate) || tooFew
                                     if (condition) Game.rooms[roomName].AddTransferTask("advanced",lab.id,Game.rooms[roomName].storage.id,lab.mineralType,"exhaust")
                                 }
                                 }
@@ -143,7 +147,51 @@ module.exports = function() {
                 }else if (mode === "reverse" && global.labStructures[roomName].core.length === 2){
                     const resourceType = utils.getLabTarget(roomName,mode)
                     if (resourceType) {
-                        
+                        var skip = true;
+                        if (!global.resources[roomName][resourceType] || global.resources[roomName][resourceType]["utils"] <= 5){
+                            var InputLabs = [].concat(global.labStructures[roomName]["XGroup"],global.labStructures[roomName]["YGroup"]);
+                            for (var groupLabs of InputLabs){
+                            for (var labId of groupLabs){
+                                var lab = Game.getObjectById(labId);
+                                if (lab.store[resourceType] >= 5){
+                                    skip = false;
+                                    break;
+                                }
+                            }
+                            if (!skip) break;
+                            }
+                        }else skip = false;
+
+                        if (skip) Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
+                        else{
+                            // Input Labs
+                            var InputLabs = [].concat(global.labStructures[roomName]["XGroup"],global.labStructures[roomName]["YGroup"]);
+                            for (var groupLabs of InputLabs){
+                            for (var labId of groupLabs){
+                                var lab = Game.getObjectById(labId);
+                                if (!lab.mineralType || (lab.mineralType === resourceType && lab.store[mineralType] <= labConfig.leastRefillAmount)){
+                                    Game.rooms[roomName].AddTransferTask("advanced","resource",lab.id,resourceType,"full");
+                                }else if (labConfig[roomName].allowedCompounds.indexOf(lab.mineralType) < 0 || lab.store[lab.mineralType] < 30 || global.labs[roomName][lab.mineralType].indexOf(lab) > 0){
+                                    if (Game.rooms[roomName].storage) Game.rooms[roomName].AddTransferTask("advanced",lab.id,Game.rooms[roomName].storage.id,lab.mineralType,"exhaust");
+                                }
+                            }
+                            }
+
+                            // Output Labs
+                            var core1 = Game.getObjectById(global.labStructures[roomName].core[0]);
+                            var core2 = Game.getObjectById(global.labStructures[roomName].core[1]);
+                            var _components = Constants.labFormula[resourceType]
+                            var cores = []
+                            if (core1.mineralType === _components[0] || core2.mineralType === _components[1]) cores = [core1,core2];
+                            else cores = [core2,core1];
+                            for (var i = 0; i < 2; i++){
+                                var coreLab = cores[i]
+                                if (coreLab.mineralType !== _components[i] || coreLab.store.getFreeCapacity(_components[i]) <= labConfig.leastTransferAmount){
+                                    if (Game.rooms[roomName].storage) Game.rooms[roomName].AddTransferTask("advanced",coreLab.id,Game.rooms[roomName].storage.id,coreLab.mineralType,"exhaust");
+                                }
+                            }
+                            
+                        }
                     }
                 }else if (mode === "clear" && Game.rooms[roomName].storage){
                     for (var lab of Game.rooms[roomName].labs) if (lab.mineralType) Game.rooms[roomName].AddTransferTask("advanced",lab.id,Game.rooms[roomName].storage.id,lab.mineralType,"exhaust")

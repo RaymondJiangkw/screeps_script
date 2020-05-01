@@ -1,5 +1,3 @@
-// Lab
-// Change the memory
 const profiler = require('tool.profiler')
 const death = require('main.Death')
 const mount = require('mount')
@@ -13,6 +11,7 @@ const spawnRun = require('main.Spawns')
 profiler.enable();
 module.exports.loop = function() {
     profiler.wrap(function(){
+        mount();
 //      mountMarket.mount();
         death();
         init();

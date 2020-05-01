@@ -7,14 +7,8 @@ const acceptableDepositCooldownTime = require('configuration.Deposit').acceptabl
 const SHA1 = require('fingerprint.Algorithm.sha1')
 const MD5 = require('fingerprint.Algorithm.md5')
 var SaltList = {}
+var creepsCollection = {}
 const utilsCollection = {
-    dis:function(_object_1_id,_object_2_id){
-        const _object_1 = Game.getObjectById(_object_1_id)
-        const _object_2 = Game.getObjectById(_object_2_id)
-        let x_diff = Math.abs(_object_1.pos.x - _object_2.pos.x)
-        let y_diff = Math.abs(_object_1.pos.y - _object_2.pos.y)
-        return [x_diff,y_diff]
-    },
     disPos:function(pos1,pos2){
         let x_diff = Math.abs(pos1.x - pos2.x)
         let y_diff = Math.abs(pos1.y - pos2.y)
@@ -97,8 +91,7 @@ const utilsCollection = {
         homes.sort((roomName1,roomName2)=>Game.map.getRoomLinearDistance(roomName1,roomName) - Game.map.getRoomLinearDistance(roomName2,roomName))
         return homes[0]
     },
-    analyseCreep:function(creepID,analysis = false,simplified_version = false){
-        const creep = Game.getObjectById(creepID)
+    analyseCreep:function(creep,analysis = false,simplified_version = false){
         if (simplified_version) {
             if (creep.getActiveBodyparts(ATTACK) || creep.getActiveBodyparts(RANGED_ATTACK)) return "attacker"
             if (creep.getActiveBodyparts(HEAL)) return "healer"
@@ -204,10 +197,10 @@ const utilsCollection = {
     },
     ownRoom:function(roomName){
         if (!Game.rooms[roomName]) return "unsure"
-        if (!Game.rooms[roomName].controller) return "neutral"
+        if (!Game.rooms[roomName].controller) return "highway"
         if (Game.rooms[roomName].controller.my) return true
-        if (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.username == constants.username) return "reserved"
-        if (Game.rooms[roomName].controller.owner && Game.rooms[roomName].controller.owner.username != constants.username) return false
+        if (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.username === constants.username) return "reserved"
+        if (Game.rooms[roomName].controller.owner && Game.rooms[roomName].controller.owner.username !== constants.username) return false
         return "neutral"
     },
     divideRoomList:function(roomName){
@@ -283,6 +276,21 @@ const utilsCollection = {
             }else Game.rooms[roomName].memory.labCur[mode] = 0;
         }else resourceType = resourceTypes
         return resourceType
+    },
+    getSuitableRoute:function(fromRoom,toRoom){
+        return [];
+    },
+    getAllCreeps:function(roomName){
+        if (!creepsCollection[roomName]){
+            creepsCollection[roomName] = _.groupBy(Game.rooms[roomName].creeps,(c)=>c.memory.role);
+            for (var role in creepConfig.components) if (!creepsCollection[roomName][role]) creepsCollection[roomName][role] = [];
+            for (var _creepTask of Game.rooms[roomName].searchTask("_spawn","default")) {
+                const taskInfo = Game.rooms[roomName].taskInfo(_creepTask)
+                const simulateCreep = {memory:taskInfo.data.memory}
+                creepsCollection[roomName][taskInfo.data.memory.role].push(simulateCreep);
+            }
+        }
+        return creepsCollection[roomName]
     }
 }
 module.exports = utilsCollection

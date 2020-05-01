@@ -11,3 +11,11 @@ const prototype_powerCreep_run = require('prototype.PowerCreep.run')
 const prototype_terminal_run = require('prototype.Terminal.run')
 const prototype_lab_run = require('prototype.Lab.run')
 const prototype_tower_run = require('prototype.Tower.run')
+module.exports = function () {
+    if (!Memory.info) {
+        const subList = ["roomState"]
+        console.log("[Memory] Initializing Info.");
+        Memory.info = {};
+        subList.forEach(subInfo=>Memory.info[subInfo] = {});
+    }
+}

@@ -30,7 +30,7 @@ module.exports = function () {
                 }
             }
         }
-        if (Game.rooms[roomName].towers !== []) {
+        if (Game.rooms[roomName].towers.length > 0) {
             if (Game.rooms[roomName].enemies.length === 0){
                 for (var tower of Game.rooms[roomName].towers) {
                     tower.run()
@@ -40,10 +40,10 @@ module.exports = function () {
                     var enemies = _.shuffle(Game.rooms[roomName].enemies)
                     for (var i = 0; i < Game.rooms[roomName].towers.length; i++) Game.rooms[roomName].towers[i].attack(enemies[(i % enemies.length)])
                 }else{
-                    var roles = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c.id,false,true))
+                    var roles = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c,false,true))
                     if (roles.indexOf("attacker") >= 0){
                         var avgDistances = utils.getCreepsRange(Game.rooms[roomName].enemies)
-                        var creepAnalysis = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c.id,true,false))
+                        var creepAnalysis = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c,true,false))
                         var priorityRole = {
                             harmless:3,
                             attacker:2,
@@ -149,24 +149,22 @@ module.exports = function () {
                 }
             }
         }
-        if (Game.rooms[roomName].labs !== [] && configLab[roomName]){
+        if (Game.rooms[roomName].labs.length > 0 && configLab[roomName]){
             const mode = configLab[roomName]["mode"]
             if (mode !== "clear" && global.labStructures[roomName].core.length === 2){
                 const resourceType = utils.getLabTarget(roomName,mode)
-                const core1 = global.labStructures[roomName].core[0]
-                const core2 = global.labStructures[roomName].core[1]
-                if ((mode === "focus" || mode === "default") && core1.mineralType && core2.mineralType && REACTIONS[core1.mineralType][core2.mineralType] === resourceType){
-                    for (var lab of Game.rooms[roomName].labs){
-                        if (lab === core1 || lab === core2) continue
-                        lab.runReaction(core1,core2)
+                const core1 = Game.getObjectById(global.labStructures[roomName].core[0]);
+                const core2 = Game.getObjectById(global.labStructures[roomName].core[1]);
+                if (mode === "focus" || mode === "default"){
+                    if (core1.mineralType && core2.mineralType && REACTIONS[core1.mineralType][core2.mineralType] === resourceType) {
+                        for (var lab of global.labs[roomName][resourceType]) if (lab.cooldown === 0) lab.runReaction(core1,core2);
+                        for (var lab of global.labs[roomName]["vacant"]) if (lab.cooldown === 0) lab.runReaction(core1,core2);
                     }
                 }else if (mode === "reverse"){
                     var fromlabs = global.labs[roomName][resourceType];
                     for (var lab of fromlabs){
-                        if (lab === core1 || lab === core2) break;
                         if (lab.cooldown > 0) continue;
                         lab.reverseReaction(core1,core2);
-                        lab.reverseReaction(core2,core1);
                     }
                 }
             }

@@ -7,7 +7,7 @@ module.exports = function() {
     global.rooms = {}
     global.rooms.my = _.filter(Game.rooms,(room) => room.controller && room.controller.my).map(r => r.name)
     global.rooms.reserved = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "reserved").map(r => r.name)
-    global.rooms.observed = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "neutral").map(r => r.name)
+    global.rooms.observed = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "highway").map(r => r.name)
 
     global.links = {}
     for (var roomName of global.rooms.my) {
@@ -47,22 +47,6 @@ module.exports = function() {
         global.containers[roomName]["resources"].sort((containerA,containerB)=>containerB.store.getUsedCapacity() - containerA.store.getUsedCapacity())
     }
 
-    global.labs = {}
-    for (var roomName of global.rooms.my) {
-        global.labs[roomName] = {}
-        var lab
-        for (lab of Game.rooms[roomName]["labs"]){
-            var mineralType = lab.mineralType
-            if (!mineralType) mineralType = "vacant"
-            if (!global.labs[roomName][mineralType]) global.labs[roomName][mineralType] = []
-            global.labs[roomName][mineralType].push(lab)
-        }
-        for (var mineralType in global.labs[roomName]) {
-            if (mineralType === "vacant") continue
-            global.labs[roomName][mineralType].sort((labA,labB)=>labB.store.getUsedCapacity(mineralType) - labA.store.getUsedCapacity(mineralType))
-        }
-    }
-
     global.resources = {}
     for (var roomName of global.rooms.my) {
         global.resources[roomName] = {}
@@ -89,9 +73,12 @@ module.exports = function() {
         }
         for (var resource in global.resources[roomName]){
             global.resources[roomName][resource]["total"] = 0
+            global.resources[roomName][resource]["utils"] = 0
             for (var structureName of storedStructure){
-                if (global.resources[roomName][resource][structureName]) global.resources[roomName][resource]["total"] += global.resources[roomName][resource][structureName]
-                else global.resources[roomName][resource][structureName] = 0
+                if (global.resources[roomName][resource][structureName]) {
+                    global.resources[roomName][resource]["total"] += global.resources[roomName][resource][structureName];
+                    if (structureName !== "labs") global.resources[roomName][resource]["utils"] += global.resources[roomName][resource][structureName];
+                }else global.resources[roomName][resource][structureName] = 0
             }
         }
     }
@@ -106,23 +93,42 @@ module.exports = function() {
                 XGroup:[],
                 YGroup:[]
             }
-            var minX = Math.min(...(Game.rooms[roomName].labs.map((object)=>object.pos.x)))
-            var maxX = Math.max(...(Game.rooms[roomName].labs.map((object)=>object.pos.x)))
-            var minY = Math.min(...(Game.rooms[roomName].labs.map((object)=>object.pos.y)))
-            var maxY = Math.max(...(Game.rooms[roomName].labs.map((object)=>object.pos.y)))
-            global.labStructures[roomName]["XGroup"].push(_.filter(Game.rooms[roomName].labs,(lab)=>lab.pos.x === minX))
-            global.labStructures[roomName]["YGroup"].push(_.filter(Game.rooms[roomName].labs,(lab)=>lab.pos.y === minY))
-            if (maxX - minX >= 3) global.labStructures[roomName]["XGroup"].push(_.filter(Game.rooms[roomName].labs,(lab)=>lab.pos.x === maxX))
-            if (maxY - minY >= 3) global.labStructures[roomName]["YGroup"].push(_.filter(Game.rooms[roomName].labs,(lab)=>lab.pos.y === maxY))
+            var minX = Math.min(...(Game.rooms[roomName].labs.map((object)=>object.pos.x)));
+            var maxX = Math.max(...(Game.rooms[roomName].labs.map((object)=>object.pos.x)));
+            var minY = Math.min(...(Game.rooms[roomName].labs.map((object)=>object.pos.y)));
+            var maxY = Math.max(...(Game.rooms[roomName].labs.map((object)=>object.pos.y)));
+            global.labStructures[roomName]["XGroup"].push((_.filter(Game.rooms[roomName].labs,(lab)=>lab.pos.x === minX)).map(l => l.id));
+            global.labStructures[roomName]["YGroup"].push((_.filter(Game.rooms[roomName].labs,(lab)=>lab.pos.y === minY)).map(l => l.id));
+            if (maxX - minX >= 3) global.labStructures[roomName]["XGroup"].push((_.filter(Game.rooms[roomName].labs,(lab)=>lab.pos.x === maxX)).map(l => l.id));
+            if (maxY - minY >= 3) global.labStructures[roomName]["YGroup"].push((_.filter(Game.rooms[roomName].labs,(lab)=>lab.pos.y === maxY)).map(l => l.id));
             var minXX = minX + 1;
             var minYY = minY + 1;
             var maxXX = maxX - 1;
             var maxYY = maxY - 1;
             if (maxX - minX < 3) maxXX = maxX
             if (maxY - minY < 3) maxYY = maxY
-            global.labStructures[roomName]["core"] = _.filter(Game.rooms[roomName],(lab)=>{
+            global.labStructures[roomName]["core"] = (_.filter(Game.rooms[roomName],(lab)=>{
                 return lab.pos.x >= minXX && lab.pos.x <= maxXX && lab.pos.y >= minYY && lab.pos.y<=maxYY
-            })
+            })).map(l => l.id);
+        }
+    }
+
+    global.labs = {}
+    for (var roomName of global.rooms.my) {
+        global.labs[roomName] = {}
+        var auxiliaryLabs = [].concat(global.labStructures[roomName]["XGroup"],global.labStructures[roomName]["YGroup"]);
+        for (var groupLabs of auxiliaryLabs){
+            for (var labId of groupLabs){
+                var lab = Game.getObjectById(labId)
+                var mineralType = lab.mineralType
+                if (!mineralType) mineralType = "vacant"
+                if (!global.labs[roomName][mineralType]) global.labs[roomName][mineralType] = []
+                global.labs[roomName][mineralType].push(lab)
+            }
+        }
+        for (var mineralType in global.labs[roomName]) {
+            if (mineralType === "vacant") continue
+            global.labs[roomName][mineralType].sort((labA,labB)=>labB.store.getUsedCapacity(mineralType) - labA.store.getUsedCapacity(mineralType))
         }
     }
 
@@ -131,12 +137,12 @@ module.exports = function() {
         global.towerRepairs["_expirationTime"] = Game.time + utils.getCacheExpiration()
         for (var roomName of global.rooms.my){
             if (!global.towerRepairs[roomName]) global.towerRepairs[roomName] = {}
-            var roads = _.filter(Game.rooms[roomName].roads,(road)=>road.hits/road.hitsMax <= configTower.road)
-            var containers = _.filter(Game.rooms[roomName].containers,(container)=>container.hits/container.hitsMax <= configTower.container)
+            var roads = (_.filter(Game.rooms[roomName].roads,(road)=>road.hits/road.hitsMax <= configTower.road)).map(r => r.id);
+            var containers = (_.filter(Game.rooms[roomName].containers,(container)=>container.hits/container.hitsMax <= configTower.container)).map(c => c.id);
             var roomLevel = Game.rooms[roomName].controller.level.toString()
             global.towerRepairs[roomName].common = [].concat(roads,containers)
-            global.towerRepairs[roomName].ramparts = _.filter(Game.rooms[roomName].ramparts,(rampart)=>rampart.hits/rampart.hitsMax <= configTower.rampart[roomLevel])
-            global.towerRepairs[roomName].walls = _.filter(Game.rooms[roomName].constructedWalls,(wall)=>wall.hits/wall.hitsMax <= configTower.wall[roomLevel])
+            global.towerRepairs[roomName].ramparts = (_.filter(Game.rooms[roomName].ramparts,(rampart)=>rampart.hits/rampart.hitsMax <= configTower.rampart[roomLevel])).map(r => r.id);
+            global.towerRepairs[roomName].walls = (_.filter(Game.rooms[roomName].constructedWalls,(wall)=>wall.hits/wall.hitsMax <= configTower.wall[roomLevel])).map(w => w.id);
         }
     }
 
