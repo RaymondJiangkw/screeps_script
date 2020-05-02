@@ -21,7 +21,7 @@ const runExtension = {
     },
     _getTarget(targetType,filterEffect){
         var target_s = this.room[targetType]
-        if (target_s === undefined || target_s === []) return undefined
+        if (target_s === undefined || target_s.length === 0) return undefined
         if (!Array.isArray(target_s)) target_s = [target_s]
         target_s = _.filter(target_s,(structure)=>{
             var existingEffects = _.map(structure.effects,(o)=>o.effect)
@@ -75,12 +75,10 @@ const runExtension = {
         return this["_tUP"](PWR_REGEN_MINERAL,"mineral")
     },
     _renew(){
-        if (utils.ownRoom(this.room.name)){
-            if (this.room.powerSpawn){
-                if (this.renew(this.room.powerSpawn) === ERR_NOT_IN_RANGE) this.travelTo(this.room.powerSpawn)
-            }else if (this.room.powerBank){
-                if (this.renew(this.room.powerBank) === ERR_NOT_IN_RANGE) this.travelTo(this.room.powerBank)
-            }
+        if (this.room.powerSpawn && utils.ownRoom(this.room.name)){
+            if (this.renew(this.room.powerSpawn) === ERR_NOT_IN_RANGE) this.travelTo(this.room.powerSpawn)
+        }else if (this.room.powerBank && utils.ownRoom(this.room.name)){
+            if (this.renew(this.room.powerBank) === ERR_NOT_IN_RANGE) this.travelTo(this.room.powerBank)
         }else if (Game.rooms[this.memory.home].powerSpawn){
             if (this.renew(Game.rooms[this.memory.home].powerSpawn) === ERR_NOT_IN_RANGE) this.travelTo(Game.rooms[this.memory.home].powerSpawn)
         }

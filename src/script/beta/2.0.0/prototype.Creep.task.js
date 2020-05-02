@@ -18,14 +18,27 @@ const creepTaskExtension = {
                     if (taskInfo.subTaskType == "remote" && Game.rooms[taskInfo.data.targetPos.roomName].buildTargets.length > 0) taskInfo.targetID = Game.rooms[taskInfo.data.targetPos.roomName].buildTargets[0].id
                 } catch (error) {}
             }else if (taskInfo.data.targetID === "repair"){
-                if (taskInfo.subTaskType == "local" && Game.rooms[this.memory.home].repairTargets.length > 0) taskInfo.targetID = Game.rooms[this.memory.home].repairTargets[0].id
+                const repairCMP = (a,b)=>a.hits/a.hitsMax - b.hits/b.hitsMax;
+                if (taskInfo.subTaskType == "local" && Game.rooms[this.memory.home].repairTargets.length > 0) {
+                    Game.rooms[this.memory.home].repairTargets.sort(repairCMP);
+                    taskInfo.targetID = Game.rooms[this.memory.home].repairTargets[0].id
+                }
                 try {
-                    if (taskInfo.subTaskType == "remote" && Game.rooms[taskInfo.data.targetPos.roomName].repairTargets.length > 0) taskInfo.targetID = Game.rooms[taskInfo.data.targetPos.roomName].repairTargets[0].id
+                    if (taskInfo.subTaskType == "remote" && Game.rooms[taskInfo.data.targetPos.roomName].repairTargets.length > 0) {
+                        Game.rooms[taskInfo.data.targetPos.roomName].repairTargets.sort(repairCMP);
+                        taskInfo.targetID = Game.rooms[taskInfo.data.targetPos.roomName].repairTargets[0].id
+                    }
                 } catch (error) {}
             }else if (taskInfo.data.targetID === "pickUp"){
-                if (taskInfo.subTaskType === "local" && Game.rooms[this.memory.home].droppedResources.length > 0) taskInfo.targetID = Game.rooms[this.memory.home].droppedResources[0].id
+                if (taskInfo.subTaskType === "local" && Game.rooms[this.memory.home].droppedResources.length > 0) {
+                    Game.rooms[this.memory.home].droppedResources.sort((a,b)=>b.amount - a.amount);
+                    taskInfo.targetID = Game.rooms[this.memory.home].droppedResources[0].id
+                }
                 try {
-                    if (taskInfo.subTaskType === "remote" && Game.rooms[taskInfo.data.targetPos.roomName].droppedResources.length > 0) taskInfo.targetID = Game.rooms[taskInfo.data.targetPos.roomName].droppedResources[0].id
+                    if (taskInfo.subTaskType === "remote" && Game.rooms[taskInfo.data.targetPos.roomName].droppedResources.length > 0) {
+                        Game.rooms[taskInfo.data.targetPos.roomName].droppedResources.sort((a,b)=>b.amount - a.amount);
+                        taskInfo.targetID = Game.rooms[taskInfo.data.targetPos.roomName].droppedResources[0].id
+                    }
                 } catch (error) {}
             }else taskInfo.targetID = taskInfo.data.targetID
             if (taskInfo.data.targetPos && !taskInfo.data.targetPos.fake) taskInfo.targetPos = taskInfo.data.targetPos

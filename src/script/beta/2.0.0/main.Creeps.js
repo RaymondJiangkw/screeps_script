@@ -35,7 +35,8 @@ module.exports = function(){
                 if (groupType === "remoteHarvest"){
                     const transferCreeps = treatedPorters(creeps["transferer"]);
                     if (transferCreeps.length > 0) signals["transfer"] = transferCreeps[0].id;
-                    signals["transferers"] = transferCreeps;
+                }else if (groupType === "powerHarvest"){
+                    signals["transferers"] = treatedPorters(creeps["transferer"]).map(c => c.id);
                 }
                 var feedback = primaryCreep.run(signals)
                 var cnt = 1
@@ -95,7 +96,7 @@ module.exports = function(){
 
             if (!creep.isIdle()){
                 var signals = {}
-                signals["creep"] = randomPrimaryCreep
+                signals["creep"] = randomPrimaryCreep.id;
                 var feedback = creep.run(signals)
                 var cnt = 1
                 while (cnt <= MAX_CALL_TIME && feedback === ERR_REPEAT) creep.run(signals)

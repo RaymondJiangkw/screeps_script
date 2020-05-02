@@ -16,7 +16,7 @@ module.exports = function() {
             if (differenceRoom.length > 0){
                 var home = differenceRoom.shift()
                 powerCreep.spawn(Game.rooms[home].powerSpawn)
-            }else powerCreep.spawn(Game.rooms[_.sample(ownedPowerCreepRoom)].powerSpawn)
+            }else powerCreep.spawn(Game.rooms[_.sample(hasPowerSpawnRoom)].powerSpawn)
         }
     }
 }

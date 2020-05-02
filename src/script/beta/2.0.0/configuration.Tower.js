@@ -24,6 +24,24 @@ const towerConfiguration = {
         "7":0.0001,
         "8":0.0001
     },
-    fullyRepair:[]
+    fullyRepair:[],
+    defense:{
+        priorityRole:{
+            harmless:3,
+            attacker:2,
+            healer:2,
+            advancedAttacker:1,
+            advancedArcher:1,
+            King:0,
+            advancedHealer:1,
+        },
+        prioritySituation:{
+            "health":0,
+            "normal":2,
+            "damaged":3,
+            "weak":1,
+            "severe":4,
+        }
+    }
 }
 module.exports = towerConfiguration

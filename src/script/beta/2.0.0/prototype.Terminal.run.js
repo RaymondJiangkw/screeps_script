@@ -10,13 +10,14 @@ const randomPrice = function (lower_bound,uppper_bound){
 }
 const terminalExtensions = {
     dealOptimisticResources(orderType,resourceType,amount,settings = {basePrice:undefined,onlyDeal:true}){
+        if (this.cooldown > 0) return ERR_COOLDOWN
         settings.basePrice = settings.basePrice || undefined
         settings.onlyDeal = settings.onlyDeal || true
 
-        var createOrderType = ORDER_BUY
-        if (orderType === ORDER_BUY) createOrderType = ORDER_SELL
+        var createOrderType = null
+        if (orderType === ORDER_SELL) createOrderType = ORDER_BUY;
+        if (orderType === ORDER_BUY) createOrderType = ORDER_SELL;
 
-        if (this.cooldown > 0) return ERR_COOLDOWN
         var optimisticDeal = that.getOptimisticDeals(orderType,resourceType,this.room.name)[0]
         if (!optimisticDeal) return ERR_NO_AVAILABLE_DEAL
         if (settings.basePrice){
@@ -25,7 +26,7 @@ const terminalExtensions = {
         }
         var marketCondition = that.getPriceBound(resourceType)
         var existingOrder = that.getMyOrder(createOrderType,resourceType)
-        if (orderType === ORDER_BUY || inBound(optimisticDeal.price,marketCondition[0],marketCondition[1])) {
+        if (inBound(optimisticDeal.price,marketCondition[0],marketCondition[1])) {
             var maximumDealAmount = Math.min(that.getOptimisticDealAmount(optimisticDeal.id,this.room.name,amount),this.store.getFreeCapacity())
             if (maximumDealAmount === 0) return ERR_NO_AVAILABLE_DEAL
             if (existingOrder) {
@@ -37,6 +38,7 @@ const terminalExtensions = {
             if (existingOrder) {
                 var order = Game.market.getOrderById(existingOrder)
                 if (!inBound(order.price,marketCondition[0],marketCondition[1])) Game.market.changeOrderPrice(existingOrder,randomPrice(marketCondition[0],marketCondition[1]));
+                if (order.remainingAmount < amount) Game.market.extendOrder(order.id,amount - order.remainingAmount);
             }else Game.market.createOrder(createOrderType,resourceType,randomPrice(marketCondition[0],marketCondition[1]),amount,this.room.name);
         }
     },

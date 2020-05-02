@@ -116,19 +116,21 @@ module.exports = function() {
     global.labs = {}
     for (var roomName of global.rooms.my) {
         global.labs[roomName] = {}
-        var auxiliaryLabs = [].concat(global.labStructures[roomName]["XGroup"],global.labStructures[roomName]["YGroup"]);
-        for (var groupLabs of auxiliaryLabs){
-            for (var labId of groupLabs){
-                var lab = Game.getObjectById(labId)
-                var mineralType = lab.mineralType
-                if (!mineralType) mineralType = "vacant"
-                if (!global.labs[roomName][mineralType]) global.labs[roomName][mineralType] = []
-                global.labs[roomName][mineralType].push(lab)
+        if (Game.rooms[roomName].labs.length > 0){
+            var auxiliaryLabs = [].concat(global.labStructures[roomName]["XGroup"],global.labStructures[roomName]["YGroup"]);
+            for (var groupLabs of auxiliaryLabs){
+                for (var labId of groupLabs){
+                    var lab = Game.getObjectById(labId)
+                    var mineralType = lab.mineralType
+                    if (!mineralType) mineralType = "vacant"
+                    if (!global.labs[roomName][mineralType]) global.labs[roomName][mineralType] = []
+                    global.labs[roomName][mineralType].push(lab)
+                }
             }
-        }
-        for (var mineralType in global.labs[roomName]) {
-            if (mineralType === "vacant") continue
-            global.labs[roomName][mineralType].sort((labA,labB)=>labB.store.getUsedCapacity(mineralType) - labA.store.getUsedCapacity(mineralType))
+            for (var mineralType in global.labs[roomName]) {
+                if (mineralType === "vacant") continue
+                global.labs[roomName][mineralType].sort((labA,labB)=>labB.store.getUsedCapacity(mineralType) - labA.store.getUsedCapacity(mineralType))
+            }
         }
     }
 

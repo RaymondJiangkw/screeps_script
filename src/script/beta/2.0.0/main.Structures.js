@@ -20,46 +20,26 @@ module.exports = function () {
                 }
             }
         }
-        if (global.links[roomName] && global.links[roomName].resources) {
+        if (global.links[roomName].resources.length > 0) {
             for (var link of global.links[roomName].resources) {
                 if (link.store.getUsedCapacity(RESOURCE_ENERGY) === 0) continue
                 var receivedLinks = [].concat(_.filter(global.links[roomName].upgrade,(link)=>link.store.getUsedCapacity(RESOURCE_ENERGY) === 0),
                 _.filter(global.links[roomName].charges,(link)=>link.store.getUsedCapacity(RESOURCE_ENERGY) === 0))
-                if (link.store.getUsedCapacity(RESOURCE_ENERGY) > 0 && receivedLinks.length > 0){
-                    link.transferEnergy(receivedLinks[0])
-                }
+                if (receivedLinks.length > 0) link.transferEnergy(receivedLinks[0])
             }
         }
         if (Game.rooms[roomName].towers.length > 0) {
             if (Game.rooms[roomName].enemies.length === 0){
-                for (var tower of Game.rooms[roomName].towers) {
-                    tower.run()
-                }
+                for (var tower of Game.rooms[roomName].towers) tower.run();
             }else{
                 if (Game.rooms[roomName].enemies.length <= 2){
                     var enemies = _.shuffle(Game.rooms[roomName].enemies)
                     for (var i = 0; i < Game.rooms[roomName].towers.length; i++) Game.rooms[roomName].towers[i].attack(enemies[(i % enemies.length)])
                 }else{
-                    var roles = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c,false,true))
+                    var roles = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c,false,true));
                     if (roles.indexOf("attacker") >= 0){
                         var avgDistances = utils.getCreepsRange(Game.rooms[roomName].enemies)
                         var creepAnalysis = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c,true,false))
-                        var priorityRole = {
-                            harmless:3,
-                            attacker:2,
-                            healer:2,
-                            advancedAttacker:1,
-                            advancedArcher:1,
-                            King:0,
-                            advancedHealer:1,
-                        }
-                        var prioritySituation = {
-                            "health":0,
-                            "normal":2,
-                            "damaged":3,
-                            "weak":1,
-                            "severe":4,
-                        }
                         var priority = []
                         for (var i = 0; i < Game.rooms[roomName].enemies.length;i++){
                             var creep = Game.rooms[roomName].enemies[i]
@@ -68,13 +48,13 @@ module.exports = function () {
                                 avgDistance:avgDistances[i],
                                 role:creepAnalysis[i][0],
                                 situation:creepAnalysis[i][1],
-                                score:Math.floor((-1 * avgDistances[i] + priorityRole[creepAnalysis[i][0]] + prioritySituation[creepAnalysis[i][1]]) / 2)
+                                score:Math.floor((-1 * avgDistances[i] + configTower.defense.priorityRole[creepAnalysis[i][0]] + configTower.defense.prioritySituation[creepAnalysis[i][1]]) / 2)
                             })
                         }
                         priority.sort((infoA,infoB)=>{
                             var Ddis = infoA.avgDistance - infoB.avgDistance
-                            var Drole = priorityRole[infoA.role] - priorityRole[infoB.role]
-                            var DSituation = prioritySituation[infoA.situation] - prioritySituation[infoB.situation]
+                            var Drole = configTower.defense.priorityRole[infoA.role] - configTower.defense.priorityRole[infoB.role]
+                            var DSituation = configTower.defense.prioritySituation[infoA.situation] - configTower.defense.prioritySituation[infoB.situation]
                             if (Math.abs(Ddis) >= 0.5) return Ddis
                             if (Drole !== 0) return Drole
                             if (DSituation !== 0) return DSituation
@@ -90,7 +70,7 @@ module.exports = function () {
                 for (var desiredGoods in configTerminal.mostDesiredGoods){
                     if (Game.rooms[roomName].terminal.cooldown !== 0) break
                     if (Game.market.credits <= configTerminal[desiredGoods]["minCredits"]) continue
-                    Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,desiredGoods,undefined,{basePrice:configTerminal[desiredGoods]["maxPrice"]})
+                    Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,desiredGoods,undefined,{basePrice:configTerminal[desiredGoods]["maxPrice"],onlyDeal:true})
                 }
 //            }
             if (configSend[roomName] && Game.time % configTerminal.terminalSendInterval === 0){
@@ -120,16 +100,16 @@ module.exports = function () {
                         if (global.resources[roomName][resourceType]["all"] <= reservedAmount) continue
                         if (Game.rooms[roomName].terminal.store[resourceType] <= minSellAmount) continue
                         var amount = Math.min(global.resources[roomName][resourceType]["all"] - reservedAmount,Game.rooms[roomName].terminal.store[resourceType])
-                        Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_BUY,resourceType,amount)
+                        Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_BUY,resourceType,amount);
                     }
                 }
                 if (configTerminal.sellingMineral[roomName] && configTerminal.sellingMineral[roomName] > 0){
                     var thisMineralType = Game.rooms[roomName].mineral.mineralType
-                    if (Game.rooms[roomName].terminal.cooldown === 0 && Game.rooms[roomName].terminal.store[thisMineralType] > configTerminal.sellingMineral[roomName]){
+                    if (Game.rooms[roomName].terminal.cooldown === 0 && Game.rooms[roomName].terminal.store[thisMineralType] > configTerminal.baseReservedMineral + configTerminal.sellingMineral[roomName]){
                         Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_BUY,thisMineralType,configTerminal.sellingMineral[roomName],{onlyDeal:false});
                     }
                 }
-                if (configTerminal.sellingMineral[roomName] && configTerminal.sellingMineral[roomName] > 0){
+                if (configTerminal.sellingEnergy[roomName] && configTerminal.sellingEnergy[roomName] > 0){
                     if (Game.rooms[roomName].terminal.cooldown === 0 && Game.rooms[roomName].terminal.store[RESOURCE_ENERGY] >= configTerminal.baseReservedEnergy + configTerminal.sellingEnergy[roomName]){
                         Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_BUY,RESOURCE_ENERGY,configTerminal.sellingEnergy[roomName],{onlyDeal:false})
                     }
@@ -142,8 +122,7 @@ module.exports = function () {
                         var beginBuyingAmount = goodsInfo[1]
                         var endBuyingAmount = goodsInfo[2]
                         if (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["all"] > beginBuyingAmount) continue
-                        var existingAmount = 0
-                        if (global.resources[roomName][resourceType]["all"]) existingAmount = global.resources[roomName][resourceType]["all"]
+                        var existingAmount = (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["all"]) | 0
                         Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,resourceType,endBuyingAmount - existingAmount,{onlyDeal:false})
                     }
                 }
@@ -169,21 +148,20 @@ module.exports = function () {
                 }
             }
         }
-        if (Game.rooms[roomName].factory && Game.rooms[roomName].factory.cooldown == 0) {
-            if (configFactory[roomName]){
-                for (var productionInfo of configFactory[roomName]){
-                    var production = productionInfo[0]
-                    var componentComplete = true
-                    for (var component in COMMODITIES[production].components){
-                        if (Game.rooms[roomName].factory.store.getUsedCapacity(component) < COMMODITIES[production].components[component]){
-                            componentComplete = false
-                            break
-                        }
+        if (Game.rooms[roomName].factory && Game.rooms[roomName].factory.cooldown == 0 && configFactory[roomName]) {
+            for (var productionInfo of configFactory[roomName]){
+                if (Game.rooms[roomName].factory.cooldown > 0) break;
+                var production = productionInfo[0]
+                var componentComplete = true
+                for (var component in COMMODITIES[production].components){
+                    if (Game.rooms[roomName].factory.store.getUsedCapacity(component) < COMMODITIES[production].components[component]){
+                        componentComplete = false;
+                        break;
                     }
-                    if (!componentComplete) continue
-                    if (productionInfo[1] === "greedy" || Game.rooms[roomName].factory.store.getUsedCapacity(production) < productionInfo[1]) Game.rooms[roomName].factory.produce(production)
-                    break
                 }
+                if (!componentComplete) continue
+                if (productionInfo[1] === "greedy" || global.resources[roomName][production]["all"] < productionInfo[1]) Game.rooms[roomName].factory.produce(production);
+                break
             }
         }
         if (Game.rooms[roomName].powerSpawn) {

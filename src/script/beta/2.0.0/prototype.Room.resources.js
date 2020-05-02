@@ -109,7 +109,6 @@ Object.defineProperty(Room.prototype,"droppedResources",{
         }else{
             this._checkRoomDroppedResourcesCache();
             roomDroppedResources[this.name] = _.filter(roomDroppedResources[this.name],s=>Game.getObjectById(s))
-            roomDroppedResources[this.name].sort((a,b)=>Game.getObjectById(b).amount - Game.getObjectById(a).amount)
             if (roomDroppedResources[this.name].length > 0){
                 this["_droppedResources_ts"] = Game.time;
                 return this["_droppedResources"] = _.map(roomDroppedResources[this.name],Game.getObjectById);

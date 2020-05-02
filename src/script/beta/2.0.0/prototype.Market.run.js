@@ -2,9 +2,8 @@ var resourcePrice = {}
 const constants = require('constants')
 const marketExtension = {
     perUnitCost(amount,price,home,targetRoom,orderType){
-        var _perUnitCostFactor = -1
-        if (orderType === ORDER_SELL) _perUnitCostFactor = 1
-        return (amount * price + this.getTransactionFee(home,targetRoom,amount) * _perUnitCostFactor) / amount
+        if (orderType === ORDER_SELL) return (amount * price + this.getTransactionFee(home,targetRoom,amount)) / amount;
+        else if (orderType === ORDER_BUY) return (amount * price - this.getTransactionFee(home,targetRoom,amount)) / amount;
     },
     getTransactionFee(home,targetRoom,amount){
         var energyCost = Game.market.calcTransactionCost(amount,home,targetRoom)
@@ -72,7 +71,7 @@ module.exports = {
                 else priceEmoji = constants.emoji.slightSmile
                 console.log(order.id,constants.emoji.number,marketExtension.getMaximumDealAmount(order.id,home),constants.emoji.money,perUnitCost,priceEmoji,order.roomName);
                 cnt++;
-                if (cnt >= displayCnt) break
+                if (cnt >= displayCnt) break;
             }
         }})
         Object.defineProperty(Game.market,"logOptimisticDeals",{value:function(orderType,resourceType,home){

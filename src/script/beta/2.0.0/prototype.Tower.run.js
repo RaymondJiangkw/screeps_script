@@ -11,7 +11,6 @@ const towerExtension = {
             global.towerRepairs[this.room.name].common.sort(hitsCompare)
             global.towerRepairs[this.room.name].walls.sort(hitsCompare)
             global.towerRepairs[this.room.name].ramparts.sort(hitsCompare)
-            //console.log(global.towerRepairs[this.room.name].walls)
             var towerRepairs = global.towerRepairs[this.room.name]
             if (towerRepairs.common.length > 0) this.repair(Game.getObjectById(towerRepairs.common[0]));
             else if (towerRepairs.ramparts.length > 0) this.repair(Game.getObjectById(towerRepairs.ramparts[0]));

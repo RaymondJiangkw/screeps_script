@@ -7,7 +7,9 @@ const acceptableDepositCooldownTime = require('configuration.Deposit').acceptabl
 const SHA1 = require('fingerprint.Algorithm.sha1')
 const MD5 = require('fingerprint.Algorithm.md5')
 var SaltList = {}
+var SaltListExpiration = 0;
 var creepsCollection = {}
+var creepsCollectionExpiration = 0;
 const utilsCollection = {
     disPos:function(pos1,pos2){
         let x_diff = Math.abs(pos1.x - pos2.x)
@@ -142,7 +144,7 @@ const utilsCollection = {
         for (var i = 0; i < creepArr.length; i++){
             var distance = 0
             for (var j = 0; j < creepArr.length;j++){
-                if (i != j) distance+=creepArr[i].pos.getRangeTo(creepArr[j])
+                if (i !== j) distance+=creepArr[i].pos.getRangeTo(creepArr[j])
             }
             result.push(distance / (creepArr.length - 1));
         }
@@ -179,9 +181,10 @@ const utilsCollection = {
         }
         return dx + dy;
     },
-    canGetObjectById:function(targetID,targetPos,currentPos){
+    canGetObjectById:function(targetID,targetPos){
         try {
-            if (currentPos.roomName !== targetPos.roomName && !Game.rooms[targetPos.roomName]) return "unsure"
+            if (!targetPos) return "unsure";
+            if (!Game.rooms[targetPos.roomName]) return "unsure";
         } catch (error) {
             return false
         }
@@ -218,7 +221,8 @@ const utilsCollection = {
         else return Object.keys(creepConfig.groupAcceptedTask[groupType])[0]
     },
     getSaltList:function(roomName,groupType,groupName,role){
-        if (!SaltList[roomName]) {
+        if (!SaltList[roomName] || SaltListExpiration !== Game.time) {
+            SaltListExpiration = Game.time;
             SaltList[roomName] = {}
             var spawningCreepSalts = {}
             for (var spawnTask of Game.rooms[roomName].searchTask("_spawn","default")) {
@@ -259,7 +263,7 @@ const utilsCollection = {
                 }   
             }
         }
-        try {return SaltList[roomName][groupType][groupName][role]} catch (error) {return []}
+        try {return SaltList[roomName][groupType][groupName][role] || []} catch (error) {return []}
     },
     getBoosts:function(role,groupType){
         if (!creepConfig.boosts[role]) return []
@@ -281,7 +285,8 @@ const utilsCollection = {
         return [];
     },
     getAllCreeps:function(roomName){
-        if (!creepsCollection[roomName]){
+        if (!creepsCollection[roomName] || creepsCollectionExpiration !== Game.time){
+            creepsCollectionExpiration = Game.time;
             creepsCollection[roomName] = _.groupBy(Game.rooms[roomName].creeps,(c)=>c.memory.role);
             for (var role in creepConfig.components) if (!creepsCollection[roomName][role]) creepsCollection[roomName][role] = [];
             for (var _creepTask of Game.rooms[roomName].searchTask("_spawn","default")) {
