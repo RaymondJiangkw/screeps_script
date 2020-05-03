@@ -124,7 +124,7 @@ multipleList.forEach(function(type){
                 this._checkRoomCache();
                 if(roomStructures[this.name][type]) {
 					this['_'+type+'s_ts'] = Game.time;
-                    return this['_'+type+'s'] = roomStructures[this.name][type].map(Game.getObjectById);
+                    return this['_'+type+'s'] = _.filter(roomStructures[this.name][type].map(Game.getObjectById),(s)=>s);
 				} else {
 					this['_'+type+'s_ts'] = Game.time;
                     return this['_'+type+'s'] = [];

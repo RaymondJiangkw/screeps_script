@@ -20,8 +20,10 @@ module.exports = function() {
         var link
         for (link of Game.rooms[roomName]["links"]){
             var adjacentEnergy = utils.Adjacent(link,Game.rooms[roomName]["energys"], 2)
+            var strongAdjacentController = utils.adjacent(link,Game.rooms[roomName].controller,1);
             var adjacentSpawn = utils.Adjacent(link,Game.rooms[roomName]["spawns"], 2)
-            if (adjacentEnergy) {global.links[roomName].resources.push(link);global.links[roomName].map[adjacentEnergy] = link.id;}
+            if (strongAdjacentController) global.links[roomName].upgrade.push(link);
+            else if (adjacentEnergy) {global.links[roomName].resources.push(link);global.links[roomName].map[adjacentEnergy] = link.id;}
             else if (adjacentSpawn) {global.links[roomName].charges.push(link);global.links[roomName].map[adjacentSpawn] = link.id;}
             else global.links[roomName].upgrade.push(link)
         }
@@ -107,7 +109,7 @@ module.exports = function() {
             var maxYY = maxY - 1;
             if (maxX - minX < 3) maxXX = maxX
             if (maxY - minY < 3) maxYY = maxY
-            global.labStructures[roomName]["core"] = (_.filter(Game.rooms[roomName],(lab)=>{
+            global.labStructures[roomName]["core"] = (_.filter(Game.rooms[roomName].labs,(lab)=>{
                 return lab.pos.x >= minXX && lab.pos.x <= maxXX && lab.pos.y >= minYY && lab.pos.y<=maxYY
             })).map(l => l.id);
         }

@@ -13,6 +13,6 @@ module.exports = {
     "W18N22":[],
     "W19N22":[],
     "W22N25":[],
-    "W23N25":[],
-    "W21N24":[new sendInfo("W19N22",RESOURCE_ENERGY,configTerminal.baseReservedEnergy,10000,150000,150000)]
+    "W23N25":[new sendInfo("W22N25",RESOURCE_ENERGY,configTerminal.baseReservedEnergy,10000,150000,250000)],
+    "W21N24":[new sendInfo("W19N22",RESOURCE_ENERGY,configTerminal.baseReservedEnergy,10000,150000,250000)]
 }

@@ -92,7 +92,7 @@ Object.defineProperty(Room.prototype,"mineral",{
         else{
             this["_mineral_ts"] = Game.time;
             for (var mineralType of singleList){
-                if (this[mineralType]) return this["_mineral"] = Game.getObjectById(this[mineralType]);
+                if (this[mineralType]) return this["_mineral"] = this[mineralType];
             }
             return this["_mineral"] = undefined;
         }

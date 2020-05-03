@@ -1,4 +1,5 @@
 const labConfiguration = {
+    mostReactionTime:3000,
     leastRefillAmount:5,
     leastTransferAmount:50,
     "W22N25":{

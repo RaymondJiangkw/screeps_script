@@ -68,9 +68,10 @@ module.exports = function () {
         if (Game.rooms[roomName].terminal && Game.time % configTerminal.terminalCheckInterval === 0){
 //            if (Game.time % configTerminal.mostDesiredGoods.interval === 0){
                 for (var desiredGoods in configTerminal.mostDesiredGoods){
-                    if (Game.rooms[roomName].terminal.cooldown !== 0) break
-                    if (Game.market.credits <= configTerminal[desiredGoods]["minCredits"]) continue
-                    Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,desiredGoods,undefined,{basePrice:configTerminal[desiredGoods]["maxPrice"],onlyDeal:true})
+                    if (desiredGoods === "interval") continue;
+                    if (Game.rooms[roomName].terminal.cooldown !== 0) break;
+                    if (Game.market.credits <= configTerminal.mostDesiredGoods[desiredGoods]["minCredits"]) continue
+                    Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,desiredGoods,undefined,{basePrice:configTerminal.mostDesiredGoods[desiredGoods]["maxPrice"],onlyDeal:true})
                 }
 //            }
             if (configSend[roomName] && Game.time % configTerminal.terminalSendInterval === 0){
@@ -84,11 +85,8 @@ module.exports = function () {
                 }
             }
             
-            if (!global.terminalDistriTime) global.terminalDistriTime = {}
-            if (!global.terminalDistriTime[roomName] || global.terminalDistriTime[roomName] <= Game.time){
-                global.terminalDistriTime[roomName] = utils.getCacheExpiration()
-                Game.rooms[roomName].terminal.distributeMineral()
-            }else{
+                
+            if (Game.rooms[roomName].terminal.distributeMineral() !== OK){
                 // Sell
                 if (configTerminal.sellingGoods[roomName]){
                     for (var goodsInfo of configTerminal.sellingGoods[roomName]){
@@ -97,15 +95,15 @@ module.exports = function () {
                         if (!global.resources[roomName][resourceType]) continue
                         var reservedAmount = goodsInfo[1]
                         var minSellAmount = goodsInfo[2]
-                        if (global.resources[roomName][resourceType]["all"] <= reservedAmount) continue
+                        if (global.resources[roomName][resourceType]["total"] <= reservedAmount) continue
                         if (Game.rooms[roomName].terminal.store[resourceType] <= minSellAmount) continue
-                        var amount = Math.min(global.resources[roomName][resourceType]["all"] - reservedAmount,Game.rooms[roomName].terminal.store[resourceType])
+                        var amount = Math.min(global.resources[roomName][resourceType]["total"] - reservedAmount,Game.rooms[roomName].terminal.store[resourceType])
                         Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_BUY,resourceType,amount);
                     }
                 }
                 if (configTerminal.sellingMineral[roomName] && configTerminal.sellingMineral[roomName] > 0){
                     var thisMineralType = Game.rooms[roomName].mineral.mineralType
-                    if (Game.rooms[roomName].terminal.cooldown === 0 && Game.rooms[roomName].terminal.store[thisMineralType] > configTerminal.baseReservedMineral + configTerminal.sellingMineral[roomName]){
+                    if (Game.rooms[roomName].terminal.cooldown === 0 && Game.rooms[roomName].terminal.store[thisMineralType] >= configTerminal.baseReservedMineral + configTerminal.sellingMineral[roomName]){
                         Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_BUY,thisMineralType,configTerminal.sellingMineral[roomName],{onlyDeal:false});
                     }
                 }
@@ -121,8 +119,8 @@ module.exports = function () {
                         var resourceType = goodsInfo[0]
                         var beginBuyingAmount = goodsInfo[1]
                         var endBuyingAmount = goodsInfo[2]
-                        if (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["all"] > beginBuyingAmount) continue
-                        var existingAmount = (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["all"]) | 0
+                        if (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["total"] > beginBuyingAmount) continue
+                        var existingAmount = (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["total"]) || 0
                         Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,resourceType,endBuyingAmount - existingAmount,{onlyDeal:false})
                     }
                 }
@@ -136,8 +134,12 @@ module.exports = function () {
                 const core2 = Game.getObjectById(global.labStructures[roomName].core[1]);
                 if (mode === "focus" || mode === "default"){
                     if (core1.mineralType && core2.mineralType && REACTIONS[core1.mineralType][core2.mineralType] === resourceType) {
-                        for (var lab of global.labs[roomName][resourceType]) if (lab.cooldown === 0) lab.runReaction(core1,core2);
-                        for (var lab of global.labs[roomName]["vacant"]) if (lab.cooldown === 0) lab.runReaction(core1,core2);
+                        try{
+                            for (var lab of global.labs[roomName][resourceType]) if (lab.cooldown === 0) lab.runReaction(core1,core2);
+                        }catch (error) {};
+                        try{
+                            for (var lab of global.labs[roomName]["vacant"]) if (lab.cooldown === 0) lab.runReaction(core1,core2);
+                        }catch (error) {};
                     }
                 }else if (mode === "reverse"){
                     var fromlabs = global.labs[roomName][resourceType];
@@ -160,8 +162,7 @@ module.exports = function () {
                     }
                 }
                 if (!componentComplete) continue
-                if (productionInfo[1] === "greedy" || global.resources[roomName][production]["all"] < productionInfo[1]) Game.rooms[roomName].factory.produce(production);
-                break
+                if (productionInfo[1] === "greedy" || !global.resources[roomName][production] || global.resources[roomName][production]["total"] < productionInfo[1]) Game.rooms[roomName].factory.produce(production);
             }
         }
         if (Game.rooms[roomName].powerSpawn) {

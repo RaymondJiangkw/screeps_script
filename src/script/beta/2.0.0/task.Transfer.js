@@ -28,7 +28,7 @@ module.exports = function() {
             var mineralContainer = global.containers[roomName].mineral
             if (mineralContainer.store.getFreeCapacity() === 0 || (mineralContainer.store.getUsedCapacity() > 0 && Game.rooms[roomName].mineral.mineralAmount === 0)){
                 var checkOrders = ["storage","terminal","factory"]
-                for (var structure in checkOrders) {
+                for (var structure of checkOrders) {
                     if (Game.rooms[roomName][structure] && Game.rooms[roomName][structure].store.getFreeCapacity() > 0) {
                         Game.rooms[roomName].AddTransferTask("core",mineralContainer.id,Game.rooms[roomName][structure].id,Game.rooms[roomName].mineral.mineralType,"exhaust");
                         break;
@@ -58,7 +58,7 @@ module.exports = function() {
                     var terminalMineral = terminalConfig.baseReservedMineral
                     if (terminalConfig["sellingMineral"][roomName]) terminalMineral += terminalConfig["sellingMineral"][roomName]
                     terminalMineral -= Game.rooms[roomName].terminal.store.getUsedCapacity(thisMineralType)
-                    if (terminalMineral > 0 && global.resources[roomName][thisMineralType]["storage"] > 0) Game.rooms[roomName].AddTransferTask("advanced",Game.rooms[roomName].storage.id,Game.rooms[roomName].terminal.id,thisMineralType,Math.min(terminalMineral,global.resources[roomName][thisMineralType]["storage"]))
+                    if (terminalMineral > 0 && global.resources[roomName][thisMineralType] && global.resources[roomName][thisMineralType]["storage"] > 0) Game.rooms[roomName].AddTransferTask("advanced",Game.rooms[roomName].storage.id,Game.rooms[roomName].terminal.id,thisMineralType,Math.min(terminalMineral,global.resources[roomName][thisMineralType]["storage"]))
                 }
             }
             
@@ -88,6 +88,7 @@ module.exports = function() {
                 const mode = labConfig[roomName]["mode"]
                 if ((mode === "focus" || mode === "default") && global.labStructures[roomName].core.length === 2){
                     const resourceType = utils.getLabTarget(roomName,mode)
+                    const resourceTypes = labConfig[roomName][mode]
                     if (resourceType){
                         var _components = Constants.labFormula[resourceType]
                         var coreLabs = []
@@ -107,9 +108,9 @@ module.exports = function() {
 
                         if (skip) {
                             var allowable = labConfig[roomName].allowedCompounds.indexOf(resourceType) > 0;
-                            var necessary1 = global.labs[roomName][resourceType].length === 0 && global.labs[roomName]["vacant"].length > 0
-                            var necessary2 = global.labs[roomName][resourceType].length > 0 && global.labs[roomName][resourceType][0].store[resourceType] < 30
-                            var possible = global.resources[roomName][resourceType]["utils"] >= 30
+                            var necessary1 = global.labs[roomName][resourceType] && global.labs[roomName][resourceType].length === 0 && global.labs[roomName]["vacant"].length > 0
+                            var necessary2 = global.labs[roomName][resourceType] && global.labs[roomName][resourceType].length > 0 && global.labs[roomName][resourceType][0].store[resourceType] < 30
+                            var possible = global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["utils"] >= 30
                             if (allowable && possible && (necessary1 || necessary2)) Game.rooms[roomName].AddTransferTask("advanced","resource","lab",resourceType,"full");
                             else Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
                         }else{
@@ -136,8 +137,8 @@ module.exports = function() {
                                     var overDue = lab.mineralType && lab.store.getFreeCapacity(lab.mineralType) <= labConfig.leastTransferAmount;
                                     var tooFew = lab.mineralType && lab.store[lab.mineralType] < 30;
 
-                                    if (mode === "focus") condition = notConsistent || overDue || tooFew
-                                    else if (mode === "default") condition = (notAllowed && notConsistent) || (overDue && !notConsistent) || (!notAllowed && notConsistent && duplicate) || tooFew
+                                    if (mode === "focus") condition = notConsistent || overDue
+                                    else if (mode === "default") condition = (notAllowed && notConsistent) || (overDue && !notConsistent) || (!notAllowed && notConsistent && duplicate) || (tooFew && notConsistent)
                                     if (condition) Game.rooms[roomName].AddTransferTask("advanced",lab.id,Game.rooms[roomName].storage.id,lab.mineralType,"exhaust")
                                 }
                                 }
@@ -146,6 +147,7 @@ module.exports = function() {
                     }
                 }else if (mode === "reverse" && global.labStructures[roomName].core.length === 2){
                     const resourceType = utils.getLabTarget(roomName,mode)
+                    const resourceTypes = labConfig[roomName][mode]
                     if (resourceType) {
                         var skip = true;
                         if (!global.resources[roomName][resourceType] || global.resources[roomName][resourceType]["utils"] <= 5){
@@ -207,7 +209,7 @@ module.exports = function() {
                     if (productionInfo[1] !== "greedy") diffAmount = productionInfo[1] - existingAmount
                     if (diffAmount > 0){
                         for (var component in COMMODITIES[production].components){
-                            var _diffAmount = COMMODITIES[production].components[component] * diffAmount - Game.rooms[roomName].factory.store[component]
+                            var _diffAmount = COMMODITIES[production].components[component] * (diffAmount / COMMODITIES[production].amount)  - Game.rooms[roomName].factory.store[component];
                             if (_diffAmount > 0 && global.resources[roomName][component]){
                                 var checkOrders = ["storage","terminal"]
                                 for (var retrievedStructure of checkOrders){
@@ -267,11 +269,11 @@ module.exports = function() {
         if (global.rooms.my.indexOf(hostRoom) < 0) continue
         if (!Game.rooms[hostRoom].terminal) continue
         for (var sendInfo of sendConfig[hostRoom]){
-            if (!Game.rooms[sendInfo.tergetRoom].terminal) continue
+            if (!Game.rooms[sendInfo.targetRoom].terminal) continue
             if (!global.resources[hostRoom][sendInfo.resourceType]) continue
             var transferAmount = sendInfo.baseAmount + sendInfo.sendAmount - Game.rooms[hostRoom].terminal.store[sendInfo.resourceType]
             if (transferAmount <= 0) continue
-            if (Game.rooms[sendInfo.targetRoom].terminal.store[sendInfo.resourceType] >= sendInfo.targetStopAmount || Game.rooms[sendInfo.targetRoom].terminal.getUsedCapacity() >= sendInfo.targetStopCapacity) continue
+            if (Game.rooms[sendInfo.targetRoom].terminal.store[sendInfo.resourceType] >= sendInfo.targetStopAmount || Game.rooms[sendInfo.targetRoom].terminal.store.getUsedCapacity() >= sendInfo.targetStopCapacity) continue
             var checkOrders = ["storage","labs","factory"]
             for (var structure of checkOrders){
                 var availableAmount = global.resources[hostRoom][sendInfo.resourceType][structure]

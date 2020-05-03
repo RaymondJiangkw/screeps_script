@@ -166,8 +166,8 @@ const roomTaskExtension = {
         const data = {targetRoom}
         return this.AddTask("defend",subTaskType,data,groupsNum,changeable,silence,getRepeat)
     },
-    AddAttackTask(subTaskType,targetRoom,routes = [],groupsNum = Infinity,changeable = false,silence = false,getRepeat = false){
-        const data = {targetRoom,routes}
+    AddAttackTask(subTaskType,target,targetRoom,routes = [],groupsNum = Infinity,changeable = false,silence = false,getRepeat = false){
+        const data = {target,targetRoom,routes}
         return this.AddTask("attack",subTaskType,data,groupsNum,changeable,silence,getRepeat)
     },
     AddPickUpTask(subTaskType,targetID,targetPos,toTarget,groupsNum = Infinity,changeable = true,silence = false,getRepeat = false){

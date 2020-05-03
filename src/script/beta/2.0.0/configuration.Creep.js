@@ -7,7 +7,7 @@ const creepConfiguration = {
         "repairer":{work:5,carry:3,move:4},
         "defender":{tough:5,move:20,attack:5,"ranged_attack":5,heal:5},
         "attacker":{move:15,attack:30},
-        "healer":{move:10,heal:30,move:10},
+        "healer":{move:10,heal:20,move:10},
         "claimer":{move:1,claim:1},
         "traveler":{move:1}
     },

@@ -25,7 +25,8 @@ const utilsCollection = {
         return dist[0] <= distance && dist[1] <= distance && pos1.roomName === pos2.roomName
     },
     adjacent:function(object,subject, distance = 1){
-        return object.pos.inRangeTo(subject,distance)
+        if (!object || !subject) return false;
+        return object.pos.inRangeTo(subject,distance);
     },
     AdjacentPos:function(pos1,posArr,distance = 1){
         for (var pos2 of posArr){
@@ -71,7 +72,10 @@ const utilsCollection = {
     },
     getComponentsList:function(roomName,role,groupType,availableEnergy,componentsObj){
         if (Game.rooms[roomName].energys.length < 2 && role === "upgrader"){
-            for (var component in componentsObj) componentsObj[component] = Math.ceil(componentsObj[component] * 0.5)
+            for (var component in componentsObj) componentsObj[component] = Math.ceil(componentsObj[component] * 0.5);
+        }
+        if (Game.rooms[roomName].controller.level === 8 && role === "upgrader"){
+            for (var component in componentsObj) componentsObj[component] = 1;
         }
         if (role === "harvester" && groupType === "remoteHarvest"){
             componentsObj["work"] += 15
@@ -221,7 +225,6 @@ const utilsCollection = {
         else return Object.keys(creepConfig.groupAcceptedTask[groupType])[0]
     },
     getSaltList:function(roomName,_groupType,_groupName,_role){
-        if (!SaltList[roomName] || SaltListExpiration !== Game.time) {
             SaltListExpiration = Game.time;
             SaltList[roomName] = {}
             var spawningCreepSalts = {}
@@ -262,7 +265,6 @@ const utilsCollection = {
                     }
                 }   
             }
-        }
         try {return SaltList[roomName][_groupType][_groupName][_role] || []} catch (error) {return []}
     },
     getBoosts:function(role,groupType){
@@ -274,8 +276,14 @@ const utilsCollection = {
         let resourceType = undefined
         if (mode !== "focus"){
             if (!Game.rooms[roomName].memory.labCur) Game.rooms[roomName].memory.labCur = {};
+            if (!Game.rooms[roomName].memory.labCur.expirationTime) Game.rooms[roomName].memory.labCur.expirationTime = {};
             if (resourceTypes.length > 0) {
                 if (!Game.rooms[roomName].memory.labCur[mode]) Game.rooms[roomName].memory.labCur[mode] = 0;
+                if (!Game.rooms[roomName].memory.labCur.expirationTime[mode]) Game.rooms[roomName].memory.labCur.expirationTime[mode] = Game.time + this.getCacheExpiration(labConfig.mostReactionTime,50);
+                if (Game.rooms[roomName].memory.labCur.expirationTime[mode] <= Game.time) {
+                    Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
+                    Game.rooms[roomName].memory.labCur.expirationTime[mode] = Game.time + this.getCacheExpiration(labConfig.mostReactionTime,50);
+                }
                 resourceType = resourceTypes[Game.rooms[roomName].memory.labCur[mode] % resourceTypes.length];
             }else Game.rooms[roomName].memory.labCur[mode] = 0;
         }else resourceType = resourceTypes
@@ -285,15 +293,12 @@ const utilsCollection = {
         return [];
     },
     getAllCreeps:function(roomName){
-        if (!creepsCollection[roomName] || creepsCollectionExpiration !== Game.time){
-            creepsCollectionExpiration = Game.time;
-            creepsCollection[roomName] = _.groupBy(Game.rooms[roomName].creeps,(c)=>c.memory.role);
-            for (var role in creepConfig.components) if (!creepsCollection[roomName][role]) creepsCollection[roomName][role] = [];
-            for (var _creepTask of Game.rooms[roomName].searchTask("_spawn","default")) {
-                const taskInfo = Game.rooms[roomName].taskInfo(_creepTask)
-                const simulateCreep = {memory:taskInfo.data.memory}
-                creepsCollection[roomName][taskInfo.data.memory.role].push(simulateCreep);
-            }
+        creepsCollection[roomName] = _.groupBy(Game.rooms[roomName].creeps,(c)=>c.memory.role);
+        for (var role in creepConfig.components) if (!creepsCollection[roomName][role]) creepsCollection[roomName][role] = [];
+        for (var _creepTask of Game.rooms[roomName].searchTask("_spawn","default")) {
+            const taskInfo = Game.rooms[roomName].taskInfo(_creepTask)
+            const simulateCreep = {memory:taskInfo.data.memory}
+            creepsCollection[roomName][taskInfo.data.memory.role].push(simulateCreep);
         }
         return creepsCollection[roomName]
     },

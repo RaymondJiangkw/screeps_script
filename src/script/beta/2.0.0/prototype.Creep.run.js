@@ -110,15 +110,21 @@ const creepRunExtensions = {
             }
         }
         if (this.memory.boostTarget && this.memory.boostTargetPos){
-            if (this["_adjMove"](tihs.memory.boostTargetPos) === ERR_NOT_IN_RANGE) return OK
-            const boostCompound = Game.getObjectById(this.memory.boostTarget).mineralType;
+            const target = Game.getObjectById(this.memory.boostTarget)
+            if (!target || this.memory.boostCompounds.indexOf(target.mineralType) < 0 || labConfig[this.room.name].allowedCompounds.indexOf(target.mineralType) < 0){
+                this.memory.boostTarget = undefined;
+                this.memory.boostTargetPos = undefined;
+                return FINISH;
+            }
+            if (this["_adjMove"](this.memory.boostTargetPos) === ERR_NOT_IN_RANGE) return OK
+            const boostCompound = target.mineralType;
             const boostBodyPart = constants.compoundEffect[boostCompound]
 
-            Game.getObjectById(this.memory.boostTarget).boostCreep(this)
+            target.boostCreep(this)
 
             this.memory.boostTarget = undefined
             this.memory.boostTargetPos = undefined
-
+            if (!this.memory["_tmp"]) this.memory["_tmp"] = {}
             this.memory["_tmp"]["bodyAnalysis"] = utils.analyseCreep(this)
             if (this.memory["_tmp"]["bodyAnalysis"][boostBodyPart][0] === this.memory["_tmp"]["bodyAnalysis"][boostBodyPart][4].length){
                 this.memory.boostCompounds.splice(this.memory.boostCompounds.indexOf(boostCompound),1)
@@ -156,7 +162,7 @@ const creepRunExtensions = {
         var ret = this.harvest(target)
         return [ret, amount]
     },
-    _getEnergy(taskType){ //Most cases used for RESOURCE_ENERGY
+    _getEnergy(taskType,subTaskType){ //Most cases used for RESOURCE_ENERGY
         if (!this.memory.get.getTarget || !this.memory.get.getTargetPos) {
             var chosenObject = undefined
             var hasEnergyContainers = _.filter(global.containers[this.memory.home].resources, c=>c.store.getUsedCapacity(RESOURCE_ENERGY) > 0)
@@ -182,6 +188,9 @@ const creepRunExtensions = {
             else if (taskType === "build" && buildConfig.notUtilsStorage.indexOf(this.memory.home) < 0 && hasEnergy(Game.rooms[this.memory.home].storage,buildConfig.baseReserveEnergy)) chosenObject = Game.rooms[this.memory.home].storage
             
             if (taskType === "transfer" && global.links[this.memory.home].charges.length > 0) chosenObject = global.links[this.memory.home].charges[0]
+            else if (taskType === "transfer" && subTaskType === "core" && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage;
+            else if (taskType === "transfer" && subTaskType === "core" && hasEnergy(Game.rooms[this.memory.home].terminal)) chosenObject = Game.rooms[this.memory.home].terminal;
+            else if (taskType === "transfer" && subTaskType === "core" && hasEnergy(Game.rooms[this.memory.home].factory)) chosenObject = Game.rooms[this.memory.home].factory;
             else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
             else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && hasEnergy(Game.rooms[this.memory.home].terminal)) chosenObject = Game.rooms[this.memory.home].terminal
             else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && hasEnergy(Game.rooms[this.memory.home].factory)) chosenObject = Game.rooms[this.memory.home].factory
@@ -252,15 +261,22 @@ const creepRunExtensions = {
             }else return ERR_NOT_FOUND
         }
     },
-    __afterGet(taskType,resourceType,amount){
+    __afterGet(taskType,resourceType,amount,subTaskType){
         var feedback = undefined
         if (this.store.getFreeCapacity(resourceType) === 0) {
             this.memory.get.getTarget = undefined
             this.memory.get.getTargetPos = undefined
-            this.memory.working = true
+            if (this.store[resourceType] > 0) this.memory.working = true;
+            else {
+                if (Game.rooms[this.memory.home].storage && Game.rooms[this.memory.home].storage.store.getFreeCapacity() > 0){
+                    if (!this.pos.inRangeTo(Game.rooms[this.memory.home].storage,1)) this.travelTo(Game.rooms[this.memory.home].storage);
+                    else for (var carry in this.store) this.transfer(Game.rooms[this.memory.home].storage,carry);
+                }else for (var carry in this.store) this.drop(carry);
+                return FINISH;
+            }
             return FINISH
         }
-        if (resourceType === RESOURCE_ENERGY) feedback = this._getEnergy(taskType)
+        if (resourceType === RESOURCE_ENERGY) feedback = this._getEnergy(taskType,subTaskType)
         else feedback = this._getResource(resourceType,amount)
         if (feedback === OK) return OK
         else if (feedback === ERR_REPEAT) return ERR_REPEAT
@@ -303,7 +319,6 @@ const creepRunExtensions = {
         if (this.store.getFreeCapacity() === 0 && target.depositType) return OK
         
         var feedback = this.harvest(target)
-
         if (feedback === OK) return OK
         else if (feedback === ERR_BUSY) return OK
         else if (feedback === ERR_INVALID_TARGET) return ERR_DELETE
@@ -313,7 +328,7 @@ const creepRunExtensions = {
         if (!this.memory.working) {
             const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
             if (taskInfo.data.from === "energy"){
-                var feedback = this.__afterGet("transfer",RESOURCE_ENERGY)
+                var feedback = this.__afterGet("transfer",RESOURCE_ENERGY,undefined,subTaskType)
                 if (!this.memory.working) return feedback
             }else if (taskInfo.data.from === "resource"){
                 var feedback = this.__afterGet("transfer",taskInfo.data.resourceType,taskInfo.data.amount)
@@ -450,8 +465,10 @@ const creepRunExtensions = {
                             for (var resourceType in target.store) feedback = this.withdraw(target,resourceType)
                         }
                     }else if (taskInfo.data.amount === "full") feedback = this.withdraw(target,taskInfo.data.resourceType)
-                    else feedback = this._withdraw(this.memory.get.getTarget,taskInfo.data.resourceType,taskInfo.data.amount)
-                    
+                    else {
+                        feedback = this._withdraw(this.memory.get.getTarget,taskInfo.data.resourceType,taskInfo.data.amount);
+                        feedback = feedback[0];
+                    }
                     if (feedback === OK || feedback === ERR_FULL) {
                         this.memory.working = true;
                         this.memory.get.getTarget = undefined
@@ -530,7 +547,7 @@ const creepRunExtensions = {
     },
     _work(taskType,subTaskType,signals){
         if (!this.memory.working) {
-            var feedback = this.__afterGet(taskType,RESOURCE_ENERGY);
+            var feedback = this.__afterGet(taskType,RESOURCE_ENERGY,undefined,subTaskType);
             if (!this.memory.working) return feedback;
         }
         if (this.memory.working) {
@@ -692,7 +709,7 @@ const creepRunExtensions = {
         if (subTaskType !== "heal" && this.room.name !== taskInfo.data.targetRoom){
             if (taskInfo.data.routes[0] === this.room.name) taskInfo.data.routes[0].shift();
             if (taskInfo.data.routes[0]){
-                this["_adjMove"](new RoomPosition(25,25,taskInfo.data.routes[0]));
+                this["_adjMove"](new RoomPosition(25,25,taskInfo.data.targetRoom));
             }else this["_adjMove"](new RoomPosition(25,25,taskInfo.data.targetRoom));
             return OK;
         }
@@ -835,7 +852,7 @@ const creepRunExtensions = {
         if (!this.memory["_tmp"]) this.memory["_tmp"] = {}
         if (!this.memory["_tmp"]["bodyAnalysis"]) this.memory["_tmp"]["bodyAnalysis"] = utils.analyseCreep(this)
         const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
-        this.say(taskInfo.taskType + "::" + taskInfo.subTaskType);
+//        this.say(taskInfo.taskType);
         return this["_" + taskInfo.taskType](taskInfo.subTaskType,signals)
     }
 }

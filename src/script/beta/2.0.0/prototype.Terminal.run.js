@@ -33,7 +33,9 @@ const terminalExtensions = {
                 var order = Game.market.getOrderById(existingOrder)
                 if (order.remainingAmount >= amount - maximumDealAmount) Game.market.cancelOrder(existingOrder)
             }
-            return Game.market.deal(optimisticDeal.id,maximumDealAmount,this.room.name)
+            var _feedback = Game.market.deal(optimisticDeal.id,maximumDealAmount,this.room.name)
+            if (_feedback === 0) console.log(this.room.name,"Deal",resourceType,orderType,maximumDealAmount);
+            return _feedback
         }else if (!settings.onlyDeal){
             if (existingOrder) {
                 var order = Game.market.getOrderById(existingOrder)
@@ -53,4 +55,4 @@ const terminalExtensions = {
         return this.send(this.room.mineral.mineralType,configTerminal.mineralDistributeMinAmount,targetRoom,`Distribute ${this.room.mineral.mineralType} to ${targetRoom} from ${this.room.name}`)
     }
 }
-_.assign(StructureTerminal,terminalExtensions)
+_.assign(StructureTerminal.prototype,terminalExtensions)

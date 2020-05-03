@@ -8,7 +8,7 @@ module.exports = function() {
                 var cachedResource = Game.getObjectById(resourceId)
 
                 var resourceMineralType = cachedResource.mineralType
-                if (resourceMineralType && !Game.rooms[roomName].extractor) continue
+                if (resourceMineralType && (!Game.rooms[roomName].extractor || cachedResource.mineralAmount === 0)) continue
 
                 Game.rooms[roomName].AddHarvestTask("local",cachedResource.id,cachedResource.pos)
             }
@@ -23,17 +23,20 @@ module.exports = function() {
     for (var roomName of global.rooms.observed) {
         const deposits = ["mists","biomasss","metals","silicons"]
         for (var depositType of deposits){
-            var home = utils.getClosetSuitableRoom(roomName,4,true)
+            var home = utils.getClosetSuitableRoom(roomName,6,true)
             if (!home) break
             for (var deposit of Game.rooms[roomName][depositType]){
+                if (!deposit) continue;
                 if (deposit.lastCooldown >= utils.getAcceptableCoolTime(home,roomName)) continue
                 Game.rooms[home].AddHarvestTask("remote",deposit.id,deposit.pos)
             }
         }
         for (var powerBank of Game.rooms[roomName]["powerBanks"]){
-            var home = utils.getClosetSuitableRoom(roomName,7,true)
+            if (!powerBank) continue;
+            if (powerBank.power < 5000 || powerBank.ticksToDecay < 4500) continue;
+            var home = utils.getClosetSuitableRoom(roomName,8,true)
             if (!home) break
-            Game.rooms[home].AddAttackTask("harvest",roomName,powerBank.id,1)
+            Game.rooms[home].AddAttackTask("harvest",powerBank.id,roomName,utils.getSuitableRoute(home,roomName),1)
         }
     }
     for (var roomName of remoteEnergyRooms) {
