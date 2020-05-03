@@ -1,4 +1,4 @@
 module.exports = {
-    notUtilsStorage:[],
+    notUtilsStorage:["W19N22"],
     baseReserveEnergy:100000
 }

@@ -14,10 +14,10 @@ const taskPriorityConfiguration = {
             "pureUpgrader":2
         },
         "worker":{              // Primary
-            "pureWorker":4
+            "pureWorker":5
         },
         "repairer":{            // Primary
-            "pureRepairer":5,
+            "pureRepairer":4,
             "remoteRepairer":9,
         },
         "defender":{            // Primary

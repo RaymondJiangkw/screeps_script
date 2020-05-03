@@ -220,7 +220,7 @@ const utilsCollection = {
         if (role == Object.keys(creepConfig.groupAcceptedTask[groupType])[0]) return true
         else return Object.keys(creepConfig.groupAcceptedTask[groupType])[0]
     },
-    getSaltList:function(roomName,groupType,groupName,role){
+    getSaltList:function(roomName,_groupType,_groupName,_role){
         if (!SaltList[roomName] || SaltListExpiration !== Game.time) {
             SaltListExpiration = Game.time;
             SaltList[roomName] = {}
@@ -248,7 +248,7 @@ const utilsCollection = {
 
             for (var groupType of groupTypes){
                 SaltList[roomName][groupType] = {};
-                for (var groupName in liveCreepSalts){
+                for (var groupName in liveCreepSalts[groupType]){
                     SaltList[roomName][groupType][groupName] = {};
                     for (var role in liveCreepSalts[groupType][groupName]){
                         SaltList[roomName][groupType][groupName][role] = liveCreepSalts[groupType][groupName][role]
@@ -263,7 +263,7 @@ const utilsCollection = {
                 }   
             }
         }
-        try {return SaltList[roomName][groupType][groupName][role] || []} catch (error) {return []}
+        try {return SaltList[roomName][_groupType][_groupName][_role] || []} catch (error) {return []}
     },
     getBoosts:function(role,groupType){
         if (!creepConfig.boosts[role]) return []
@@ -296,6 +296,6 @@ const utilsCollection = {
             }
         }
         return creepsCollection[roomName]
-    }
+    },
 }
 module.exports = utilsCollection

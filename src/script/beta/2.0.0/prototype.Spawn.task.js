@@ -18,6 +18,10 @@ const spawnTaskExtension = {
         if (this.memory.taskFingerPrint) return true
         return false
     },
+    renewTask(){
+        Game.rooms[this.room.name].renewTask(this.memory.taskFingerPrint)
+        this.memory.taskFingerPrint = null
+    },
     run(){
         if (this.spawning) return OK
         const taskInfo = this.room.taskInfo(this.memory.taskFingerPrint)
@@ -28,7 +32,7 @@ const spawnTaskExtension = {
         if (feedback === OK) {
             Game.rooms[this.room.name].finishTask(this.memory.taskFingerPrint)
             this.memory.taskFingerPrint = null
-        }
+        }else this.renewTask()
     }
 }
 _.assign(Spawn.prototype,spawnTaskExtension)

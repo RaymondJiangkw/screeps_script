@@ -28,7 +28,7 @@ const terminalConfiguration = {
     },
     buyingGoods:{
         //[(resourceType),(beginBuyingAmount),(endBuyingAmount)]
-        "W22N25":[],
+        "W22N25":[(RESOURCE_OXYGEN,2500,5000),(RESOURCE_LEMERGIUM,2500,5000)],
         "W23N25":[],
         "W21N24":[],
         "W19N22":[],

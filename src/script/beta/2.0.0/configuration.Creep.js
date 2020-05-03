@@ -13,8 +13,22 @@ const creepConfiguration = {
     },
     boosts:{
         "transferer":{
-            "remoteTransfer":["KH","KH2O"],
+            "remoteTransfer":["KH","KH2O","XKH2O"],
+            "remotePickUper":["KH"],
+            "pureTransfer":["KH","KH2O","XKH2O"],
         },
+        "repairer":{
+            "pureRepairer":["LH","LH2O","XLH2O"],
+        },
+        "attacker":{
+            "Attack":["UH","UH2O","XH2O"],
+        },
+        "healer":{
+            "Attack":["LO","LHO2","XLHO2"],
+        },
+        "upgrader":{
+            "pureUpgrader":["GH","GH2O","XGH2O"],
+        }
     },
     groupAcceptedTask:{
         // PRIMARY KEY PRINCIPLE

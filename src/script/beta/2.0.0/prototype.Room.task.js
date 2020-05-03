@@ -18,8 +18,9 @@ const roomTaskExtension = {
             }
             delete this.memory.task[taskType]
         }
+        for (var taskFingerprint in this.memory.task["info"]) this.refreshSingleTask(taskFingerprint)
         for (var creep of Game.rooms[this.name].creeps) creep.memory.taskFingerprint = null
-        for (var spawn of Game.rooms[this.name].spawns) spawn.memory.taskFingerPrint = null
+    //    for (var spawn of Game.rooms[this.name].spawns) spawn.memory.taskFingerPrint = null
     },
     clearTask(){
         this.memory.task = {}
@@ -29,6 +30,16 @@ const roomTaskExtension = {
     checkTaskExistence(fingerprint){
         if (this.memory.task.info[fingerprint]) return true
         return false
+    },
+    refreshSingleTask(fingerprint){
+        if (!this.checkTaskExistence(fingerprint)) return
+        const taskInfo = this.memory.task.info[fingerprint]
+        if (taskInfo.settings.receivedGroupsNum === 0) {
+            const taskType = taskInfo.taskType;
+            this.memory.task[taskType].push(fingerprint);
+        }
+        taskInfo.settings.receivedGroupsNum = taskInfo.settings.allGroupsNum;
+        taskInfo.settings.workingGroupsNum = 0;
     },
     renewTask(fingerprint){
         if (!this.checkTaskExistence(fingerprint)) return
@@ -91,8 +102,8 @@ const roomTaskExtension = {
         return taskList
     },
     getTask(subject,taskType,subTaskType = "all",dry = false,priority_limit = INFINITY){
-        if (!this.memory.task[taskType] || this.memory.task[taskType].length == 0) return undefined
-        var potentialTaskList = this.memory.task[taskType]
+        if (!this.memory.task[taskType] || this.memory.task[taskType].length == 0) return undefined;
+        var potentialTaskList = this.memory.task[taskType];
         if (subTaskType !== "all") potentialTaskList = _.filter(potentialTaskList,(t)=>subTaskType.indexOf(this.memory.task.info[t].subTaskType) >= 0)
         if (potentialTaskList.length === 0) return undefined
         if (dry) return true

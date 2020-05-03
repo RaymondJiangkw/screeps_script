@@ -468,7 +468,7 @@ const creepRunExtensions = {
             if (!this.memory.working) return ERR_REPEAT
 
             if (!taskInfo.targetID || !taskInfo.targetPos){
-                if (taskInfo.data.to === "lab" || taskInfo.data.to === "labs"){
+                if ((taskInfo.data.to === "lab" || taskInfo.data.to === "labs") && taskInfo.data.resourceType !== RESOURCE_ENERGY){
                     try{
                         var room = taskInfo.data.toRoom || this.memory.home;
                         if (global.labs[room][taskInfo.data.resourceType].length > 0) taskInfo.targetID = global.labs[room][taskInfo.data.resourceType][0].id;
@@ -536,7 +536,7 @@ const creepRunExtensions = {
         if (this.memory.working) {
             this.initTask()
             const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
-            if (!taskInfo.targetID && Game.rooms[taskInfo.targetPos.roomName]) return ERR_DELETE
+            if (!taskInfo.targetID && (!taskInfo.targetPos || Game.rooms[taskInfo.targetPos.roomName])) return ERR_DELETE
 
             if (!utils.canGetObjectById(taskInfo.targetID,taskInfo.targetPos)) {
                 taskInfo.targetID = undefined;
@@ -577,11 +577,10 @@ const creepRunExtensions = {
         return this._work("upgradeController",subTaskType,signals)
     },
     _pickup(subTaskType,signals){
-        if (this.store.getUsedCapacity() === 0) this.memory.working = false;
         const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
         if (!this.memory.working) {
             this.initTask()
-            if (!taskInfo.targetID && Game.rooms[taskInfo.targetPos.roomName]) return ERR_DELETE
+            if (!taskInfo.targetID && (!taskInfo.targetPos || Game.rooms[taskInfo.targetPos.roomName])) return ERR_DELETE
 
             if (!utils.canGetObjectById(taskInfo.targetID,taskInfo.targetPos)){
                 taskInfo.targetID = undefined;
@@ -602,16 +601,19 @@ const creepRunExtensions = {
             }
         }
         if (this.memory.working) {
+            if (this.store.getUsedCapacity() === 0) {
+                this.memory.working = false;
+                if (!taskInfo.settings.changeable) return OK;
+                else return ERR_RENEW;
+            }
             var target = Game.getObjectById(taskInfo.data.toTarget);
             if (this["_adjMove"](target.pos) === ERR_NOT_IN_RANGE) return OK;
 
             var feedback = undefined;
             for (var carry in this.store) feedback = this.transfer(target,carry);
 
-            if (feedback === OK){
-                if (!taskInfo.settings.changeable) return OK;
-                if (!this.memory.working) return ERR_RENEW;
-            }else if (feedback === ERR_FULL) return ERR_DELETE;
+            if (feedback === OK) return OK;
+            else if (feedback === ERR_FULL) return ERR_DELETE;
         }
     },
     _travel(subTaskType,signals){
@@ -642,7 +644,7 @@ const creepRunExtensions = {
         if (subTaskType == "reserved"){
             if ((this.hits < this.hitsMax || this.room.name === taskInfo.data.targetRoom) && (!this.memory.attackTarget || !Game.getObjectById(this.memory.attackTarget))) {
                 const target = this.pos.findClosestByRange(FIND_HOSTILE_CREEPS,{filter:(o)=>o.getActiveBodyparts(ATTACK) > 0 || o.getActiveBodyparts(RANGED_ATTACK) > 0})
-                if (target) this.memory.attackTarget = target;
+                if (target) this.memory.attackTarget = target.id;
                 else this.memory.attackTarget = undefined;
             }
             if (this.hits < this.hitsMax) this.heal(this);
@@ -833,7 +835,7 @@ const creepRunExtensions = {
         if (!this.memory["_tmp"]) this.memory["_tmp"] = {}
         if (!this.memory["_tmp"]["bodyAnalysis"]) this.memory["_tmp"]["bodyAnalysis"] = utils.analyseCreep(this)
         const taskInfo = Game.rooms[this.memory.home].taskInfo(this.memory.taskFingerprint)
-//        this.say(taskInfo.taskType + "::" + taskInfo.subTaskType);
+        this.say(taskInfo.taskType + "::" + taskInfo.subTaskType);
         return this["_" + taskInfo.taskType](taskInfo.subTaskType,signals)
     }
 }
