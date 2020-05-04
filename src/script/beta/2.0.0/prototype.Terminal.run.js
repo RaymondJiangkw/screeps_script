@@ -2,8 +2,8 @@ const that = require('prototype.Market.run').marketExtension
 const configTerminal = require('configuration.Terminal')
 const ERR_COOLDOWN = 1
 const ERR_NO_AVAILABLE_DEAL = 2
-const inBound = function (x,lower_bound,uppper_bound){
-    return x >= lower_bound && x <= uppper_bound
+const inBound = function (x,lower_bound,upper_bound){
+    return x >= lower_bound && x <= upper_bound
 }
 const randomPrice = function (lower_bound,uppper_bound){
     return lower_bound + Math.random() * (uppper_bound - lower_bound);
@@ -11,8 +11,7 @@ const randomPrice = function (lower_bound,uppper_bound){
 const terminalExtensions = {
     dealOptimisticResources(orderType,resourceType,amount,settings = {basePrice:undefined,onlyDeal:true}){
         if (this.cooldown > 0) return ERR_COOLDOWN
-        settings.basePrice = settings.basePrice || undefined
-        settings.onlyDeal = settings.onlyDeal || true
+        if (settings.onlyDeal === undefined || settings.onlyDeal === null) settings.onlyDeal = true
 
         var createOrderType = null
         if (orderType === ORDER_SELL) createOrderType = ORDER_BUY;
@@ -26,7 +25,7 @@ const terminalExtensions = {
         }
         var marketCondition = that.getPriceBound(resourceType)
         var existingOrder = that.getMyOrder(createOrderType,resourceType)
-        if (inBound(optimisticDeal.price,marketCondition[0],marketCondition[1])) {
+        if (inBound(optimisticDeal.price,marketCondition[0],marketCondition[1]) || (orderType === ORDER_SELL && optimisticDeal.price <= marketCondition[0]) || (orderType === ORDER_BUY && optimisticDeal.price >= marketCondition[1])) {
             var maximumDealAmount = Math.min(that.getOptimisticDealAmount(optimisticDeal.id,this.room.name,amount),this.store.getFreeCapacity())
             if (maximumDealAmount === 0) return ERR_NO_AVAILABLE_DEAL
             if (existingOrder) {

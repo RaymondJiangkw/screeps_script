@@ -71,21 +71,22 @@ const utilsCollection = {
         return result
     },
     getComponentsList:function(roomName,role,groupType,availableEnergy,componentsObj){
+        _componentsObj = JSON.parse(JSON.stringify(componentsObj))
         if (Game.rooms[roomName].energys.length < 2 && role === "upgrader"){
-            for (var component in componentsObj) componentsObj[component] = Math.ceil(componentsObj[component] * 0.5);
+            for (var component in _componentsObj) _componentsObj[component] = Math.ceil(_componentsObj[component] * 0.5);
         }
         if (Game.rooms[roomName].controller.level === 8 && role === "upgrader"){
-            for (var component in componentsObj) componentsObj[component] = 1;
+            for (var component in _componentsObj) _componentsObj[component] = 1;
         }
         if (role === "harvester" && groupType === "remoteHarvest"){
-            componentsObj["work"] += 15
-            componentsObj["carry"] += 1
-            componentsObj["move"] += 8
+            _componentsObj["work"] += 15
+            _componentsObj["carry"] += 1
+            _componentsObj["move"] += 8
         }
-        const energyDisCom = this._getComponentRatio(componentsObj)
+        const energyDisCom = this._getComponentRatio(_componentsObj)
         var result = []
-        for (var component in componentsObj){
-            var times = Math.min(Math.max(Math.floor(availableEnergy * energyDisCom[component] / BODYPART_COST[component]),1),componentsObj[component])
+        for (var component in _componentsObj){
+            var times = Math.min(Math.max(Math.floor(availableEnergy * energyDisCom[component] / BODYPART_COST[component]),1),_componentsObj[component])
             for (var i = 0; i < times; i++) result.push(component)
         }
         return result
@@ -101,6 +102,9 @@ const utilsCollection = {
         if (simplified_version) {
             if (creep.getActiveBodyparts(ATTACK) || creep.getActiveBodyparts(RANGED_ATTACK)) return "attacker"
             if (creep.getActiveBodyparts(HEAL)) return "healer"
+            for (var body of creep.body){
+                if (body.type === "heal" || body.type === "attack" || body.type === "ranged_attack") return "disabled";
+            }
             return "harmless"
         }
         var bodyAnalysis = {}
@@ -203,8 +207,10 @@ const utilsCollection = {
         return _taskList
     },
     ownRoom:function(roomName){
+        var coordi = this.roomNameToXY(roomName)
         if (!Game.rooms[roomName]) return "unsure"
-        if (!Game.rooms[roomName].controller) return "highway"
+        if (!Game.rooms[roomName].controller && (coordi[0] % 10 === 0 || coordi[1] % 10 === 0)) return "highway"
+        if (!Game.rooms[roomName].controller) return "central"
         if (Game.rooms[roomName].controller.my) return true
         if (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.username === constants.username) return "reserved"
         if (Game.rooms[roomName].controller.owner && Game.rooms[roomName].controller.owner.username !== constants.username) return false
@@ -279,12 +285,17 @@ const utilsCollection = {
             if (!Game.rooms[roomName].memory.labCur.expirationTime) Game.rooms[roomName].memory.labCur.expirationTime = {};
             if (resourceTypes.length > 0) {
                 if (!Game.rooms[roomName].memory.labCur[mode]) Game.rooms[roomName].memory.labCur[mode] = 0;
-                if (!Game.rooms[roomName].memory.labCur.expirationTime[mode]) Game.rooms[roomName].memory.labCur.expirationTime[mode] = Game.time + this.getCacheExpiration(labConfig.mostReactionTime,50);
-                if (Game.rooms[roomName].memory.labCur.expirationTime[mode] <= Game.time) {
-                    Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
-                    Game.rooms[roomName].memory.labCur.expirationTime[mode] = Game.time + this.getCacheExpiration(labConfig.mostReactionTime,50);
-                }
+                //if (!Game.rooms[roomName].memory.labCur.expirationTime[mode]) Game.rooms[roomName].memory.labCur.expirationTime[mode] = Game.time + this.getCacheExpiration(labConfig.mostReactionTime,50);
+                //if (Game.rooms[roomName].memory.labCur.expirationTime[mode] <= Game.time) {
+                //    Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
+                //    Game.rooms[roomName].memory.labCur.expirationTime[mode] = Game.time + this.getCacheExpiration(labConfig.mostReactionTime,50);
+                //}
                 resourceType = resourceTypes[Game.rooms[roomName].memory.labCur[mode] % resourceTypes.length];
+                if (mode === "default" && global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["labs"] >= labConfig.mostExistenceAmount){
+                    if (Game.rooms[roomName].memory.labCur[mode] === ((Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length)) return undefined;
+                    Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
+                    resourceType = resourceTypes[Game.rooms[roomName].memory.labCur[mode] % resourceTypes.length];
+                }
             }else Game.rooms[roomName].memory.labCur[mode] = 0;
         }else resourceType = resourceTypes
         return resourceType

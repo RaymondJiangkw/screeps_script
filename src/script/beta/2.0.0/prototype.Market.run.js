@@ -13,7 +13,7 @@ const marketExtension = {
     getPrice(resourceType){
         if (resourcePrice[resourceType] === undefined){
             var history = Game.market.getHistory(resourceType)
-            if (history.length > 0) return resourcePrice[resourceType] = [history[0]["avgPrice"],history[0]["stddevPrice"]]
+            if (history.length > 0) return resourcePrice[resourceType] = [history[history.length - 1]["avgPrice"],history[history.length - 1]["stddevPrice"]]
             else return resourcePrice[resourceType] = [null,null]
         }else return resourcePrice[resourceType]
     },
@@ -47,11 +47,9 @@ const marketExtension = {
     },
     getMyOrder(orderType,resourceType){
         for (var order in Game.market.orders){
-            if (Game.market.orders[order].type === orderType && Game.market.orders[order].type === resourceType){
-                if (!Game.market.orders[order].active){
-                    Game.market.cancelOrder(order)
-                    return undefined
-                }else return order
+            if (Game.market.orders[order].type === orderType && Game.market.orders[order].resourceType === resourceType){
+                if (!Game.market.orders[order].active) Game.market.cancelOrder(order)
+                else return order
             }
         }
         return undefined

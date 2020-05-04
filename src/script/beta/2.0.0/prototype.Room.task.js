@@ -124,7 +124,7 @@ const roomTaskExtension = {
             if (_getRepeat) return fingerprint
             else return false
         }
-        if (taskType === "spawn") console.log("AddTask",JSON.stringify(data))
+        console.log(this.name,"AddTask",JSON.stringify(data))
         if (!silence) {this.memory.task[taskType].push(fingerprint);this.memory.task["_" + taskType].push(fingerprint);}
         this.memory.task.info[fingerprint] = {
             taskType,subTaskType,targetID:null,targetPos:null,

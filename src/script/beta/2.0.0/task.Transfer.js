@@ -17,8 +17,8 @@ module.exports = function() {
         var spawns = _.filter(Game.rooms[roomName].spawns,needEnergy)
         var extensions = _.filter(Game.rooms[roomName].extensions,needEnergy)
         var towers = _.filter(Game.rooms[roomName].towers,(t)=>t.store.getUsedCapacity(RESOURCE_ENERGY) <= towerConfig.reservedEnergy)
-        if (spawns.length > 0) Game.rooms[roomName].AddTransferTask("core","energy","spawns",RESOURCE_ENERGY);
-        if (extensions.length > 0) Game.rooms[roomName].AddTransferTask("core","energy","extensions",RESOURCE_ENERGY);
+        if (spawns.length > 0) Game.rooms[roomName].AddTransferTask("core","energy","spawns",RESOURCE_ENERGY,"full",undefined,undefined,1,false);
+        if (extensions.length > 0) Game.rooms[roomName].AddTransferTask("core","energy","extensions",RESOURCE_ENERGY,"full",undefined,undefined,1,false);
         if (towers.length > 0) Game.rooms[roomName].AddTransferTask("defense","energy","towers",RESOURCE_ENERGY);
         if (Game.rooms[roomName].powerSpawn && Game.rooms[roomName].powerSpawn.store.getUsedCapacity(RESOURCE_ENERGY) <= powerSpawnConfig.startChargeEnergy) {
             Game.rooms[roomName].AddTransferTask("advanced","energy",Game.rooms[roomName].powerSpawn.id,RESOURCE_ENERGY);
@@ -74,7 +74,7 @@ module.exports = function() {
             }
 
             // Charge Power
-            if (global.resources[roomName][RESOURCE_POWER] && Game.rooms[roomName].powerSpawn && Game.rooms[roomName].powerSpawn.store.getFreeCapacity(RESOURCE_POWER) > 0){
+            if (global.resources[roomName][RESOURCE_POWER] && Game.rooms[roomName].powerSpawn && Game.rooms[roomName].powerSpawn.store.getFreeCapacity(RESOURCE_POWER) > 50){
                 var checkOrders = ["storage","terminal"]
                 for (var structure of checkOrders){
                     if (global.resources[roomName][RESOURCE_POWER][structure] > 0){
@@ -136,12 +136,36 @@ module.exports = function() {
                                     var notAllowed = lab.mineralType && labConfig[roomName].allowedCompounds.indexOf(lab.mineralType) < 0;
                                     var overDue = lab.mineralType && lab.store.getFreeCapacity(lab.mineralType) <= labConfig.leastTransferAmount;
                                     var tooFew = lab.mineralType && lab.store[lab.mineralType] < 30;
-
+                                    
                                     if (mode === "focus") condition = notConsistent || overDue
                                     else if (mode === "default") condition = (notAllowed && notConsistent) || (overDue && !notConsistent) || (!notAllowed && notConsistent && duplicate) || (tooFew && notConsistent)
                                     if (condition) Game.rooms[roomName].AddTransferTask("advanced",lab.id,Game.rooms[roomName].storage.id,lab.mineralType,"exhaust")
                                 }
                                 }
+                            }
+                        }
+                    }else{
+                        const coreLabA = Game.getObjectById(global.labStructures[roomName].core[0]);
+                        const coreLabB = Game.getObjectById(global.labStructures[roomName].core[1]);
+                        const coreLabs = [coreLabA,coreLabB];
+                        for (var i = 0; i < coreLabs.length;i++){
+                            var coreLab = coreLabs[i]
+                            if (coreLab.mineralType){
+                                if (Game.rooms[roomName].storage) Game.rooms[roomName].AddTransferTask("advanced",coreLab.id,Game.rooms[roomName].storage.id,coreLab.mineralType,"exhaust");
+                            }
+                        }
+                        if (Game.rooms[roomName].storage){
+                            var OutputLabs = [].concat(global.labStructures[roomName]["XGroup"],global.labStructures[roomName]["YGroup"])
+                            for (var groupLabs of OutputLabs){
+                            for (var labId of groupLabs){
+                                var lab = Game.getObjectById(labId);
+                                var condition = false
+                                var notAllowed = lab.mineralType && labConfig[roomName].allowedCompounds.indexOf(lab.mineralType) < 0;
+                                var tooFew = lab.mineralType && lab.store[lab.mineralType] < 30;
+                                
+                                condition = tooFew || notAllowed
+                                if (condition) Game.rooms[roomName].AddTransferTask("advanced",lab.id,Game.rooms[roomName].storage.id,lab.mineralType,"exhaust")
+                            }
                             }
                         }
                     }

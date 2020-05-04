@@ -11,7 +11,7 @@ const towerConfiguration = {
         "5":0.01,
         "6":0.01,
         "7":0.01,
-        "8":0.01
+        "8":0.004
     },
     "wall":{
         "0":0,
@@ -22,7 +22,7 @@ const towerConfiguration = {
         "5":0.0001,
         "6":0.0001,
         "7":0.0001,
-        "8":0.0001
+        "8":0.00004
     },
     fullyRepair:[],
     defense:{

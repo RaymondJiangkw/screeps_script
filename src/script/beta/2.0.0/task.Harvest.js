@@ -1,5 +1,6 @@
 const utils = require('utils')
 const remoteEnergyRooms = require('configuration.Observer').utilsEnergy
+const remoteCentralRooms = require('configuration.Observer').coreDominance
 module.exports = function() {
     for (var roomName of global.rooms.my) {
         var cachedResources = Object.keys(global.containers[roomName].map)
@@ -44,6 +45,18 @@ module.exports = function() {
         var home = utils.getClosetSuitableRoom(roomName,4,true)
         if (!home) continue
         var sources = Game.rooms[roomName].find(FIND_SOURCES_ACTIVE)
-        for (var source of sources) Game.rooms[home].AddHarvestTask("remote",source.id,source.pos)
+        for (var source of sources) if (source.energy > 0) Game.rooms[home].AddHarvestTask("remote",source.id,source.pos)
+    }
+    for (var roomName in remoteCentralRooms){
+        if (!Game.rooms[roomName]) continue;
+        const enemies = _.filter(Game.rooms[roomName].enemies,(c)=>utils.Adjacent(c,_.map(remoteCentralRooms[roomName],Game.getObjectById),3));
+        if (enemies.length > 0) continue;
+        var home = utils.getClosetSuitableRoom(roomName,7,true)
+        if (!home) continue
+        for (var resourceID of remoteCentralRooms[roomName]){
+            var resource = Game.getObjectById(resourceID);
+            if (resource.energy === 0 || resource.mineralAmount === 0) continue;
+            Game.rooms[home].AddHarvestTask("remote",resourceID,resource.pos);
+        }
     }
 }

@@ -1,4 +1,5 @@
 const labConfiguration = {
+    mostExistenceAmount:6000,
     mostReactionTime:3000,
     leastRefillAmount:5,
     leastTransferAmount:50,
@@ -6,7 +7,7 @@ const labConfiguration = {
         mode:"default",
         allowedCompounds:["LH2O","XLH2O","KH"],
         reverse:["GO","ZH","UH","KO"],
-        default:["LH","LH2O","XLH2O","KH"],
+        default:["LH","OH","LH2O","XLH2O","KH"],
         focus:undefined,
         clear:undefined
     },
@@ -22,7 +23,7 @@ const labConfiguration = {
         mode:"default",
         allowedCompounds:["KH","KH2O"],
         reverse:["GO","ZH","UH","KO"],
-        default:["KH","KH2O"],
+        default:["KH"],
         focus:undefined,
         clear:undefined
     },

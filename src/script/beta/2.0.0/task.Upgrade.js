@@ -1,6 +1,5 @@
 const OPEN_UPGRADE_ENGINE = {
-    "W23N25":1,
-    "W21N24":1,
+
 }
 module.exports = function () {
     for (var roomName of global.rooms.my) {

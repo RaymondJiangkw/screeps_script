@@ -6,6 +6,7 @@ const claimRoomConfig = require('configuration.targetRooms').targetRooms
 const observerConfig = require("configuration.Observer")
 const buildConfig = require('configuration.Build')
 const labConfig = require('configuration.Lab')
+const factoryConfig = require('configuration.Factory')
 const FINISH = "finish"
 const ERR_DELETE = "delete"
 const ERR_RENEW = "renew"
@@ -56,6 +57,7 @@ const hasEnergy = function(object,amount = 0){
 }
 const creepRunExtensions = {
     Invisible(){
+        if (this.store.getUsedCapacity() > 0) return this["__store"]();
         var vacantDirection = getVacantPlace(this.pos)
         if (vacantDirection && vacantDirection !== "stay") this.move(vacantDirection)
     },
@@ -185,15 +187,20 @@ const creepRunExtensions = {
             if (taskType === "upgradeController" && global.links[this.memory.home].upgrade.length > 0) chosenObject = global.links[this.memory.home].upgrade[0]
 
             if ((taskType === "build" || taskType == "repair") && this.room.name !== this.memory.home) huntEnergy()
+            else if (taskType === "build" && hasEnoughEnergyContainers.length > 0) chosenObject = hasEnoughEnergyContainers[0]
             else if (taskType === "build" && buildConfig.notUtilsStorage.indexOf(this.memory.home) < 0 && hasEnergy(Game.rooms[this.memory.home].storage,buildConfig.baseReserveEnergy)) chosenObject = Game.rooms[this.memory.home].storage
+            else if (taskType === "build" && buildConfig.notUtilsStorage.indexOf(this.memory.home) < 0 && hasEnergy(Game.rooms[this.memory.home].terminal,terminalConfig.baseReservedEnergy)) chosenObject = Game.rooms[this.memory.home].terminal;
+            else if (taskType === "build" && buildConfig.notUtilsStorage.indexOf(this.memory.home) < 0 && hasEnergy(Game.rooms[this.memory.home].factory,factoryConfig.reservedEnergy)) chosenObject = Game.rooms[this.memory.home].factory;
             
-            if (taskType === "transfer" && global.links[this.memory.home].charges.length > 0) chosenObject = global.links[this.memory.home].charges[0]
+            if (taskType === "transfer" && global.links[this.memory.home].charges.length > 0) chosenObject = global.links[this.memory.home].charges[0];
+            else if (taskType === "transfer" && _.filter(hasEnoughEnergyContainers,(c)=>c.pos.inRangeTo(this,11)).length > 0) chosenObject = hasEnoughEnergyContainers[0];
             else if (taskType === "transfer" && subTaskType === "core" && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage;
             else if (taskType === "transfer" && subTaskType === "core" && hasEnergy(Game.rooms[this.memory.home].terminal)) chosenObject = Game.rooms[this.memory.home].terminal;
             else if (taskType === "transfer" && subTaskType === "core" && hasEnergy(Game.rooms[this.memory.home].factory)) chosenObject = Game.rooms[this.memory.home].factory;
             else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && hasEnergy(Game.rooms[this.memory.home].storage)) chosenObject = Game.rooms[this.memory.home].storage
             else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && hasEnergy(Game.rooms[this.memory.home].terminal)) chosenObject = Game.rooms[this.memory.home].terminal
             else if (taskType === "transfer" && global.state[this.memory.home].economy <= 0.6 && hasEnergy(Game.rooms[this.memory.home].factory)) chosenObject = Game.rooms[this.memory.home].factory
+            else if (taskType === "transfer" && hasEnoughEnergyContainers.length > 0) chosenObject = hasEnoughEnergyContainers[0];
             
             if (!chosenObject){
                 if (hasEnoughEnergyContainers.length > 0) chosenObject = hasEnoughEnergyContainers[0]
@@ -231,8 +238,8 @@ const creepRunExtensions = {
         }else return ERR_NOT_FOUND
     },
     _getResource(resourceType,amount){ // excludes the lab
-        if (!global.resources[this.memory.home][resourceType]) return [ERR_NOT_FOUND,0]
-        if (!this.memory.get.getTarget && !this.memory.get.getTargetPos){
+        if (!global.resources[this.memory.home][resourceType]) return ERR_NOT_FOUND
+        if (!this.memory.get.getTarget || !this.memory.get.getTargetPos){
             var checkOrders = ["storage","terminal","factory"]
             for (var retrievedStructure of checkOrders){
                 if (global.resources[this.memory.home][resourceType][retrievedStructure] === 0) continue
@@ -261,6 +268,14 @@ const creepRunExtensions = {
             }else return ERR_NOT_FOUND
         }
     },
+    __store(){
+        if (Game.rooms[this.memory.home].storage && Game.rooms[this.memory.home].storage.store.getFreeCapacity() > 0){
+            if (!this.pos.inRangeTo(Game.rooms[this.memory.home].storage,1)) this.travelTo(Game.rooms[this.memory.home].storage);
+            else {
+                for (var carry in this.store) this.transfer(Game.rooms[this.memory.home].storage,carry);
+            }
+        }else for (var carry in this.store) this.drop(carry);
+    },
     __afterGet(taskType,resourceType,amount,subTaskType){
         var feedback = undefined
         if (this.store.getFreeCapacity(resourceType) === 0) {
@@ -268,10 +283,7 @@ const creepRunExtensions = {
             this.memory.get.getTargetPos = undefined
             if (this.store[resourceType] > 0) this.memory.working = true;
             else {
-                if (Game.rooms[this.memory.home].storage && Game.rooms[this.memory.home].storage.store.getFreeCapacity() > 0){
-                    if (!this.pos.inRangeTo(Game.rooms[this.memory.home].storage,1)) this.travelTo(Game.rooms[this.memory.home].storage);
-                    else for (var carry in this.store) this.transfer(Game.rooms[this.memory.home].storage,carry);
-                }else for (var carry in this.store) this.drop(carry);
+                this["__store"]();
                 return FINISH;
             }
             return FINISH
@@ -343,8 +355,10 @@ const creepRunExtensions = {
                 
                 var _dx = [0,0,1,0,-1],_dy=[0,1,0,-1,0];
                 for (var i = 0; i < 5;i++){
-                    var droppedResources = this.room.lookForAt(LOOK_RESOURCES,this.memory.get.getTargetPos.x+_dx[i],this.memory.get.getTargetPos.y+_dy[i])
-                    for (var droppedResource of droppedResources) this.pickup(droppedResource)
+                    try{
+                        var droppedResources = this.room.lookForAt(LOOK_RESOURCES,this.memory.get.getTargetPos.x+_dx[i],this.memory.get.getTargetPos.y+_dy[i])
+                        for (var droppedResource of droppedResources) this.pickup(droppedResource)
+                    }catch (error){}
                 }
                 
                 var containerCached = _.filter(this.room.lookForAt(LOOK_STRUCTURES,this.memory.get.getTargetPos.x,this.memory.get.getTargetPos.y),(s)=>s.structureType === STRUCTURE_CONTAINER)
@@ -352,7 +366,7 @@ const creepRunExtensions = {
                 var _combinedWithdraw = [].concat(tombStones,containerCached)
                 for (var structure of _combinedWithdraw) for (var store in structure.store) this.withdraw(structure,store)
                 
-                if (this.store.getFreeCapacity(taskInfo.data.resourceType) === 0 || signals["finish"]){
+                if (this.store.getFreeCapacity() === 0 || signals["finish"]){
                     this.memory.working = true;
                     this.memory.get.getTarget = undefined;
                     this.memory.get.getTargetPos = undefined;
@@ -420,7 +434,6 @@ const creepRunExtensions = {
                     var target = Game.getObjectById(this.memory.get.getTarget)
                     var feedback = undefined
                     for (var carry in target.store) feedback = this.withdraw(target,carry)
-
                     if (this.store.getFreeCapacity() === 0) this.memory.working = true
                     if (feedback !== OK) {
                         this.memory.get.getTarget = undefined
@@ -441,7 +454,15 @@ const creepRunExtensions = {
                             this.memory.get.getTarget = Game.rooms[room][taskInfo.data.from].id;
                         } catch (error) {return ERR_DELETE}
                     }else this.memory.get.getTarget = taskInfo.data.from
-                    if (Game.getObjectById(this.memory.get.getTarget)) this.memory.get.getTargetPos = Game.getObjectById(this.memory.get.getTarget).pos;
+                    if (Game.getObjectById(this.memory.get.getTarget)) {
+                        var target = Game.getObjectById(this.memory.get.getTarget)
+                        if ((target.store.getUsedCapacity() > 0 && target.structureType !== STRUCTURE_CONTAINER) || (target.structureType === STRUCTURE_CONTAINER && target.store.getUsedCapacity() > 50)) this.memory.get.getTargetPos = Game.getObjectById(this.memory.get.getTarget).pos;
+                        else{
+                            this.memory.get.getTarget = undefined;
+                            this.memory.get.getTargetPos = undefined;
+                            return ERR_DELETE;
+                        }
+                    }
                     else if (!taskInfo.data.fromRoom || Game.rooms[taskInfo.data.fromRoom]) return ERR_DELETE;
                 }
                 if (this.memory.get.getTarget || this.memory.get.getTargetPos){
@@ -453,7 +474,9 @@ const creepRunExtensions = {
                     if (subTaskType === "aid" || subTaskType === "limit"){
                         if (Game.getObjectById(this.memory.get.getTarget).store[taskInfo.data.resourceType] < taskInfo.data.stopAmount) return ERR_DELETE;
                     }
-
+                    
+                    if (taskInfo.data.resourceType && this.store[taskInfo.data.resourceType] === 0 && this.store.getFreeCapacity() === 0) return this["__store"]();
+                    
                     var moveFeedback =  this["_adjMove"](this.memory.get.getTargetPos)
                     if (moveFeedback === ERR_NOT_IN_RANGE) return OK
 
@@ -462,7 +485,10 @@ const creepRunExtensions = {
                     if (taskInfo.data.amount === "exhaust"){
                         if (taskInfo.data.resourceType) feedback = this.withdraw(target,taskInfo.data.resourceType);
                         else {
-                            for (var resourceType in target.store) feedback = this.withdraw(target,resourceType)
+                            for (var resourceType in target.store) {
+                                if (target.structureType === STRUCTURE_LAB && resourceType === RESOURCE_ENERGY) continue;
+                                feedback = this.withdraw(target,resourceType)
+                            }
                         }
                     }else if (taskInfo.data.amount === "full") feedback = this.withdraw(target,taskInfo.data.resourceType)
                     else {
@@ -470,11 +496,12 @@ const creepRunExtensions = {
                         feedback = feedback[0];
                     }
                     if (feedback === OK || feedback === ERR_FULL) {
-                        this.memory.working = true;
+                        if ((taskInfo.data.resourceType && this.store[taskInfo.data.resourceType] > 0) || !taskInfo.data.resourceType) this.memory.working = true;
+                        else this["__store"]();
                         this.memory.get.getTarget = undefined
                         this.memory.get.getTargetPos = undefined
                         return OK
-                    }else if (feedback === ERR_INVALID_TARGET || feedback === ERR_NOT_ENOUGH_RESOURCES) return ERR_DELETE;
+                    }else if (feedback === ERR_INVALID_TARGET || feedback === ERR_NOT_ENOUGH_RESOURCES || !feedback) return ERR_DELETE;
                 }       
             }
         }
@@ -540,6 +567,10 @@ const creepRunExtensions = {
                 taskInfo.targetPos = undefined;
                 if (typeof(taskInfo.data.amount) === "number") taskInfo.data.amount -= transferCapacity;
                 if (taskInfo.data.amount <= 0) return ERR_DELETE;
+                if (taskInfo.data.amount === "full"){
+                    if (taskInfo.data.resourceType && target.store.getFreeCapacity(taskInfo.data.resourceType) <= transferCapacity) return ERR_DELETE;
+                    if (!taskInfo.data.resourceType && target.store.getFreeCapacity() <= transferCapacity) return ERR_DELETE;
+                }
                 if (taskInfo.settings.changeable) return ERR_RENEW;
                 return OK;
             }else if (feedback === ERR_FULL || feedback === ERR_INVALID_TARGET) return ERR_DELETE;
@@ -701,6 +732,36 @@ const creepRunExtensions = {
                     this.memory.healTargetHome = neededHealer[0].memory.home;
                 }else this.say(constants.emoji.hunt)
             }
+        }else if (subTaskType === "central"){
+            if (this.room.name !== taskInfo.data.targetRoom) this["_Move"](new RoomPosition(25,25,taskInfo.data.targetRoom));
+            else{
+                if (!this.memory.attackTarget){
+                    const remoteResources = require('configuration.Observer').coreDominance[taskInfo.data.targetRoom];
+                    if (remoteResources && remoteResources.length > 0){
+                        const enemies = _.filter(this.room.enemies,(c)=>utils.Adjacent(c,_.map(remoteResources,Game.getObjectById),3));
+                        enemies.sort((a,b)=>a.pos.getRangeTo(this) - b.pos.getRangeTo(this));
+                        if (enemies.length > 0) this.memory.attackTarget = enemies[0].id;
+                        else if (this.hits < this.hitsMax) this.heal(this);
+                    }else{
+                        if (this.hits < this.hitsMax && this.ticksToLive > COMMON_DYING_TICK + 1) this.heal(this);
+                        else return ERR_DELETE;
+                    }
+                }
+                if (this.memory.attackTarget && !Game.getObjectById(this.memory.attackTarget)){
+                    if (this.hits < this.hitsMax) this.heal(this);
+                    else this.memory.attackTarget = undefined;
+                }
+                if (this.memory.attackTarget && Game.getObjectById(this.memory.attackTarget)){
+                    const enemy = Game.getObjectById(this.memory.attackTarget)
+                    if (enemy.pos.inRangeTo(this,1)) this.attack(enemy);
+                    else{
+                        this["_Move"](enemy.pos);
+                        if (enemy.pos.inRangeTo(this,3)) this.rangedAttack(enemy);
+                        if (this.hits < this.hitsMax) this.heal(this);
+                    }
+                }
+            }
+            return OK
         }
         return OK
     },
@@ -815,14 +876,14 @@ const creepRunExtensions = {
                     if (!target) this.renewTask()
                     else{
                         if (target.lastCooldown >= utils.getAcceptableCoolTime(this.memory.home,taskInfo.targetPos.roomName)) this.deleteTask()
-                        else if (target.energy) this.deleteTask()
+                        else if (target.energy || target.mineralType) this.deleteTask()
                         else this.renewTask()
                     }
                 }else if (taskInfo.taskType === "attack" || taskInfo.taskType === "defend") this.deleteTask()
                 else this.renewTask()
             }else this.deleteTask()
         }
-        if (!this.memory.reSpawn && ((this.ticksToLive <= COMMON_DYING_TICK / 2 && this.getTask(true)) || canGetTask)) {
+        if (!this.memory.reSpawn && this.memory.role !== "upgrader" && ((this.ticksToLive <= COMMON_DYING_TICK / 2 && this.getTask(true)) || canGetTask)) {
             this.memory.reSpawn = true
             Game.rooms[this.memory.home].AddSpawnTask(this.memory.role,creepConfig.components[this.memory.role],this.memory.group.type,this.memory.group.name,utils.getBoosts(this.memory.role,this.memory.group.type),this.memory.salt);
         }

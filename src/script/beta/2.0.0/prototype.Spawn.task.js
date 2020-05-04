@@ -1,5 +1,6 @@
 const utils = require('utils')
 const spawnConfig = require('configuration.Spawn')
+const creepConfig = require('configuration.Creep')
 const INFINITY = 32767
 const spawnTaskExtension = {
     activateProtection(){
@@ -22,17 +23,22 @@ const spawnTaskExtension = {
         Game.rooms[this.room.name].renewTask(this.memory.taskFingerPrint)
         this.memory.taskFingerPrint = null
     },
+    deleteTask(){
+        Game.rooms[this.room.name].deleteTask(this.memory.taskFingerPrint);
+        this.memory.taskFingerPrint = null
+    },
     run(){
         if (this.spawning) return OK
         const taskInfo = this.room.taskInfo(this.memory.taskFingerPrint)
         const name = taskInfo.data.memory.role + "_" + this.room.name + "_" + Game.time
         const availableEnergy = this.room.energyAvailable
-        var components = utils.getComponentsList(this.room.name,taskInfo.data.memory.role,taskInfo.data.memory.group.type,availableEnergy,taskInfo.data.components)
+        var components = utils.getComponentsList(this.room.name,taskInfo.data.memory.role,taskInfo.data.memory.group.type,availableEnergy,creepConfig.components[taskInfo.data.memory.role])
         var feedback = this.spawnCreep(components,name,{memory:taskInfo.data.memory})
         if (feedback === OK) {
             Game.rooms[this.room.name].finishTask(this.memory.taskFingerPrint)
             this.memory.taskFingerPrint = null
-        }else this.renewTask()
+        }else if (feedback === ERR_INVALID_ARGS) this.deleteTask();
+        else this.renewTask()
     }
 }
 _.assign(Spawn.prototype,spawnTaskExtension)

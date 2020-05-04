@@ -11,8 +11,8 @@ class sendInfo{
 }
 module.exports = {
     "W18N22":[],
-    "W19N22":[],
+    "W19N22":[new sendInfo("W22N25",RESOURCE_SILICON,0,1000,5000,300000)],
     "W22N25":[],
-    "W23N25":[new sendInfo("W22N25",RESOURCE_ENERGY,configTerminal.baseReservedEnergy,10000,150000,250000)],
+    "W23N25":[],//new sendInfo("W22N25",RESOURCE_ENERGY,configTerminal.baseReservedEnergy,10000,150000,250000)],
     "W21N24":[new sendInfo("W19N22",RESOURCE_ENERGY,configTerminal.baseReservedEnergy,10000,150000,250000)]
 }

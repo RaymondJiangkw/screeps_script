@@ -187,7 +187,7 @@ Object.defineProperty(Room.prototype, "repairTargets",{
             this._checkRepairCache();
             var _ret = []
             for (var i = 0; i < roomRepairs[this.name].length; i++){
-                roomRepairs[this.name][i] = _.filter(roomRepairs[this.name][i], s => Game.getObjectById(s).hits < Game.getObjectById(s).hitsMax)
+                roomRepairs[this.name][i] = _.filter(roomRepairs[this.name][i], s => s && Game.getObjectById(s).hits < Game.getObjectById(s).hitsMax)
                 _ret = _ret.concat(roomRepairs[this.name][i])
             }
             if (_ret.length > 0){

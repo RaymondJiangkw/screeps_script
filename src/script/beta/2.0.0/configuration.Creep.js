@@ -3,9 +3,9 @@ const creepConfiguration = {
         "harvester":{move:3,work:5,carry:1},
         "transferer":{move:10,carry:10},
         "upgrader":{move:6,work:10,carry:2},
-        "worker":{work:3,carry:3,move:3},
+        "worker":{work:5,carry:15,move:10},
         "repairer":{work:5,carry:3,move:4},
-        "defender":{tough:5,move:20,attack:5,"ranged_attack":5,heal:5},
+        "defender":{carry:10,move:10,"ranged_attack":5,attack:15,heal:5},
         "attacker":{move:15,attack:30},
         "healer":{move:10,heal:20,move:10},
         "claimer":{move:1,claim:1},
@@ -28,6 +28,9 @@ const creepConfiguration = {
         },
         "upgrader":{
             "pureUpgrader":["GH","GH2O","XGH2O"],
+        },
+        "worker":{
+            "pureWorker":["KH"]
         }
     },
     groupAcceptedTask:{

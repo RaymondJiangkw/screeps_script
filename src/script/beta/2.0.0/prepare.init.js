@@ -4,10 +4,11 @@ const hitsCompare = function(objectA,objectB) {
     return objectA.hits/objectA.hitsMax - objectB.hits/objectB.hitsMax
 }
 module.exports = function() {
-    global.rooms = {}
-    global.rooms.my = _.filter(Game.rooms,(room) => room.controller && room.controller.my).map(r => r.name)
-    global.rooms.reserved = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "reserved").map(r => r.name)
-    global.rooms.observed = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "highway").map(r => r.name)
+    global.rooms = {};
+    global.rooms.my = _.filter(Game.rooms,(room) => room.controller && room.controller.my).map(r => r.name);
+    global.rooms.reserved = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "reserved").map(r => r.name);
+    global.rooms.central = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "central").map(r => r.name);
+    global.rooms.observed = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "highway").map(r => r.name);
 
     global.links = {}
     for (var roomName of global.rooms.my) {

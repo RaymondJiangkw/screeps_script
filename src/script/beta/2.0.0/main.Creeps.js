@@ -28,7 +28,10 @@ module.exports = function(){
                 primaryCreep.toDeath(true);
                 continue;
             }
-            if (primaryCreep.isIdle()) primaryCreep.getTask();
+            if (primaryCreep.isIdle()) {
+                if (primaryCreep.store.getUsedCapacity() > 0) primaryCreep["__store"]();
+                else primaryCreep.getTask();
+            }
             if (primaryCreep._boost() === OK) continue;
             if (!primaryCreep.isIdle()) {
                 signals = {}
