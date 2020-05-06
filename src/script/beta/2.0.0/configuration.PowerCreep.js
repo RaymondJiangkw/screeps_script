@@ -3,6 +3,6 @@ const powerCreepConfiguration = {
         "default":["rS","rM","oS","_"],
     },
     getTaskInterval:5,
-    renewRemainingTicks:50,
+    renewRemainingTicks:100,
 }
 module.exports = powerCreepConfiguration

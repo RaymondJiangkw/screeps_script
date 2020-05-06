@@ -9,7 +9,12 @@ module.exports = function() {
     global.rooms.reserved = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "reserved").map(r => r.name);
     global.rooms.central = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "central").map(r => r.name);
     global.rooms.observed = _.filter(Game.rooms,(room) => utils.ownRoom(room.name) === "highway").map(r => r.name);
-
+    
+    global.healTargets = {};
+    for (var roomName of global.rooms.my) {
+        global.healTargets[roomName] = _.filter(Game.rooms[roomName].inCreeps,(c)=>c.hits < c.hitsMax);
+    }
+    
     global.links = {}
     for (var roomName of global.rooms.my) {
         global.links[roomName] = {
@@ -35,7 +40,7 @@ module.exports = function() {
     }
     
     global.containers = {}
-    for (var roomName of [].concat(global.rooms.my,global.rooms.reserved)) {
+    for (var roomName of [].concat(global.rooms.my,global.rooms.reserved,global.rooms.central)) {
         global.containers[roomName] = {
             resources:[],
             mineral:undefined,

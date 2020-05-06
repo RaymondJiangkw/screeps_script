@@ -105,9 +105,9 @@ const roomTaskExtension = {
         if (!this.memory.task[taskType] || this.memory.task[taskType].length == 0) return undefined;
         var potentialTaskList = this.memory.task[taskType];
         if (subTaskType !== "all") potentialTaskList = _.filter(potentialTaskList,(t)=>subTaskType.indexOf(this.memory.task.info[t].subTaskType) >= 0)
-        if (potentialTaskList.length === 0) return undefined
         if (dry) return true
         potentialTaskList = this.sortTask(subject,taskType,potentialTaskList,priority_limit)
+        if (potentialTaskList.length === 0) return undefined
         const fingerprint = potentialTaskList[0]
         this.memory.task.info[fingerprint].settings.receivedGroupsNum--;
         this.memory.task.info[fingerprint].settings.workingGroupsNum++;
@@ -117,14 +117,15 @@ const roomTaskExtension = {
     AddTask(taskType,subTaskType,data,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
         this.initTaskMemory(taskType)
         if (!Number.isFinite(groupsNum)) groupsNum = INFINITY;
-        const _getRepeat = getRepeat;
+        var _getRepeat = false;
+        if (getRepeat) _getRepeat = true;
         getRepeat = false;
         const fingerprint = utils.getTaskFingerprint(arguments)
         if (this.checkTaskExistence(fingerprint)) {
             if (_getRepeat) return fingerprint
             else return false
         }
-        console.log(this.name,"AddTask",JSON.stringify(data))
+        console.log(this.name,"AddTask",taskType,subTaskType,JSON.stringify(data))
         if (!silence) {this.memory.task[taskType].push(fingerprint);this.memory.task["_" + taskType].push(fingerprint);}
         this.memory.task.info[fingerprint] = {
             taskType,subTaskType,targetID:null,targetPos:null,

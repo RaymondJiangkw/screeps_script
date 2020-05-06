@@ -6,7 +6,8 @@ const MAX_CALL_TIME = 2
 const creepConfig = require('configuration.Creep')
 const utils = require('utils')
 const randomElement = function(array){
-    return array[Math.floor(Math.random() * array.length)]
+    return array[0];
+    // return array[Math.floor(Math.random() * array.length)]
 }
 const treatedPorters = function(creeps){
     var _objects = _.filter(creeps,c => c.store.getFreeCapacity() > 0)
@@ -15,7 +16,12 @@ const treatedPorters = function(creeps){
 }
 module.exports = function(){
     for (var roomName of global.rooms.my){
+        if (Game.cpu.bucket < 100) break;
     for (var groupType in creepConfig.groupAcceptedTask){
+        if (Game.cpu.bucket < 1000) {
+            var allowedGroups = ["pureTransfer","pureWorker","pureRepairer","pureUpgrader","localHarvest","Defend","Claim","Attack"]
+            if (allowedGroups.indexOf(groupType) < 0) continue;
+        }
     for (var groupName in Game.rooms[roomName][groupType]){
         var creeps = Game.rooms[roomName][groupType][groupName]
         const groupRoles = Object.keys(creepConfig.groupAcceptedTask[groupType])
@@ -29,7 +35,7 @@ module.exports = function(){
                 continue;
             }
             if (primaryCreep.isIdle()) {
-                if (primaryCreep.store.getUsedCapacity() > 0) primaryCreep["__store"]();
+                if (primaryCreep.store.getUsedCapacity() > 0 && primaryCreep.memory.role === "transferer") primaryCreep["__store"]();
                 else primaryCreep.getTask();
             }
             if (primaryCreep._boost() === OK) continue;
@@ -43,7 +49,7 @@ module.exports = function(){
                 }
                 var feedback = primaryCreep.run(signals)
                 var cnt = 1
-                while (cnt <= MAX_CALL_TIME && feedback === ERR_REPEAT) {primaryCreep.run(signals);cnt++}
+                while (cnt <= MAX_CALL_TIME && feedback === ERR_REPEAT) {feedback = primaryCreep.run(signals);cnt++}
                 if (feedback === FINISH) primaryCreep.finishTask()
                 else if (feedback === ERR_RENEW) primaryCreep.renewTask()
                 else if (feedback === ERR_DELETE) primaryCreep.deleteTask()
@@ -54,23 +60,29 @@ module.exports = function(){
         const servantCreepRole = groupRoles[i]
         for (var creep of creeps[servantCreepRole]){
             const randomPrimaryCreep = randomElement(creeps[primaryCreepRole])
-            if (creep.dying()){
-                let reSpawn = false;
-                if (!randomPrimaryCreep) {
-                    var checkRespawn = function (t) {
-                        var memory = Game.rooms[creep.memory.home].taskInfo(t).data.memory;
-                        return memory.role === primaryCreepRole && memory.group.type === creep.memory.group.type && memory.group.name === creep.memory.group.name;
-                    }
-                    const isReSpawn = _.filter(Game.rooms[creep.memory.home].searchTask("_spawn","default"),checkRespawn);
-                    if (isReSpawn.length > 0) reSpawn = true
+            let reSpawn = false;
+            if (!randomPrimaryCreep) {
+                var checkRespawn = function (t) {
+                    var memory = Game.rooms[creep.memory.home].taskInfo(t).data.memory;
+                    return memory.role === primaryCreepRole && memory.group.type === creep.memory.group.type && memory.group.name === creep.memory.group.name;
                 }
+                const isReSpawn = _.filter(Game.rooms[creep.memory.home].searchTask("_spawn","default"),checkRespawn);
+                if (isReSpawn.length > 0) reSpawn = true
+            }
+            
+            if (creep.dying()){
                 creep.memory.dying = true
                 if (reSpawn || (randomPrimaryCreep && (!randomPrimaryCreep.isIdle() || randomPrimaryCreep.getTask(true)) )  ) creep.toDeath(false,true);
                 else creep.toDeath(false,false);
                 continue;
             }
 
-            if (!randomPrimaryCreep) {creep.deleteTask();creep.Invisible();continue;}
+            if (!randomPrimaryCreep && reSpawn) {creep.deleteTask();creep.Invisible();continue;}
+            if (!randomPrimaryCreep && !reSpawn) {
+                if (creep.store.getUsedCapacity() > 0) creep["__store"]();
+                else if (creep["__recycle"]() !== OK) creep.suicide();
+                continue;
+            }
             if (creep._boost() === OK) continue
             if (creep.isIdle() && randomPrimaryCreep.isIdle()) {creep.Invisible();continue;}
                         
@@ -80,7 +92,7 @@ module.exports = function(){
                 var mainTask = taskList[0], subTask = taskList[1][0]
                 if (mainTask === "attack"){
                     if (subTask === "heal"){
-                        var fingerprint = Game.rooms[creep.memory.home].AddAttackTask(subTask,"creep",primaryTaskInfo.data.routes,Infinity,false,true,true);
+                        var fingerprint = Game.rooms[creep.memory.home].AddAttackTask(subTask,"creep",primaryTaskInfo.data.targetRoom,primaryTaskInfo.data.routes,Infinity,false,true,true);
                         if (fingerprint) creep.memory.taskFingerprint = fingerprint
                     }
                 }else if (mainTask === "transfer"){
@@ -100,9 +112,10 @@ module.exports = function(){
             if (!creep.isIdle()){
                 var signals = {}
                 signals["creep"] = randomPrimaryCreep.id;
+                if (randomPrimaryCreep.isIdle()) signals["finish"] = true;
                 var feedback = creep.run(signals)
                 var cnt = 1
-                while (cnt <= MAX_CALL_TIME && feedback === ERR_REPEAT) creep.run(signals)
+                while (cnt <= MAX_CALL_TIME && feedback === ERR_REPEAT) {feedback = creep.run(signals);cnt++;}
                 if (feedback === FINISH) creep.finishTask()
                 else if (feedback === ERR_RENEW) creep.renewTask()
                 else if (feedback === ERR_DELETE) creep.deleteTask()

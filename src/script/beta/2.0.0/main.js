@@ -29,6 +29,13 @@ const stateScanner = function () {
         if (Game.rooms[roomName].terminal) Memory.stats.terminal[roomName] = Game.rooms[roomName].terminal.store.getUsedCapacity()
     }
 }
+const Wrap = function (func,_name) {
+    const MAXIMUM_CPU_LIMIT = 50;
+    if (Game.cpu.getUsed() < MAXIMUM_CPU_LIMIT) func();
+    else {
+        console.log("Prevent over-burst " + _name);
+    }
+}
 module.exports.loop = function() {
     profiler.wrap(function(){
         mount();
@@ -37,9 +44,9 @@ module.exports.loop = function() {
         init();
         task.init();
         structureRun();
-        powerCreepRun();
+        Wrap(powerCreepRun,"powerCreepRun");
         creepRun();
-        task.spawn();
+        Wrap(task.spawn,"task.spawn");
         spawnRun();
         stateScanner();
     })

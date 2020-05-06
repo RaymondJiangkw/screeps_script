@@ -6,6 +6,7 @@ const configLab = require('configuration.Lab')
 const configFactory = require('configuration.Factory')
 const constants = require('constants')
 const utils = require('utils')
+const ADVANCED_BUCKET_LIMIT = 5000;
 module.exports = function () {
     for (var roomName of global.rooms.my){
         if (Game.rooms[roomName].enemies.length > 0){
@@ -72,7 +73,7 @@ module.exports = function () {
                 }
             }
         }
-        if (Game.rooms[roomName].terminal){
+        if (Game.rooms[roomName].terminal && Game.cpu.bucket >= ADVANCED_BUCKET_LIMIT){
             if (Game.time % configTerminal.mostDesiredGoods.interval === 0){
                 for (var desiredGoods in configTerminal.mostDesiredGoods){
                     if (desiredGoods === "interval") continue;
@@ -126,15 +127,21 @@ module.exports = function () {
                             var resourceType = goodsInfo[0]
                             var beginBuyingAmount = goodsInfo[1]
                             var endBuyingAmount = goodsInfo[2]
-                            if (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["total"] > beginBuyingAmount) continue
-                            var existingAmount = (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["total"]) || 0
-                            Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,resourceType,endBuyingAmount - existingAmount,{onlyDeal:false})
+                            if (resourceType !== RESOURCE_ENERGY) {
+                                if (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["total"] > beginBuyingAmount) continue
+                                var existingAmount = (global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["total"]) || 0
+                                Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,resourceType,endBuyingAmount - existingAmount,{onlyDeal:false})
+                            }else{
+                                var existingAmount = Game.rooms[roomName].terminal.store["energy"]
+                                if (existingAmount > beginBuyingAmount) continue;
+                                Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,RESOURCE_ENERGY,endBuyingAmount - existingAmount);
+                            }
                         }
                     }
                 }
             }
         }
-        if (Game.rooms[roomName].labs.length > 0 && configLab[roomName]){
+        if (Game.rooms[roomName].labs.length > 0 && configLab[roomName] && Game.cpu.bucket >= ADVANCED_BUCKET_LIMIT){
             const mode = configLab[roomName]["mode"]
             if (mode !== "clear" && global.labStructures[roomName].core.length === 2){
                 const resourceType = utils.getLabTarget(roomName,mode)
@@ -151,14 +158,16 @@ module.exports = function () {
                     }
                 }else if (mode === "reverse"){
                     var fromlabs = global.labs[roomName][resourceType];
-                    for (var lab of fromlabs){
-                        if (lab.cooldown > 0) continue;
-                        lab.reverseReaction(core1,core2);
+                    if (fromlabs){
+                        for (var lab of fromlabs){
+                            if (lab.cooldown > 0) continue;
+                            lab.reverseReaction(core1,core2);
+                        }
                     }
                 }
             }
         }
-        if (Game.rooms[roomName].factory && Game.rooms[roomName].factory.cooldown == 0 && configFactory[roomName]) {
+        if (Game.rooms[roomName].factory && Game.rooms[roomName].factory.cooldown == 0 && configFactory[roomName] && Game.cpu.bucket >= ADVANCED_BUCKET_LIMIT) {
             for (var productionInfo of configFactory[roomName]){
                 if (Game.rooms[roomName].factory.cooldown > 0) break;
                 var production = productionInfo[0]

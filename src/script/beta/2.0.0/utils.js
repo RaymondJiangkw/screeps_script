@@ -10,6 +10,7 @@ var SaltList = {}
 var SaltListExpiration = 0;
 var creepsCollection = {}
 var creepsCollectionExpiration = 0;
+var fingerprintCached = {};
 const utilsCollection = {
     disPos:function(pos1,pos2){
         let x_diff = Math.abs(pos1.x - pos2.x)
@@ -56,8 +57,15 @@ const utilsCollection = {
                 str = str + JSON.stringify(arg)
             }else str = str + arg.toString()
         }
-        var hash = MD5(str)
-        return hash
+        str = str.replace(",","");
+        str = str.replace("{","");
+        str = str.replace("}","");
+        str = str.replace(" ","");
+        str = str.replace('"',"");
+        str = str.replace("'","");
+        str = str.replace(":","");
+        if (fingerprintCached[str]) return fingerprintCached[str];
+        else return fingerprintCached[str] = MD5(str);
     },
     _getComponentRatio:function(componentsObj){
         var totalCost = 0
@@ -78,10 +86,31 @@ const utilsCollection = {
         if (Game.rooms[roomName].controller.level === 8 && role === "upgrader"){
             for (var component in _componentsObj) _componentsObj[component] = 1;
         }
+        const nearCentral = ["W23N25"]
         if (role === "harvester" && groupType === "remoteHarvest"){
-            _componentsObj["work"] += 15
-            _componentsObj["carry"] += 1
-            _componentsObj["move"] += 8
+            if (nearCentral.indexOf(roomName) < 0){
+                _componentsObj["work"] += 15
+                _componentsObj["carry"] += 1
+                _componentsObj["move"] += 8
+            }
+        }
+        if (role === "transferer" && groupType === "remoteHarvest"){
+            if (nearCentral.indexOf(roomName) >= 0){
+                for (var component in _componentsObj) _componentsObj[component] = Math.floor(_componentsObj[component] * 0.5);
+            }
+        }
+        if (role === "transferer" && groupType === "powerHarvest"){
+            for (var component in _componentsObj) _componentsObj[component] = _componentsObj[component] * 2;
+        }
+        if (role === "defender"){
+            // "defender":{carry:10,move:13,"ranged_attack":5,attack:15,heal:5},
+            if (nearCentral.indexOf(roomName) < 0){
+                _componentsObj["carry"] = 6;
+                _componentsObj["move"] = 7;
+                _componentsObj["ranged_attack"] = 0;
+                _componentsObj["attack"] = 6;
+                _componentsObj["heal"] = 2;
+            }
         }
         const energyDisCom = this._getComponentRatio(_componentsObj)
         var result = []
@@ -92,10 +121,22 @@ const utilsCollection = {
         return result
     },
     getClosetSuitableRoom:function(roomName,controllerLevel,haveStorage = false,binary_energy = false){
+        const specific_room_pair = {
+            "W22N24":"W21N24"
+        }
         var homes = _.filter(global.rooms.my,(r)=>Game.rooms[r].controller.level >= controllerLevel)
         if (haveStorage) homes = _.filter(homes,(h)=>Game.rooms[h].storage)
         if (binary_energy) homes = _.filter(homes,(h)=>Game.rooms[h].energys.length == 2)
-        homes.sort((roomName1,roomName2)=>Game.map.getRoomLinearDistance(roomName1,roomName) - Game.map.getRoomLinearDistance(roomName2,roomName))
+        var minDistance = Math.min(...(homes.map((_roomName)=>Game.map.getRoomLinearDistance(roomName,_roomName))));
+        homes = _.filter(homes,(_roomName)=>Game.map.getRoomLinearDistance(roomName,_roomName) === minDistance);
+        if (homes.indexOf(specific_room_pair[roomName]) >= 0) return specific_room_pair[roomName];
+        if (homes.length > 1 && minDistance === 1){
+            var adjacentRooms = Game.map.describeExits(roomName);
+            for (var index in adjacentRooms){
+                var home = adjacentRooms[index];
+                if (homes.indexOf(home) >= 0) return home;
+            }
+        }
         return homes[0]
     },
     analyseCreep:function(creep,analysis = false,simplified_version = false){
@@ -209,7 +250,7 @@ const utilsCollection = {
     ownRoom:function(roomName){
         var coordi = this.roomNameToXY(roomName)
         if (!Game.rooms[roomName]) return "unsure"
-        if (!Game.rooms[roomName].controller && (coordi[0] % 10 === 0 || coordi[1] % 10 === 0)) return "highway"
+        if (!Game.rooms[roomName].controller && (coordi[0] % 10 + 1 === 0 || coordi[1] % 10 + 1 === 0)) return "highway"
         if (!Game.rooms[roomName].controller) return "central"
         if (Game.rooms[roomName].controller.my) return true
         if (Game.rooms[roomName].controller.reservation && Game.rooms[roomName].controller.reservation.username === constants.username) return "reserved"

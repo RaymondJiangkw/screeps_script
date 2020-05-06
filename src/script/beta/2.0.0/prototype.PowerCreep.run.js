@@ -4,7 +4,51 @@ const USE_POWER = 100
 const NOT_USE_POWER = 101
 const INVALID_TASK = 102
 const PLACE_HOLDER = "_"
+const reachBoundary = function(x){
+    return x < 1 || x > 48
+}
+const getVacantPlace = function(pos,adjPos = undefined) {
+    var x = pos.x
+    var y = pos.y
+    var roomName = pos.roomName
+
+    var direction = ["stay",TOP,TOP_RIGHT,RIGHT,BOTTOM_RIGHT,BOTTOM,BOTTOM_LEFT,LEFT,TOP_LEFT]
+    var dx = [0,0,1,1,1,0,-1,-1,-1]
+    var dy = [0,-1,-1,0,1,1,1,0,-1]
+    
+    const terrain = Game.rooms[roomName].getTerrain()
+
+    for (var i = 0; i < direction.length; i++){
+        var xx = x + dx[i], yy = y + dy[i]
+        if (reachBoundary(xx) || reachBoundary(yy)) continue
+        if (terrain.get(xx,yy) == TERRAIN_MASK_WALL) continue
+        if (adjPos && !utils.adjacentPos(pos,adjPos)) continue
+
+        var noRoad = true,walkable = true
+        const structures = Game.rooms[roomName].lookForAt(LOOK_STRUCTURES,xx,yy);
+        const constructedStructures = Game.rooms[roomName].lookForAt(LOOK_CONSTRUCTION_SITES,xx,yy);
+        if (constructedStructures.length > 0) continue;
+        for (var structure of structures){
+            if (structure.structureType !== STRUCTURE_ROAD &&
+                structure.structureType !== STRUCTURE_CONTAINER &&
+                structure.structureType !== STRUCTURE_RAMPART) {
+                walkable = false
+                break
+            }
+            if (structure.structureType === STRUCTURE_ROAD) {
+                noRoad = false
+                break
+            }
+        }
+        if (noRoad && walkable) return direction[i]
+    }
+    return undefined
+}
 const runExtension = {
+    Invisible(){
+        var vacantDirection = getVacantPlace(this.pos)
+        if (vacantDirection && vacantDirection !== "stay") this.move(vacantDirection)
+    },
     _(){
         return [undefined,NOT_USE_POWER]
     },
@@ -119,12 +163,15 @@ const runExtension = {
                 this.memory.taskCur = (this.memory.taskCur + 1) % taskList.length
             }
             var feedback = this[this.memory.task]()
-            if (feedback[1] !== USE_POWER && this.className === POWER_CLASS.OPERATOR) this.usePower(PWR_GENERATE_OPS);
+            if (feedback[1] !== USE_POWER && this.powers[PWR_GENERATE_OPS]) this.usePower(PWR_GENERATE_OPS);
             if (feedback[0] === ERR_NOT_ENOUGH_RESOURCES) if (this["_withdrawOps"]) return;
             if (feedback[0] === INVALID_TASK) this.memory.task = PLACE_HOLDER
             if (feedback[0] === OK) return;
             const basicTaskOrder = ["_enableRoom","_transferSurplus"]
-            for (var basicTask of basicTaskOrder) if (this[basicTask] === OK) return;
+            for (var basicTask of basicTaskOrder) {
+                if (this[basicTask]() === OK) return;
+            }
+            this.Invisible();
         }
     }
 }

@@ -18,6 +18,6 @@ module.exports = function(){
         var coordi = utils.roomNameToXY(reservedRoom)
         if (coordi[0] % 10 == 0 || coordi[1] % 10 == 0) continue;
         var home = utils.getClosetSuitableRoom(reservedRoom,4,true)
-        if (home) Game.rooms[home].AddAttackTask("claim",undefined,reservedRoom,utils.getSuitableRoute(home,reservedRoom),2);
+        if (home) Game.rooms[home].AddAttackTask("claim",undefined,reservedRoom,utils.getSuitableRoute(home,reservedRoom),1);
     }
 };

@@ -9,7 +9,7 @@ const generateSpawnTask = function(roomName,groupType){
         var saltArr = utils.getSaltList(roomName,groupType,groupName,role)
         var roleNum = 1
         var boostCompounds = utils.getBoosts(role,groupType)
-        if (creepConfig.groupSpawnConfig[groupType] && creepConfig.groupSpawnConfig[groupType][role]) roleNum = creepConfig.groupSpawnConfig[groupType][role]
+        if (creepConfig.groupSpawnConfig[groupType] !== undefined && creepConfig.groupSpawnConfig[groupType][role] !== undefined) roleNum = creepConfig.groupSpawnConfig[groupType][role]
         for (var _ = 0; _ < roleNum;_++){
             if (saltArr.indexOf(_) >= 0) continue
             if (!Game.rooms[roomName].AddSpawnTask(role,creepConfig.components[role],groupType,groupName,boostCompounds,_)) executable = false;
@@ -44,7 +44,7 @@ module.exports = function(){
         
         // Defend Task
         const Defender = creepsCollection["defender"]
-        const roomDefendCnt = Game.rooms[roomName].countTask("_defend",["local","reserved"])
+        const roomDefendCnt = Game.rooms[roomName].countTask("_defend",["local","reserved","central"])
         if (Defender.length < roomDefendCnt) generateSpawnTask(roomName,"Defend");
         
         // Build Task

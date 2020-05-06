@@ -2,10 +2,10 @@ module.exports = function() {
     var hasWaitingToSpawn = false
     var waitingSpawnPowerCreeps = []
     for (var powerCreep in Game.powerCreeps) {
-        if (powerCreep.ticksToLive) powerCreep.run();
+        if (Game.powerCreeps[powerCreep].ticksToLive) Game.powerCreeps[powerCreep].run();
         else {
             hasWaitingToSpawn = true
-            waitingSpawnPowerCreeps.push(powerCreep)
+            waitingSpawnPowerCreeps.push(Game.powerCreeps[powerCreep])
         }
     }
     if (hasWaitingToSpawn){

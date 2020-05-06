@@ -34,9 +34,19 @@ const towerExtension = {
             this.attack(target)
             return true
         }
+        return false;
+    },
+    _heal(){
+        global.healTargets[this.room.name] = _.filter(global.healTargets[this.room.name],(c)=>c.hits < c.hitsMax);
+        if (global.healTargets[this.room.name].length > 0) {
+            global.healTargets[this.room.name].sort(hitsCompare);
+            this.heal(global.healTargets[this.room.name][0]);
+            return true;
+        }
+        return false;
     },
     run(){
-        if (!this._attack()) this._repair()
+        if (!this._attack()) if (!this._heal()) this._repair();
     }
 }
 _.assign(StructureTower.prototype,towerExtension)

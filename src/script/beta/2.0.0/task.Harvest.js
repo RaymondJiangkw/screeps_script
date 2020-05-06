@@ -34,18 +34,21 @@ module.exports = function() {
         }
         for (var powerBank of Game.rooms[roomName]["powerBanks"]){
             if (!powerBank) continue;
-            if (powerBank.power < 5000 || powerBank.ticksToDecay < 4500) continue;
+            if (powerBank.power < 4000 || powerBank.ticksToDecay < 4500) continue;
             var home = utils.getClosetSuitableRoom(roomName,8,true)
-            if (!home) break
+            if (!home || Game.rooms[home].energyAvailable !== Game.rooms[home].energyCapacityAvailable || Game.cpu.bucket < 9000) break;
+            if (Game.map.getRoomLinearDistance(home,roomName) > 2) break;
+            var harvestTaskLength = Game.rooms[home].countTask("_attack",["harvest"]);
+            if (harvestTaskLength > 0) break;
             Game.rooms[home].AddAttackTask("harvest",powerBank.id,roomName,utils.getSuitableRoute(home,roomName),1)
         }
     }
     for (var roomName of remoteEnergyRooms) {
-        if (utils.ownRoom(roomName) !== "reserved") continue
+        if (utils.ownRoom(roomName) === false) continue
+        if (!Game.rooms[roomName]) continue;
         var home = utils.getClosetSuitableRoom(roomName,4,true)
         if (!home) continue
-        var sources = Game.rooms[roomName].find(FIND_SOURCES_ACTIVE)
-        for (var source of sources) if (source.energy > 0) Game.rooms[home].AddHarvestTask("remote",source.id,source.pos)
+        for (var source of Game.rooms[roomName].energys) Game.rooms[home].AddHarvestTask("remote",source.id,source.pos)
     }
     for (var roomName in remoteCentralRooms){
         if (!Game.rooms[roomName]) continue;

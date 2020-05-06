@@ -2,7 +2,7 @@ const terminalConfiguration = {
     terminalCheckInterval:100,
     terminalSendInterval:200,
     baseReservedEnergy:30000,
-    baseReservedMineral:30000,
+    baseReservedMineral:10000,
     mineralDistributeMinAmount:2500,
     sellingEnergy:{
         "W22N25":0,
@@ -28,7 +28,7 @@ const terminalConfiguration = {
     },
     buyingGoods:{
         //[(resourceType),(beginBuyingAmount),(endBuyingAmount)]
-        "W22N25":[[RESOURCE_OXYGEN,2500,5000],[RESOURCE_LEMERGIUM,2500,5000],[RESOURCE_UTRIUM,2500,5000]],
+        "W22N25":[[RESOURCE_OXYGEN,2500,5000],[RESOURCE_LEMERGIUM,2500,5000],[RESOURCE_UTRIUM,2500,5000],[RESOURCE_ENERGY,100000,150000]],
         "W23N25":[],
         "W21N24":[],
         "W19N22":[],
@@ -37,7 +37,7 @@ const terminalConfiguration = {
     mostDesiredGoods:{ // Buy as much as it can
         interval:10,
         [RESOURCE_POWER]:{
-            maxPrice:4,  // Will buy these goods under this line
+            maxPrice:4.5,  // Will buy these goods under this line
             minCredits:10000,
         }
     },

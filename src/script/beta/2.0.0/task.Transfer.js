@@ -7,6 +7,7 @@ const powerSpawnConfig = require('configuration.PowerSpawn')
 const aidConfig = require('configuration.Aid')
 const sendConfig = require('configuration.Send')
 const Constants = require('constants')
+const ADVANCED_BUCKET_LIMIT = 5000;
 const needEnergy = function(object){
     return object.store.getFreeCapacity(RESOURCE_ENERGY) > 0
 }
@@ -19,14 +20,14 @@ module.exports = function() {
         var towers = _.filter(Game.rooms[roomName].towers,(t)=>t.store.getUsedCapacity(RESOURCE_ENERGY) <= towerConfig.reservedEnergy)
         if (spawns.length > 0) Game.rooms[roomName].AddTransferTask("core","energy","spawns",RESOURCE_ENERGY,"full",undefined,undefined,1,false);
         if (extensions.length > 0) Game.rooms[roomName].AddTransferTask("core","energy","extensions",RESOURCE_ENERGY,"full",undefined,undefined,1,false);
-        if (towers.length > 0) Game.rooms[roomName].AddTransferTask("defense","energy","towers",RESOURCE_ENERGY);
+        if (towers.length > 0) Game.rooms[roomName].AddTransferTask("defense","energy","towers",RESOURCE_ENERGY,"full",undefined,undefined,1,false);
         if (Game.rooms[roomName].powerSpawn && Game.rooms[roomName].powerSpawn.store.getUsedCapacity(RESOURCE_ENERGY) <= powerSpawnConfig.startChargeEnergy) {
             Game.rooms[roomName].AddTransferTask("advanced","energy",Game.rooms[roomName].powerSpawn.id,RESOURCE_ENERGY);
         }
         
         if (global.containers[roomName].mineral){
             var mineralContainer = global.containers[roomName].mineral
-            if (mineralContainer.store.getFreeCapacity() === 0 || (mineralContainer.store.getUsedCapacity() > 0 && Game.rooms[roomName].mineral.mineralAmount === 0)){
+            if (mineralContainer.store.getFreeCapacity() === 0 || (mineralContainer.store.getUsedCapacity() >= 50 && Game.rooms[roomName].mineral.mineralAmount === 0)){
                 var checkOrders = ["storage","terminal","factory"]
                 for (var structure of checkOrders) {
                     if (Game.rooms[roomName][structure] && Game.rooms[roomName][structure].store.getFreeCapacity() > 0) {
@@ -38,8 +39,8 @@ module.exports = function() {
         }
 
         if (!global.task.transfer[roomName]) global.task.transfer[roomName] = {}
-        if (!global.task.transfer[roomName].cachedExpirationTime || global.task.transfer[roomName].cachedExpirationTime <= Game.time){
-            global.task.transfer[roomName].cachedExpirationTime = utils.getCacheExpiration(15) + Game.time
+        if ((!global.task.transfer[roomName].cachedExpirationTime || global.task.transfer[roomName].cachedExpirationTime <= Game.time) && Game.cpu.bucket >= ADVANCED_BUCKET_LIMIT){
+            global.task.transfer[roomName].cachedExpirationTime = utils.getCacheExpiration() + Game.time
             // Transfer Energy to labs / factory
             var labs = _.filter(Game.rooms[roomName].labs,needEnergy)
             if (labs.length > 0) Game.rooms[roomName].AddTransferTask("advanced","energy","labs",RESOURCE_ENERGY);
@@ -63,14 +64,17 @@ module.exports = function() {
             }
             
             // Charge Nuker
-            if (Game.rooms[roomName].nuker && Game.rooms[roomName].nuker.store.getFreeCapacity(RESOURCE_GHODIUM) > 0 && global.resources[roomName][RESOURCE_GHODIUM]){
-                var checkOrders = ["labs","terminal","storage","factory"]
-                for (var structure of checkOrders){
-                    if (global.resources[roomName][RESOURCE_GHODIUM][structure] > 0){
-                        Game.rooms[roomName].AddTransferTask("defense",structure,Game.rooms[roomName].nuker.id,RESOURCE_GHODIUM,"full");
-                        break;
+            if (Game.rooms[roomName].nuker){
+                if (Game.rooms[roomName].nuker.store.getFreeCapacity(RESOURCE_GHODIUM) > 0 && global.resources[roomName][RESOURCE_GHODIUM]){
+                    var checkOrders = ["labs","terminal","storage","factory"]
+                    for (var structure of checkOrders){
+                        if (global.resources[roomName][RESOURCE_GHODIUM][structure] > 0){
+                            Game.rooms[roomName].AddTransferTask("defense",structure,Game.rooms[roomName].nuker.id,RESOURCE_GHODIUM,"full");
+                            break;
+                        }
                     }
                 }
+                if (Game.rooms[roomName].nuker.store.getFreeCapacity(RESOURCE_ENERGY) > 0) Game.rooms[roomName].AddTransferTask("defense","energy",Game.rooms[roomName].nuker.id,RESOURCE_ENERGY);
             }
 
             // Charge Power
@@ -195,7 +199,7 @@ module.exports = function() {
                             for (var groupLabs of InputLabs){
                             for (var labId of groupLabs){
                                 var lab = Game.getObjectById(labId);
-                                if (!lab.mineralType || (lab.mineralType === resourceType && lab.store[mineralType] <= labConfig.leastRefillAmount)){
+                                if (!lab.mineralType || (lab.mineralType === resourceType && lab.store[lab.mineralType] <= labConfig.leastRefillAmount)){
                                     Game.rooms[roomName].AddTransferTask("advanced","resource",lab.id,resourceType,"full");
                                 }else if (labConfig[roomName].allowedCompounds.indexOf(lab.mineralType) < 0 || lab.store[lab.mineralType] < 30 || global.labs[roomName][lab.mineralType].indexOf(lab) > 0){
                                     if (Game.rooms[roomName].storage) Game.rooms[roomName].AddTransferTask("advanced",lab.id,Game.rooms[roomName].storage.id,lab.mineralType,"exhaust");
