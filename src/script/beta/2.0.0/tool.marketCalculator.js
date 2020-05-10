@@ -34,7 +34,7 @@
         var queue = [[commodity,settings.amount]];
         var ret = {cooldown:0,components:{}};
         var cnt = 1;
-        var addToRet = (type,amount) => ret.components[type] = ret.components[type]? ret.components[type] + amount:amount;
+        var addToRet = (type,amount) => ret.components[type] = ret.components[type] + amount || amount;
         var addCooldown = (cooldown) => ret.cooldown += cooldown;
         while (queue.length && cnt <= settings.maxIteration) {
             cnt++;
@@ -46,7 +46,7 @@
             }
             addCooldown(COMMODITIES[type].cooldown);
             for (var _type in COMMODITIES[type].components) {
-                var amountRatio = COMMODITIES[type].components[_type].amount / COMMODITIES[type].amount;
+                var amountRatio = COMMODITIES[type].components[_type] / COMMODITIES[type].amount;
                 queue.push([_type,amountRatio * amount]);
             }
         }
@@ -67,30 +67,50 @@
             maxIteration:1024,
             returnBasis:0
         });
-        var ret = undefined;
-        try{
-            const stopArr = _.map(stopInfo,(i)=>i[0]);
-            ret = calcCommodityRawComponents(commodity,{amount,stopArr,maxIteration});
-            if (!_.isObject(ret)) return ret;
-        }catch(error){return ERR_INVALID_ARGS;}
-        var additionCalc = [];
-        for (var info of settings.stopInfo) {
-            try{
-                const type = info[0];
-                const existingAmount = info[1];
-                if (type in ret.components) {
-                    if (ret.components[type] > existingAmount) additionCalc.push([type,ret.components[type] - existingAmount])
-                    delete ret.components[type];
-                }
-            }catch (error){return ERR_INVALID_ARGS;}
-        }
-        var basedResources = []
+        var ret = {components:{},cooldown:0};
+        var basedResources = [];
         if (settings.returnBasis === 0) basedResources = [].concat(BASIC_RESOURCES);
         else if (settings.returnBasis === 1) basedResources = [].concat(COMPRESSED_RESOURCES);
         else if (settings.returnBasis === 2) basedResources = [].concat(BASIC_RESOURCES,COMPRESSED_RESOURCES);
         else return ERR_INVALID_ARGS;
-        var additionCost = _.map(additionCalc,(arr)=>calcCommodityRawComponents(arr[0],{amount:arr[1],stopArr:basedResources}));
-        return _.merge(ret,additionCost);
+        
+        var addToRet = (type,amount) => ret.components[type] = ret.components[type] + amount || amount;
+        
+        var cnt = 0;
+        var queue = [[commodity,settings.amount]];
+        while (queue.length && cnt < settings.maxIteration) {
+            cnt++;
+            var front = queue.shift();
+            var resourceType = front[0],amount = front[1];
+            if (basedResources.indexOf(resourceType) >= 0 || !COMMODITIES[resourceType]) {
+                addToRet(resourceType,amount);
+                continue;
+            }
+            const stopArr = basedResources.concat(_.map(settings.stopInfo,(i)=>i[0]));
+            var _ret = calcCommodityRawComponents(resourceType,{amount,stopArr:stopArr,maxIteration:settings.maxIteration});
+            if (!_.object(_ret)) return _ret;
+            
+            ret.cooldown += _ret.cooldown;
+            for (var i = 0; i < settings.stopInfo.length; i++) {
+                var type = settings.stopInfo[i][0];
+                var existingAmount = settings.stopInfo[i][1];
+                if (type in _ret.components) {
+                    if (_ret.components[type] > existingAmount) {
+                        _ret.components[type] -= existingAmount;
+                        settings.stopInfo.splice(i,1);
+                    }else if (_ret.components[type] < existingAmount) {
+                        settings.stopInfo[i][1] -= _ret.components[type];
+                        delete _ret.components[type];
+                    }else{
+                        settings.stopInfo.splice(i,1);
+                        delete _ret.components[type];
+                    }
+                }
+            }
+            for (var component in _ret.components) queue.push([component,_ret.components[component]]);
+        }
+        if (cnt > settings.maxIteration) return ERR_MAX_ITERATION_REACHED;
+        return ret;
     }
     /*
     @@ commodity: target commodity.
@@ -160,15 +180,12 @@
         for (var i = 0; i < existingComponents.length; i++) existingInfo.push([existingComponents[i],existingAmount[i]]);
         return calcCommodityComponents(commodity,{amount:amount,existingInfo});
     }
-    function createMethod() {
-        var methods = {};
-        methods.commodity = {
+    module.exports = {
+        commodity:{
             "calcExpectedRevenue":calcExpectedRevenue,
             "calcRawComponents":calcCommodityRawComponents,
             "calcComponents":calcCommodityComponents,
             "calcComponentsByExistence":calcCommodityComponentsBasedOnExistence,
-        };
-        return methods;
-    }
-    module.exports = createMethod();
+        }
+    };
 })();

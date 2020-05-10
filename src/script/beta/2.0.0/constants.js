@@ -1,4 +1,5 @@
 const Constants = {
+    enemies:["Yoner"],
     username:"BoosterKevin",
     emoji:{
         redFlag:"🚩",

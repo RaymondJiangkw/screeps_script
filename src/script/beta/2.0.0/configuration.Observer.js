@@ -5,7 +5,7 @@ const observerConfiguration = {
         // "example":["resourceID"],
     },  // Utilize the core room
 
-    "W22N25":["W20N24","W20N25","W20N26","W20N22","W20N23","W20N22","W20N21","W20N20","W21N20","W19N20"],
+    "W22N25":["W20N24","W20N25","W20N23","W20N22","W20N21","W21N20","W20N20","W19N20"],
     "W23N25":[],
     "W21N24":[],
     "W19N22":[],

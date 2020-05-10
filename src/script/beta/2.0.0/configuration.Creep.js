@@ -6,6 +6,9 @@ const creepConfiguration = {
         "worker":{work:5,carry:15,move:10},
         "repairer":{work:5,carry:3,move:4},
         "defender":{move:23,"ranged_attack":5,attack:15,heal:5},
+        "defender_reserved":{move:12,"ranged_attack":5,attack:5,heal:2},
+        "defender_observed":{attack:5,move:25,"ranged_attack":15,heal:5},
+        "defender_observed_servant":{attack:5,move:25,"ranged_attack":15,heal:5},
         "attacker":{move:25,attack:25},
         "healer":{move:16,heal:16},
         "claimer":{move:2,claim:2},
@@ -14,7 +17,7 @@ const creepConfiguration = {
     boosts:{
         "transferer":{
             "remoteTransfer":["KH","KH2O","XKH2O"],
-            "remotePickUper":["KH"],
+            "remotePickUper":[],
             "pureTransfer":["KH","KH2O","XKH2O"],
             "remoteHarvest":["KH"],
         },
@@ -37,22 +40,25 @@ const creepConfiguration = {
     groupAcceptedTask:{
         // PRIMARY KEY PRINCIPLE
         "remoteHarvest":{"harvester":["harvest-remote"],"transferer":["-transfer-remote"]},
-        "powerHarvest":{"attacker":["attack-harvest"],"healer":["-attack-heal"],"transferer":["-transfer-remote"]},
+        "powerHarvest":{"attacker":["attack-harvest"],"healer":["-attack-heal"]},
         "localHarvest":{"harvester":["harvest-local"]},
         "pureTransfer":{"transferer":["transfer-core","transfer-defense","pickup-local","transfer-advanced|limit"]},
         "pureWorker":{"worker":["build-local","build-remote","*transfer-core","*repair-local","*upgrade"]},
         "pureRepairer":{"repairer":["repair-local","*transfer-core","*upgrade"]},
         "remoteRepairer":{"repairer":["repair-remote","build-remote"]},
-        "remoteTransfer":{"transfer":["transfer-aid"]},
-        "remotePickUper":{"transfer":["pickup-remote","transfer-remote"]},
+        "remoteTransfer":{"transferer":["transfer-aid"]},
+        "remotePickUper":{"transferer":["transfer-remote"]},
         "pureUpgrader":{"upgrader":["upgrade"]},
-        "Defend":{"defender":["defend-local|reserved|central"]},
+        "Defend":{"defender":["defend-local|central|observed"]},
+        "Defend_reserved":{"defender_reserved":["defend-reserved"]},
+        "Defend_observed":{"defender_observed":["defend-observed"]},
         "Attack":{"attacker":["attack-attack"],"healer":["-attack-heal"]},
         "Claim":{"claimer":["attack-claim"]},
         "Travel":{"traveler":["travel"]}
     },
     groupSpawnConfig:{
-        "powerHarvest":{"healer":2,"transferer":0}
+        "powerHarvest":{"healer":2},
+        "Defend_observed":{"defender_observed":2},
     }
 }
 module.exports = creepConfiguration

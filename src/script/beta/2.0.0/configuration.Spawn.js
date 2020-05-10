@@ -1,5 +1,5 @@
 module.exports = {
-    spawnIntervalTick : 50,
+    spawnIntervalTick : 150,
     vigilantDeathToll : 3,
     protectionSpawnLevel: 5,
     compulsoryFullSpawnLevel: 7

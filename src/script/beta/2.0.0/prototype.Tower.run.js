@@ -39,7 +39,7 @@ const towerExtension = {
     _heal(){
         global.healTargets[this.room.name] = _.filter(global.healTargets[this.room.name],(c)=>c.hits < c.hitsMax);
         if (global.healTargets[this.room.name].length > 0) {
-            global.healTargets[this.room.name].sort(hitsCompare);
+            global.healTargets[this.room.name].sort((a,b)=>a.hits/a.hitsMax - b.hits/b.hitsMax);
             this.heal(global.healTargets[this.room.name][0]);
             return true;
         }

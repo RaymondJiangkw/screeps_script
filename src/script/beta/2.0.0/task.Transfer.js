@@ -112,11 +112,14 @@ module.exports = function() {
 
                         if (skip) {
                             var allowable = labConfig[roomName].allowedCompounds.indexOf(resourceType) > 0;
-                            var necessary1 = global.labs[roomName][resourceType] && global.labs[roomName][resourceType].length === 0 && global.labs[roomName]["vacant"].length > 0
-                            var necessary2 = global.labs[roomName][resourceType] && global.labs[roomName][resourceType].length > 0 && global.labs[roomName][resourceType][0].store[resourceType] < 30
-                            var possible = global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["utils"] >= 30
-                            if (allowable && possible && (necessary1 || necessary2)) Game.rooms[roomName].AddTransferTask("advanced","resource","lab",resourceType,"full");
-                            else Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
+                            var necessary1 = (!global.labs[roomName][resourceType] || global.labs[roomName][resourceType].length === 0) && global.labs[roomName]["vacant"].length > 0;
+                            var necessary2 = global.labs[roomName][resourceType] && global.labs[roomName][resourceType].length > 0 && global.labs[roomName][resourceType][0].store[resourceType] < 30;
+                            var possible = global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["utils"] >= 30;
+                            if (allowable && possible && (necessary1 || necessary2)) {
+                                Game.rooms[roomName].AddTransferTask("advanced","resource","lab",resourceType,"full");
+                            }else {
+                                Game.rooms[roomName].memory.labCur[mode] = (Game.rooms[roomName].memory.labCur[mode] + 1) % resourceTypes.length;
+                            }
                         }else{
                             // Input Labs
                             for (var i = 0; i < coreLabs.length;i++){
@@ -201,7 +204,7 @@ module.exports = function() {
                                 var lab = Game.getObjectById(labId);
                                 if (!lab.mineralType || (lab.mineralType === resourceType && lab.store[lab.mineralType] <= labConfig.leastRefillAmount)){
                                     Game.rooms[roomName].AddTransferTask("advanced","resource",lab.id,resourceType,"full");
-                                }else if (labConfig[roomName].allowedCompounds.indexOf(lab.mineralType) < 0 || lab.store[lab.mineralType] < 30 || global.labs[roomName][lab.mineralType].indexOf(lab) > 0){
+                                }else if (lab.mineralType !== resourceType && (labConfig[roomName].allowedCompounds.indexOf(lab.mineralType) < 0 || lab.store[lab.mineralType] < 30 || global.labs[roomName][lab.mineralType].indexOf(lab) > 0)){
                                     if (Game.rooms[roomName].storage) Game.rooms[roomName].AddTransferTask("advanced",lab.id,Game.rooms[roomName].storage.id,lab.mineralType,"exhaust");
                                 }
                             }
@@ -272,8 +275,7 @@ module.exports = function() {
 
         if (Game.rooms[roomName].storage && (!global.task.transfer[roomName]["tomb_ruinExpirationTime"] || global.task.transfer[roomName]["tomb_ruinExpirationTime"] <= Game.time)){
             global.task.transfer[roomName]["tomb_ruinExpirationTime"] = Game.time + utils.getCacheExpiration()
-            var tombStones = Game.rooms[roomName].find(FIND_TOMBSTONES,{filter:(t)=>t.store.getUsedCapacity() > 0})
-            tombStones.sort((a,b)=>b.store.getUsedCapacity() - a.store.getUsedCapacity())
+            var tombStones = Game.rooms[roomName].find(FIND_TOMBSTONES,{filter:(t)=>Object.keys(t.store).length > 0});
             for (var tombStone of tombStones) Game.rooms[roomName].AddTransferTask("defense",tombStone.id,Game.rooms[roomName].storage.id,undefined,"exhaust")
             Game.rooms[roomName].ruins.sort((a,b)=>b.store.getUsedCapacity() - a.store.getUsedCapacity())
             for (var ruin of Game.rooms[roomName].ruins) Game.rooms[roomName].AddTransferTask("defense",ruin.id,Game.rooms[roomName].storage.id,undefined,"exhaust")
@@ -287,9 +289,9 @@ module.exports = function() {
             if (global.rooms.my.indexOf(fromRoom) < 0) continue
             var from = aidInfo.from, to = aidInfo.to
             if (!Game.rooms[hostRoom][to] || !Game.rooms[fromRoom][from]) continue
-            if (Game.rooms[hostRoom][to].store[aidInfo.resourceType] > aidInfo.toBeginAmount) continue
+            if (Game.rooms[hostRoom][to].store[aidInfo.resourceType] > aidInfo.toEndAmount) continue
             if (Game.rooms[fromRoom][from].store[aidInfo.resourceType] < aidInfo.beginAmount) continue
-            Game.rooms[hostRoom].AddAidTask(Game.rooms[fromRoom][from].id,fromRoom,fromRoom,Game.rooms[hostRoom][to].id,hostRoom,aidInfo.resourceType,aidInfo.endAmount,aidInfo.toEndAmount)
+            Game.rooms[hostRoom].AddAidTask(Game.rooms[fromRoom][from].id,fromRoom,Game.rooms[hostRoom][to].id,hostRoom,aidInfo.resourceType,aidInfo.endAmount,aidInfo.toEndAmount)
         }
     }
 

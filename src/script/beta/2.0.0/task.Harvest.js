@@ -23,6 +23,7 @@ module.exports = function() {
     }
     for (var roomName of global.rooms.observed) {
         const deposits = ["mists","biomasss","metals","silicons"]
+        if (Game.rooms[roomName].enemies.length > 0) continue;
         for (var depositType of deposits){
             var home = utils.getClosetSuitableRoom(roomName,6,true)
             if (!home) break
@@ -37,7 +38,7 @@ module.exports = function() {
             if (powerBank.power < 4000 || powerBank.ticksToDecay < 4500) continue;
             var home = utils.getClosetSuitableRoom(roomName,8,true)
             if (!home || Game.rooms[home].energyAvailable !== Game.rooms[home].energyCapacityAvailable || Game.cpu.bucket < 9000) break;
-            if (Game.map.getRoomLinearDistance(home,roomName) > 2) break;
+            if (Game.map.getRoomLinearDistance(home,roomName) > 3) break;
             var harvestTaskLength = Game.rooms[home].countTask("_attack",["harvest"]);
             if (harvestTaskLength > 0) break;
             Game.rooms[home].AddAttackTask("harvest",powerBank.id,roomName,utils.getSuitableRoute(home,roomName),1)

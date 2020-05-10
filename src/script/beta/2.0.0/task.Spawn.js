@@ -44,8 +44,14 @@ module.exports = function(){
         
         // Defend Task
         const Defender = creepsCollection["defender"]
-        const roomDefendCnt = Game.rooms[roomName].countTask("_defend",["local","reserved","central"])
+        const Defender_observed = creepsCollection["defender_observed"];
+        const Defender_reserved = creepsCollection["defender_reserved"];
+        const roomDefendCnt = Game.rooms[roomName].countTask("_defend",["local","central"])
+        const reservedDefendCnt = Game.rooms[roomName].countTask("_defend",["reserved"]);
+        const observedDefendCnt = Game.rooms[roomName].countTask("_defend",["observed"]);
         if (Defender.length < roomDefendCnt) generateSpawnTask(roomName,"Defend");
+        if (Defender_reserved.length < reservedDefendCnt) generateSpawnTask(roomName,"Defend_reserved");
+        if (Defender_observed.length < Math.min(1,observedDefendCnt)) generateSpawnTask(roomName,"Defend_observed");
         
         // Build Task
         const Worker = creepsCollection["worker"]
@@ -84,8 +90,12 @@ module.exports = function(){
 
         // PickUp Task
         const remotePickUper = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "remotePickUper")
-        const remotePickUpTaskLength = Game.rooms[roomName].countTask("_pickup",["remote"])
-        const remoteTransferTaskLength = Game.rooms[roomName].countTask("_transfer",["remote"])
-        if (remotePickUper.length < remotePickUpTaskLength + remoteTransferTaskLength) generateSpawnTask(roomName,"remotePickUper")
+        var remotePickUpTasks = Game.rooms[roomName].searchTask("transfer",["remote"]);
+        var remotePickUpLength = 0;
+        for (var remotePickUptask of remotePickUpTasks){
+            var taskInfo = Game.rooms[roomName].taskInfo(remotePickUptask);
+            remotePickUpLength += taskInfo.settings.allGroupsNum;
+        }
+        if (remotePickUper.length < remotePickUpLength) generateSpawnTask(roomName,"remotePickUper");
     }
 }

@@ -78,15 +78,19 @@ const runExtension = {
         }
     },
     _tUP(powerType,targetType){
+        if (!this.memory.target) this.memory.target = this["_getTarget"](targetType,powerType)
+        if (!this.memory.target) return [INVALID_TASK,NOT_USE_POWER]
         var feedback = this["_opsCheck"](powerType)
         if (feedback[0] !== OK) return feedback
-        if (!this.memory.target) this.memory.target = this["_getTarget"](targetType,powerType)
         if (this.memory.target){
             if (this.usePower(powerType,Game.getObjectById(this.memory.target)) === ERR_NOT_IN_RANGE) {
                 this.travelTo(Game.getObjectById(this.memory.target))
                 return [ERR_NOT_IN_RANGE,NOT_USE_POWER]
-            }else return [OK,USE_POWER]
-        }else return [INVALID_TASK,NOT_USE_POWER]
+            }else {
+                this.memory.target = undefined;
+                return [OK,USE_POWER]
+            }
+        }
     },
     oC(){
         return this["_tUP"](PWR_OPERATE_CONTROLLER,"controller")
@@ -166,12 +170,18 @@ const runExtension = {
             if (feedback[1] !== USE_POWER && this.powers[PWR_GENERATE_OPS]) this.usePower(PWR_GENERATE_OPS);
             if (feedback[0] === ERR_NOT_ENOUGH_RESOURCES) if (this["_withdrawOps"]) return;
             if (feedback[0] === INVALID_TASK) this.memory.task = PLACE_HOLDER
-            if (feedback[0] === OK) return;
+            if (feedback[0] === OK || feedback[0] === ERR_NOT_IN_RANGE) return;
             const basicTaskOrder = ["_enableRoom","_transferSurplus"]
             for (var basicTask of basicTaskOrder) {
                 if (this[basicTask]() === OK) return;
             }
-            this.Invisible();
+            if (configPC.idlePosition[this.name]) {
+                var position = configPC.idlePosition[this.name];
+                if (this.pos.x !== position[0] || this.pos.y !== position[1] || this.pos.roomName !== position[2]) this.travelTo(new RoomPosition(position[0],position[1],position[2]));
+            }else{
+                if (!this.pos.inRangeTo(Game.rooms[this.memory.home].powerSpawn,2)) this.travelTo(Game.rooms[this.memory.home].powerSpawn);
+            }
+            
         }
     }
 }

@@ -12,7 +12,7 @@ class transferInfo{
 }
 module.exports = {
     "W18N22":[],
-    "W19N22":[],
+    "W19N22":[new transferInfo("W18N22",RESOURCE_ENERGY,500000,300000,0,900000)],
     "W22N25":[],
     "W23N25":[],
     "W21N24":[]

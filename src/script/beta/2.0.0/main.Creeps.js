@@ -19,7 +19,7 @@ module.exports = function(){
         if (Game.cpu.bucket < 100) break;
     for (var groupType in creepConfig.groupAcceptedTask){
         if (Game.cpu.bucket < 1000) {
-            var allowedGroups = ["pureTransfer","pureWorker","pureRepairer","pureUpgrader","localHarvest","Defend","Claim","Attack"]
+            var allowedGroups = ["pureTransfer","pureWorker","pureRepairer","pureUpgrader","localHarvest","Defend","Claim","powerHarvest","Defend_observed"]
             if (allowedGroups.indexOf(groupType) < 0) continue;
         }
     for (var groupName in Game.rooms[roomName][groupType]){
@@ -53,7 +53,12 @@ module.exports = function(){
                 if (feedback === FINISH) primaryCreep.finishTask()
                 else if (feedback === ERR_RENEW) primaryCreep.renewTask()
                 else if (feedback === ERR_DELETE) primaryCreep.deleteTask()
-            }else primaryCreep.Invisible()
+            }else {
+                const recycleRoleList = ["transferer"];
+                const recycleGroupTypes = ["remotePickUper"];
+                if (recycleGroupTypes.indexOf(primaryCreep.memory.group.type) >= 0 && recycleRoleList.indexOf(primaryCreep.memory.role) >= 0) primaryCreep.__recycle();
+                else primaryCreep.Invisible();
+            }
         }
 
         for (var i = 1; i < groupRoles.length;i++){
@@ -76,8 +81,12 @@ module.exports = function(){
                 else creep.toDeath(false,false);
                 continue;
             }
-
-            if (!randomPrimaryCreep && reSpawn) {creep.deleteTask();creep.Invisible();continue;}
+            if (!randomPrimaryCreep && reSpawn) {
+                creep.deleteTask();
+                if (creep.store.getUsedCapacity() > 0) creep["__store"]();
+                else creep.Invisible();
+                continue;
+            }
             if (!randomPrimaryCreep && !reSpawn) {
                 if (creep.store.getUsedCapacity() > 0) creep["__store"]();
                 else if (creep["__recycle"]() !== OK) creep.suicide();
@@ -99,8 +108,7 @@ module.exports = function(){
                     if (subTask === "remote"){
                         var from, fromRoom
                         if (groupType === "remoteHarvest") from = "creep"
-                        else if (groupType === "powerHarvest") from = "power"
-                        if (from === "power") fromRoom = primaryTaskInfo.data.targetRoom
+
                         if (from === "creep") fromRoom = primaryTaskInfo.data.targetPos["roomName"]
                             
                         var fingerprint = Game.rooms[creep.memory.home].AddTransferTask(subTask,from,Game.rooms[creep.memory.home].storage.id,undefined,"full",fromRoom,creep.memory.home,1,false,true,true)

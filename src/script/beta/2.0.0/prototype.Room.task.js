@@ -1,5 +1,6 @@
 const utils = require('utils')
-const notRefreshList = ["spawn","_spawn","harvest","_harvest","defend","_defend","attack","_attack","info"]
+const notRefreshList = ["spawn","_spawn","harvest","_harvest","defend","_defend","attack","_attack","info"];
+const notRefreshSubTask = {"transfer":["remote"],"_transfer":["remote"]};
 const taskPriority = require('configuration.taskPriority')
 const INFINITY = 32767
 const roomTaskExtension = {
@@ -10,17 +11,31 @@ const roomTaskExtension = {
         if (!this.memory.task["_" + taskType]) this.memory.task["_" + taskType] = []
     },
     refreshTask(){
-        if (!this.memory.task) this.memory.task = {}
+        if (!this.memory.task) this.memory.task = {};
+        if (!this.memory.task.info) this.memory.task.info = {};
         for (var taskType in this.memory.task){
-            if (notRefreshList.indexOf(taskType) >= 0) continue
+            if (notRefreshList.indexOf(taskType) >= 0) continue;
+            var afterList = [];
             for (var taskFingerprint of this.memory.task[taskType]){
-                if (this.memory.task.info[taskFingerprint]) delete this.memory.task.info[taskFingerprint]
+                const taskInfo = this.memory.task.info[taskFingerprint];
+                if (taskInfo && notRefreshSubTask[taskType] && notRefreshSubTask[taskType].indexOf(taskInfo.subTaskType) >= 0) afterList.push(taskFingerprint);
+                else if (taskInfo) delete this.memory.task.info[taskFingerprint];
             }
-            delete this.memory.task[taskType]
+            this.memory.task[taskType] = afterList;
         }
         for (var taskFingerprint in this.memory.task["info"]) this.refreshSingleTask(taskFingerprint)
         for (var creep of Game.rooms[this.name].creeps) creep.memory.taskFingerprint = null
     //    for (var spawn of Game.rooms[this.name].spawns) spawn.memory.taskFingerPrint = null
+    },
+    clearTaskType(_taskType){
+        if (!this.memory.task) this.memory.task = {}
+        if (!this.memory.task.info) this.memory.task.info = {};
+        for (var fingerprint in this.memory.task.info) {
+            const taskType = this.memory.task.info[fingerprint].taskType;
+            if (taskType === _taskType) delete this.memory.task.info[fingerprint];
+        }
+        delete this.memory.task[_taskType];
+        delete this.memory.task["_" + _taskType];
     },
     clearTask(){
         this.memory.task = {}
@@ -32,9 +47,9 @@ const roomTaskExtension = {
         return false
     },
     refreshSingleTask(fingerprint){
-        if (!this.checkTaskExistence(fingerprint)) return
-        const taskInfo = this.memory.task.info[fingerprint]
-        if (taskInfo.settings.receivedGroupsNum === 0) {
+        if (!this.checkTaskExistence(fingerprint)) return;
+        const taskInfo = this.memory.task.info[fingerprint];
+        if (taskInfo.settings.receivedGroupsNum === 0 && taskInfo.settings.silence !== true) {
             const taskType = taskInfo.taskType;
             this.memory.task[taskType].push(fingerprint);
         }
@@ -133,7 +148,8 @@ const roomTaskExtension = {
                 receivedGroupsNum:groupsNum,
                 workingGroupsNum:0,
                 allGroupsNum:groupsNum,
-                changeable
+                changeable,
+                silence,
             },
             options:{},
             data

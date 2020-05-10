@@ -79,7 +79,7 @@ const utilsCollection = {
         return result
     },
     getComponentsList:function(roomName,role,groupType,availableEnergy,componentsObj){
-        _componentsObj = JSON.parse(JSON.stringify(componentsObj))
+        var _componentsObj = JSON.parse(JSON.stringify(componentsObj))
         if (Game.rooms[roomName].energys.length < 2 && role === "upgrader"){
             for (var component in _componentsObj) _componentsObj[component] = Math.ceil(_componentsObj[component] * 0.5);
         }
@@ -99,18 +99,8 @@ const utilsCollection = {
                 for (var component in _componentsObj) _componentsObj[component] = Math.floor(_componentsObj[component] * 0.5);
             }
         }
-        if (role === "transferer" && groupType === "powerHarvest"){
+        if (role === "transferer" && (groupType === "powerHarvest" || groupType === "remoteTransfer" || groupType === "remotePickUper")){
             for (var component in _componentsObj) _componentsObj[component] = _componentsObj[component] * 2;
-        }
-        if (role === "defender"){
-            // "defender":{carry:10,move:13,"ranged_attack":5,attack:15,heal:5},
-            if (nearCentral.indexOf(roomName) < 0){
-                _componentsObj["carry"] = 6;
-                _componentsObj["move"] = 7;
-                _componentsObj["ranged_attack"] = 0;
-                _componentsObj["attack"] = 6;
-                _componentsObj["heal"] = 2;
-            }
         }
         const energyDisCom = this._getComponentRatio(_componentsObj)
         var result = []

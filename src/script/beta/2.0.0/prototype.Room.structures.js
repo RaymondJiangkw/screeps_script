@@ -26,17 +26,20 @@ Changelog:
 1.7; Added Factory support (line 46)
 */
 
-var roomStructures           = {};
-var roomStructuresExpiration = {};
+var roomStructures                  = {};
+var roomStructuresExpiration        = {};
 
-var roomRepairs              = {};
-var roomRepairsExpiration    = {};
+var roomRepairs                     = {};
+var roomRepairsExpiration           = {};
 
-var roomBuilds               = {};
-var roomBuildsExpiration     = {};
+var roomBuilds                      = {};
+var roomBuildsExpiration            = {};
 
-var roomRuins                = {};
-var roomRuinsExpiration      = {};
+var roomRuins                       = {};
+var roomRuinsExpiration             = {};
+
+var roomHostileStructures           = {};
+var roomHostileStructuresExpiration = {};
 
 const CACHE_TIMEOUT = 50;
 const CACHE_OFFSET  = 4;
@@ -92,6 +95,14 @@ Room.prototype._checkBuildCache = function _checkBuildCache(){
         roomBuildsExpiration[this.name] = Game.time + getCacheExpiration();
         roomBuilds[this.name] = this.find(FIND_CONSTRUCTION_SITES);
         roomBuilds[this.name] = _.map(roomBuilds[this.name],s=>s.id);
+    }
+}
+
+Room.prototype._checkHostileStructureCache = function _checkHostileStructureCache(){
+    if (!roomHostileStructuresExpiration[this.name] || !roomHostileStructures[this.name] || roomHostileStructuresExpiration[this.name] < Game.time){
+        roomHostileStructuresExpiration[this.name] = Game.time + getCacheExpiration();
+        roomHostileStructures[this.name] = this.find(FIND_HOSTILE_STRUCTURES);
+        roomHostileStructures[this.name] = _.map(roomHostileStructures[this.name],s=>s.id);
     }
 }
 
@@ -223,4 +234,25 @@ Object.defineProperty(Room.prototype,"ruins",{
     set:function(){},
     enumerable:false,
     configurable:true
+})
+
+Object.defineProperty(Room.prototype,"hostileStructures",{
+    get:function(){
+        if (this["_hostileStructures"] && this["_hostileStructures_ts"] === Game.time) {
+            return this["_hostileStructures"];
+        }else{
+            this._checkHostileStructureCache();
+            roomHostileStructures[this.name] = _.filter(roomHostileStructures[this.name],s=>Game.getObjectById(s));
+            if (roomHostileStructures[this.name].length > 0){
+                this["_hostileStructures_ts"] = Game.time;
+                return this["_hostileStructures"] = _.map(roomHostileStructures[this.name],Game.getObjectById);
+            }else{
+                this["_hostileStructures_ts"] = Game.time;
+                return this["_hostileStructures"] = [];
+            }
+        }
+    },
+    set:function(){},
+    enumerable:false,
+    configurable:true,
 })

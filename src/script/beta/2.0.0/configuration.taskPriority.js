@@ -3,8 +3,9 @@ const taskPriorityConfiguration = {
         "transferer":{
             "pureTransfer":0,   // Primary
             "remoteHarvest":106,
-            "powerHarvest":106,
-            "remoteTransfer":106
+            "powerHarvest":107,
+            "remoteTransfer":106,
+            "remotePickUper":5,
         },
         "harvester":{           // Primary
             "remoteHarvest":6,
@@ -22,6 +23,12 @@ const taskPriorityConfiguration = {
         },
         "defender":{            // Primary
             "Defend":3
+        },
+        "defender_observed":{
+            "Defend_observed":3,
+        },
+        "defender_reserved":{
+            "Defend_reserved":3,
         },
         "attacker":{            // Primary
             "Attack":7,

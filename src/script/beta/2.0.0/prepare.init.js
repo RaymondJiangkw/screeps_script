@@ -95,12 +95,12 @@ module.exports = function() {
         global.labStructures = {}
         global.labStructures["_expirationTime"] = Game.time + utils.getCacheExpiration(100)
         for (var roomName of global.rooms.my){
-            if (Game.rooms[roomName].labs.length === 0) continue
             global.labStructures[roomName] = {
                 core:[],
                 XGroup:[],
                 YGroup:[]
             }
+            if (Game.rooms[roomName].labs.length === 0) continue
             var minX = Math.min(...(Game.rooms[roomName].labs.map((object)=>object.pos.x)));
             var maxX = Math.max(...(Game.rooms[roomName].labs.map((object)=>object.pos.x)));
             var minY = Math.min(...(Game.rooms[roomName].labs.map((object)=>object.pos.y)));
