@@ -34,6 +34,11 @@ module.exports = function(){
                 primaryCreep.toDeath(true);
                 continue;
             }
+            if (primaryCreep.memory.recycle === true) {
+                if (!primaryCreep.isIdle()) primaryCreep.deleteTask();
+                primaryCreep.__recycle();
+                continue;
+            }
             if (primaryCreep.isIdle()) {
                 if (primaryCreep.store.getUsedCapacity() > 0 && primaryCreep.memory.role === "transferer") primaryCreep["__store"]();
                 else primaryCreep.getTask();
@@ -79,6 +84,11 @@ module.exports = function(){
                 creep.memory.dying = true
                 if (reSpawn || (randomPrimaryCreep && (!randomPrimaryCreep.isIdle() || randomPrimaryCreep.getTask(true)) )  ) creep.toDeath(false,true);
                 else creep.toDeath(false,false);
+                continue;
+            }
+            if (creep.memory.recycle === true) {
+                if (!creep.isIdle()) creep.deleteTask();
+                creep.__recycle();
                 continue;
             }
             if (!randomPrimaryCreep && reSpawn) {

@@ -80,12 +80,9 @@ const utilsCollection = {
     },
     getComponentsList:function(roomName,role,groupType,availableEnergy,componentsObj){
         var _componentsObj = JSON.parse(JSON.stringify(componentsObj))
-        if (Game.rooms[roomName].energys.length < 2 && role === "upgrader"){
-            for (var component in _componentsObj) _componentsObj[component] = Math.ceil(_componentsObj[component] * 0.5);
-        }
-        if (Game.rooms[roomName].controller.level === 8 && role === "upgrader"){
-            for (var component in _componentsObj) _componentsObj[component] = 1;
-        }
+        //if (Game.rooms[roomName].energys.length < 2 && role === "upgrader"){
+        //    for (var component in _componentsObj) _componentsObj[component] = Math.ceil(_componentsObj[component] * 0.5);
+        //}
         const nearCentral = ["W23N25"]
         if (role === "harvester" && groupType === "remoteHarvest"){
             if (nearCentral.indexOf(roomName) < 0){

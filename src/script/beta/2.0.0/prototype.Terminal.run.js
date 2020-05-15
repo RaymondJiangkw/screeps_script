@@ -9,10 +9,10 @@ const randomPrice = function (lower_bound,uppper_bound){
     return lower_bound + Math.random() * (uppper_bound - lower_bound);
 }
 const terminalExtensions = {
-    dealOptimisticResources(orderType,resourceType,amount,settings = {basePrice:undefined,onlyDeal:true}){
+    dealOptimisticResources(orderType,resourceType,amount,settings = {basePrice:undefined,onlyDeal:true,minCredits:0}){
         if (this.cooldown > 0) return ERR_COOLDOWN
         if (settings.onlyDeal === undefined || settings.onlyDeal === null) settings.onlyDeal = true
-
+        if (settings.minCredits === undefined || settings.minCredits === null) settings.minCredits = 0
         var createOrderType = null
         if (orderType === ORDER_SELL) createOrderType = ORDER_BUY;
         if (orderType === ORDER_BUY) createOrderType = ORDER_SELL;
@@ -26,7 +26,7 @@ const terminalExtensions = {
         var marketCondition = that.getPriceBound(resourceType)
         var existingOrder = that.getMyOrder(createOrderType,resourceType)
         if (inBound(optimisticDeal.price,marketCondition[0],marketCondition[1]) || (orderType === ORDER_SELL && optimisticDeal.price <= marketCondition[0]) || (orderType === ORDER_BUY && optimisticDeal.price >= marketCondition[1])) {
-            var maximumDealAmount = Math.min(that.getOptimisticDealAmount(optimisticDeal.id,this.room.name,amount),this.store.getFreeCapacity())
+            var maximumDealAmount = Math.min(that.getOptimisticDealAmount(optimisticDeal.id,this.room.name,amount,settings.minCredits),this.store.getFreeCapacity())
             if (maximumDealAmount === 0) return ERR_NO_AVAILABLE_DEAL
             if (existingOrder) {
                 var order = Game.market.getOrderById(existingOrder)

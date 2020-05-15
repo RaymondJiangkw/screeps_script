@@ -20,7 +20,7 @@ module.exports = function() {
         var towers = _.filter(Game.rooms[roomName].towers,(t)=>t.store.getUsedCapacity(RESOURCE_ENERGY) <= towerConfig.reservedEnergy)
         if (spawns.length > 0) Game.rooms[roomName].AddTransferTask("core","energy","spawns",RESOURCE_ENERGY,"full",undefined,undefined,1,false);
         if (extensions.length > 0) Game.rooms[roomName].AddTransferTask("core","energy","extensions",RESOURCE_ENERGY,"full",undefined,undefined,1,false);
-        if (towers.length > 0) Game.rooms[roomName].AddTransferTask("defense","energy","towers",RESOURCE_ENERGY,"full",undefined,undefined,1,false);
+        if (towers.length > 0) Game.rooms[roomName].AddTransferTask("defense","energy","towers",RESOURCE_ENERGY,"full",undefined,undefined,Infinity,false);
         if (Game.rooms[roomName].powerSpawn && Game.rooms[roomName].powerSpawn.store.getUsedCapacity(RESOURCE_ENERGY) <= powerSpawnConfig.startChargeEnergy) {
             Game.rooms[roomName].AddTransferTask("advanced","energy",Game.rooms[roomName].powerSpawn.id,RESOURCE_ENERGY);
         }
@@ -111,8 +111,8 @@ module.exports = function() {
                         if (mode === "default") skip = lackRefills[0] || lackRefills[1];
 
                         if (skip) {
-                            var allowable = labConfig[roomName].allowedCompounds.indexOf(resourceType) > 0;
-                            var necessary1 = (!global.labs[roomName][resourceType] || global.labs[roomName][resourceType].length === 0) && global.labs[roomName]["vacant"].length > 0;
+                            var allowable = labConfig[roomName].allowedCompounds.indexOf(resourceType) >= 0;
+                            var necessary1 = (!global.labs[roomName][resourceType] || global.labs[roomName][resourceType].length === 0) && (global.labs[roomName]["vacant"] && global.labs[roomName]["vacant"].length > 0);
                             var necessary2 = global.labs[roomName][resourceType] && global.labs[roomName][resourceType].length > 0 && global.labs[roomName][resourceType][0].store[resourceType] < 30;
                             var possible = global.resources[roomName][resourceType] && global.resources[roomName][resourceType]["utils"] >= 30;
                             if (allowable && possible && (necessary1 || necessary2)) {
@@ -262,7 +262,7 @@ module.exports = function() {
                     if (!global.resources[roomName][resourceType]) continue
                     if (global.resources[roomName][resourceType]["total"] <= reservedAmount) continue
 
-                    const sellingAmount = global.resources[roomName][resourceType]["total"] - reservedAmount
+                    var sellingAmount = global.resources[roomName][resourceType]["total"] - reservedAmount
                     var checkOrders = ["factory","labs","storage"]
                     for (var retrievedStructure of checkOrders){
                         if (global.resources[roomName][resourceType][retrievedStructure] === 0) continue
@@ -308,7 +308,8 @@ module.exports = function() {
             for (var structure of checkOrders){
                 var availableAmount = global.resources[hostRoom][sendInfo.resourceType][structure]
                 if (availableAmount > 0) {
-                    Game.rooms[hostRoom].AddTransferTask("advanced",structure,Game.rooms[hostRoom].terminal.id,sendInfo.resourceType,Math.min(transferAmount,availableAmount))
+                    Game.rooms[hostRoom].AddTransferTask("advanced",structure,Game.rooms[hostRoom].terminal.id,sendInfo.resourceType,Math.min(transferAmount,availableAmount));
+                    break;
                 }
             }
         }

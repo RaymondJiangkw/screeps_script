@@ -64,7 +64,8 @@ const runExtension = {
         return [OK,undefined]
     },
     _getTarget(targetType,filterEffect){
-        var target_s = this.room[targetType]
+        var targetRoom = this.memory.targetRoom || this.room.name;
+        var target_s = Game.rooms[targetRoom][targetType];
         if (target_s === undefined || target_s.length === 0) return undefined
         if (!Array.isArray(target_s)) target_s = [target_s]
         target_s = _.filter(target_s,(structure)=>{
@@ -88,6 +89,7 @@ const runExtension = {
                 return [ERR_NOT_IN_RANGE,NOT_USE_POWER]
             }else {
                 this.memory.target = undefined;
+                this.memory.targetRoom = undefined;
                 return [OK,USE_POWER]
             }
         }
@@ -121,6 +123,25 @@ const runExtension = {
     },
     rM(){
         return this["_tUP"](PWR_REGEN_MINERAL,"mineral")
+    },
+    oE(){
+        if (!this.powers[PWR_OPERATE_EXTENSION] || this.powers[PWR_OPERATE_EXTENSION].cooldown > 0) return [INVALID_TASK,NOT_USE_POWER];
+        if (this.room.energyAvailable / this.room.energyCapacityAvailable <= 0.8) {
+            var fillEnergy = this.room.energyCapacityAvailable * POWER_INFO[PWR_OPERATE_EXTENSION].effect[this.powers[PWR_OPERATE_EXTENSION].level];
+            if (!this.memory.target) {
+                var chosenObject = undefined;
+                if (this.room.factory.store[RESOURCE_ENERGY] >= fillEnergy) chosenObject = this.room.factory;
+                if (this.room.storage.store[RESOURCE_ENERGY] >= fillEnergy) chosenObject = this.room.storage;
+                if (this.room.terminal.store[RESOURCE_ENERGY] >= fillEnergy) chosenObject = this.room.terminal;
+                if (chosenObject) this.memory.target = chosenObject.id;
+                else return [INVALID_TASK,NOT_USE_POWER];
+            }
+            return this["_tUP"](PWR_OPERATE_EXTENSION,"storage");
+        }else {
+            this.memory.target = undefined;
+            this.memory.targetRoom = undefined;
+        }
+        return [INVALID_TASK,NOT_USE_POWER];
     },
     _renew(){
         if (this.room.powerSpawn && utils.ownRoom(this.room.name)){
@@ -168,7 +189,7 @@ const runExtension = {
             }
             var feedback = this[this.memory.task]()
             if (feedback[1] !== USE_POWER && this.powers[PWR_GENERATE_OPS]) this.usePower(PWR_GENERATE_OPS);
-            if (feedback[0] === ERR_NOT_ENOUGH_RESOURCES) if (this["_withdrawOps"]) return;
+            if (feedback[0] === ERR_NOT_ENOUGH_RESOURCES) if (this["_withdrawOps"]() === OK) return;
             if (feedback[0] === INVALID_TASK) this.memory.task = PLACE_HOLDER
             if (feedback[0] === OK || feedback[0] === ERR_NOT_IN_RANGE) return;
             const basicTaskOrder = ["_enableRoom","_transferSurplus"]

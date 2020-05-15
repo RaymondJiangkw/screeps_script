@@ -7,7 +7,7 @@ const creepConfiguration = {
         "repairer":{work:5,carry:3,move:4},
         "defender":{move:23,"ranged_attack":5,attack:15,heal:5},
         "defender_reserved":{move:12,"ranged_attack":5,attack:5,heal:2},
-        "defender_observed":{attack:5,move:25,"ranged_attack":15,heal:5},
+        "defender_observed":{tough:3,attack:2,move:25,"ranged_attack":15,heal:5},
         "defender_observed_servant":{attack:5,move:25,"ranged_attack":15,heal:5},
         "attacker":{move:25,attack:25},
         "healer":{move:16,heal:16},
@@ -35,6 +35,9 @@ const creepConfiguration = {
         },
         "worker":{
             "pureWorker":["KH"]
+        },
+        "defender_observed":{
+            "Defend_observed":["LO","LHO2","XLHO2","GO","GHO2","XGHO2"]
         }
     },
     groupAcceptedTask:{

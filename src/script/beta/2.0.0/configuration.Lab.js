@@ -5,25 +5,25 @@ const labConfiguration = {
     leastTransferAmount:50,
     "W22N25":{
         mode:"default",
-        allowedCompounds:["LH2O","XLH2O","KH2O","XKH2O"],
+        allowedCompounds:["LH2O","XLH2O","KH2O","XKH2O","XLHO2","XZHO2","XUH2O"],
         reverse:["GO","ZH","UH","KO"],
-        default:["KH","OH","KH2O","XKH2O"],
+        default:["KH","ZO","UH","OH","ZHO2","KH2O","UH2O","XUH2O","XZHO2","XKH2O"],
         focus:undefined,
         clear:undefined
     },
     "W23N25":{
         mode:"default",
-        allowedCompounds:["KH"],
+        allowedCompounds:["KH","XKHO2"],
         reverse:["GO"],
-        default:["KH"],
+        default:["KH","KO","OH","KHO2","XKHO2"],
         focus:undefined,
         clear:undefined
     },
     "W21N24":{
         mode:"default",
-        allowedCompounds:["KH","KH2O"],
+        allowedCompounds:["KH2O","XGHO2"],
         reverse:["GO","ZH","UH","KO"],
-        default:["KH"],
+        default:["KH","OH","GHO2","XGHO2"],
         focus:undefined,
         clear:undefined
     },

@@ -39,6 +39,7 @@ const spawnTaskExtension = {
         const availableEnergy = this.room.energyAvailable
         var components = utils.getComponentsList(this.room.name,taskInfo.data.memory.role,taskInfo.data.memory.group.type,availableEnergy,creepConfig.components[taskInfo.data.memory.role])
         if ((taskInfo.data.memory.role === "attacker" || taskInfo.data.memory.role === "healer") && this.room.energyAvailable / this.room.energyCapacityAvailable < 0.8) return this.renewTask();
+        if (taskInfo.data.memory.role === "defender_observed" && this.room.energyAvailable / this.room.energyCapacityAvailable < 0.4) return this.renewTask();
         var feedback = this.spawnCreep(components,name,{memory:taskInfo.data.memory})
         if (feedback === OK) {
             Game.rooms[this.room.name].finishTask(this.memory.taskFingerPrint)

@@ -67,7 +67,7 @@ module.exports = function () {
                             if (Drole !== 0) return Drole
                             if (DSituation !== 0) return DSituation
                         })
-                        priority = _.uniq(priority,true,"score")
+                        // priority = _.uniq(priority,true,"score")
                         for (var i = 0; i < Game.rooms[roomName].towers.length; i++) Game.rooms[roomName].towers[i].attack(Game.getObjectById(priority[Math.floor(i + Math.random()) % priority.length].id))
                     }
                 }
@@ -79,7 +79,7 @@ module.exports = function () {
                     if (desiredGoods === "interval") continue;
                     if (Game.rooms[roomName].terminal.cooldown !== 0) break;
                     if (Game.market.credits <= configTerminal.mostDesiredGoods[desiredGoods]["minCredits"]) continue
-                    Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,desiredGoods,undefined,{basePrice:configTerminal.mostDesiredGoods[desiredGoods]["maxPrice"],onlyDeal:true})
+                    Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,desiredGoods,undefined,{basePrice:configTerminal.mostDesiredGoods[desiredGoods]["maxPrice"],onlyDeal:true,minCredits:configTerminal.mostDesiredGoods[desiredGoods]["minCredits"]})
                 }
             }
             if (Game.time % configTerminal.terminalCheckInterval === 0){

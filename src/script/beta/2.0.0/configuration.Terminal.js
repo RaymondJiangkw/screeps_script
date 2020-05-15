@@ -12,25 +12,25 @@ const terminalConfiguration = {
         "W18N22":0
     },
     sellingMineral:{
-        "W22N25":10000,
+        "W22N25":0,
         "W23N25":0,
-        "W21N24":10000,
+        "W21N24":0,
         "W19N22":10000,
         "W18N22":0
     },
     sellingGoods:{
         //[(resourceType),(reservedAmount),(minSellAmount)]
-        "W22N25":[],
+        "W22N25":[[RESOURCE_SWITCH,0,25]],
         "W23N25":[],
-        "W21N24":[],
+        "W21N24":[[RESOURCE_BATTERY,1000,1000]],
         "W19N22":[],
         "W18N22":[]
     },
     buyingGoods:{
         //[(resourceType),(beginBuyingAmount),(endBuyingAmount)]
         "W22N25":[[RESOURCE_OXYGEN,2500,5000],[RESOURCE_LEMERGIUM,2500,5000],[RESOURCE_UTRIUM,2500,5000],[RESOURCE_ZYNTHIUM,2500,5000],[RESOURCE_ENERGY,100000,150000]],
-        "W23N25":[],
-        "W21N24":[],
+        "W23N25":[[RESOURCE_OXYGEN,2500,5000]],
+        "W21N24":[[RESOURCE_OXYGEN,2500,5000]],
         "W19N22":[],
         "W18N22":[]
     },

@@ -34,16 +34,18 @@ const marketExtension = {
         }
         return availableOrders
     },
-    getMaximumDealAmount(orderId,home){
-        if (!Game.rooms[home].terminal) return null
+    getMaximumDealAmount(orderId,home,minCredits = 0){
+        if (!Game.rooms[home].terminal) return null;
+        if (Game.market.credits <= minCredits) return 0;
         var order = Game.market.getOrderById(orderId)
         var energyCost = Game.market.calcTransactionCost(1,home,order.roomName)
         var energyStore = Game.rooms[home].terminal.store[RESOURCE_ENERGY]
-        return Math.min(order.amount,Math.floor(energyStore / energyCost),Math.floor(Game.market.credits / order.price))
+        return Math.min(order.amount,Math.floor(energyStore / energyCost),Math.floor(Game.market.credits / order.price),(Game.market.credits - minCredits) / order.price);
     },
-    getOptimisticDealAmount(orderID,home,amount){
-        if (!amount) return this.getMaximumDealAmount(orderID,home)
-        return Math.min(amount,this.getMaximumDealAmount(orderID,home))
+    getOptimisticDealAmount(orderID,home,amount,minCredits = 0){
+        if (Game.market.credits <= minCredits) return 0;
+        if (!amount) return this.getMaximumDealAmount(orderID,home,minCredits)
+        return Math.min(amount,this.getMaximumDealAmount(orderID,home,minCredits))
     },
     getMyOrder(orderType,resourceType){
         for (var order in Game.market.orders){

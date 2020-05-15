@@ -25,10 +25,10 @@ const taskPriorityConfiguration = {
             "Defend":3
         },
         "defender_observed":{
-            "Defend_observed":3,
+            "Defend_observed":5,
         },
         "defender_reserved":{
-            "Defend_reserved":3,
+            "Defend_reserved":5,
         },
         "attacker":{            // Primary
             "Attack":7,
