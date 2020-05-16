@@ -3,7 +3,7 @@
  */
 /**
  * The Extension of Task -> Creep.prototype.
- * @extends Creep
+ * @memberof Creep
  */
 const creepsExtensions = {
 
