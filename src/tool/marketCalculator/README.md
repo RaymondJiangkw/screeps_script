@@ -141,7 +141,7 @@ This function is mainly for calculating the **additional** components of commodi
 // Calculate additional resources are needed to produce specific commodity based on what you have.
 
 //   Suppose you have 100 energy and 500 silicon.
->>> MarketCal.commodity.component(RESOURCE_SWITCH,{amount:2,stopResources:[ [RESOURCE_ENERGY,10000], [RESOURCE_SILICON,500] ]});
+>>> MarketCal.commodity.component(RESOURCE_SWITCH,{amount:2,stopResources:[ [RESOURCE_ENERGY,100], [RESOURCE_SILICON,500] ]});
 {
     "components":{
         "O":190,
@@ -185,7 +185,7 @@ This function is mainly for calculating the **additional** components of commodi
         "U":2175
     },
     "cooldown":2905,
-    "recipes":[        // Notice that "microship" does appear in the "recipes" but still apear in the "components".
+    "recipes":[        // Notice that "microship" does not appear in the "recipes" but still apear in the "components".
         ["utrium_bar",435],
         ["reductant",425],
         ["wire",267],
@@ -281,7 +281,7 @@ This function is mainly for calculating the **additional** components of commodi
 This function is used to calculate the expected revenues of producing the commodity based on information about resources.
 
 ```
-// Perhaps you want to know how many credits can be earned by producing level 2 commodity with all the very basic materials bought in the market.
+// Perhaps you want to know how many credits can be earned by producing level 5 commodity with all the very basic materials bought in the market.
 >>> MarketCal.commodity.revenue(RESOURCE_DEVICE);
 {
     "revenue":101719.032,
@@ -481,7 +481,7 @@ This function will calculate the most profittable commodity you can produce **(o
     ]
 }
 
-// Perhaps you do not have level 1~5 factories, so you only want to consider those you can produce.
+// Perhaps you do not have level 2~5 factories, so you only want to consider those you can produce.
 >>> MarketCal.commodity.bestCommodity([],{detectLevel:true});
 {
     "cooldown":24,
