@@ -37,6 +37,8 @@ require("tool.marketCalculator");
 <a name = "..Example.rawComponent"></a>
 ### [rawComponent(commodity, [settings])](#marketCalculator..rawComponent)
 
+This function is mainly used for calculating the components to produce the commdity. 
+
 ```
 // Reduce commodity to very basic resourceTypes.
 >>> MarketCal.commodity.rawComponent(RESOURCE_DEVICE);
@@ -132,6 +134,9 @@ require("tool.marketCalculator");
 
 <a name = "..Example.component"></a>
 ### [component(commodity, [settings])](#marketCalculator..component)
+
+This function is mainly for calculating the **additional** components of commodity.
+
 ```
 // Calculate additional resources are needed to produce specific commodity based on what you have.
 
@@ -273,6 +278,8 @@ require("tool.marketCalculator");
 <a name = "..Example.revenue"></a>
 ### [revenue(commodity, [settings])](#marketCalculator..revenue)
 
+This function is used to calculate the expected revenues of producing the commodity based on information about resources.
+
 ```
 // Perhaps you want to know how many credits can be earned by producing level 2 commodity with all the very basic materials bought in the market.
 >>> MarketCal.commodity.revenue(RESOURCE_DEVICE);
@@ -410,6 +417,9 @@ require("tool.marketCalculator");
 ```
 <a name = "..Example.bestCommodity"></a>
 ### [bestCommodity([stopResources], [settings])](#marketCalculator..bestCommodity)
+
+This function will calculate the most profittable commodity you can produce **(only 1)**, which I will explain the [API](#..API).
+
 ```
 // This function is the most powerful and the most expensive.
 // Perhaps you want to know based on what I have, what is the most profitable commodity I can produce, considering buying lacking ones in the market?
@@ -618,7 +628,7 @@ This function can be ***expensive***, but mostly ***cheap***.
 <a name="marketCalculator..component"></a>
 
 ### MarketCal.commodity.component(commodity, [settings]) ⇒ [<code>CommodityInformation</code>](#CommodityInformation) \| <code>Number</code>
-This function is mainly for calculating the components of commodity.
+This function is mainly for calculating the **additional** components of commodity.
 
 Notice that 
 - This function will calculate based on `storage`, `terminal` by default, if you set `settings.existenceBased` = true.
