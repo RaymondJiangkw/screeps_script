@@ -572,7 +572,7 @@ This function will calculate the most profittable commodity you can produce **(o
 
 * [MarketCal.commodity](#marketCalculator)
     * [.rawComponent(commodity, [settings])](#marketCalculator..rawComponent) ⇒ [<code>CommodityInformation</code>](#CommodityInformation) \| <code>Number</code>
-    * [.revenue(commodity, [settings])](#marketCalculator..revenue) ⇒ <code>Object</code> \| [<code>Revenue</code>](#Revenue)
+    * [.revenue(commodity, [settings])](#marketCalculator..revenue) ⇒ <code>Number</code> \| [<code>Revenue</code>](#Revenue)
     * [.component(commodity, [settings])](#marketCalculator..component) ⇒ [<code>CommodityInformation</code>](#CommodityInformation) \| <code>Number</code>
     * [.bestCommodity(stopResources, [settings])](#marketCalculator..bestCommodity) ⇒ [<code>bestCommodity</code>](#bestCommodity)
 
