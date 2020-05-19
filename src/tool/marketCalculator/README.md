@@ -665,7 +665,7 @@ So, considering above, I decide to make this function only to calculate one.
 Notice that 
 - This function will **not** consider those commodities which require some resources lacking market data (shortage of supply), that you do not have either.
 - This function will not detect the situation of your factorys' level by default, but you can turn it on by let `settings.detectLevel` = true.
-- This function will calculate all categories (including *metal*, *silicon*, *mist*, *biomass*, *compressed*, *basic(regional basic commodity)* ) commodities by default, this can be time-consuming and waste **CPU**, given you just harvest and produce one type of commodity, you can change it in `setting.series`.
+- This function will calculate all categories (including *metal*, *silicon*, *mist*, *biomass*, *compressed*, *basic(metal, crystal, liquid)* ) commodities by default, this can be time-consuming and waste **CPU**, given you just harvest and produce one type of commodity, you can change it in `setting.series`.
 - This function will not take the cooldown time into account when evalutes the revenue of commodity by default, since it's usual the case for most players that the restriction of producing commodities is GPL, which makes the factory idle in most times.
 
 This function is usually ***expensive***.
