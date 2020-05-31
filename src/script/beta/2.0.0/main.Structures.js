@@ -7,15 +7,17 @@ const configFactory = require('configuration.Factory')
 const constants = require('constants')
 const utils = require('utils')
 const ADVANCED_BUCKET_LIMIT = 5000;
+const enemies_appear_time = {};
+const enemies_last_hits = {};
 module.exports = function () {
     for (var roomName of global.rooms.my){
-        if (Game.rooms[roomName].enemies.length > 0){
-            var enemies = _.filter(Game.rooms[roomName].enemies,(e)=>utils.analyseCreep(e,false,true) !== "harmless");
-            enemies = _.filter(enemies,(c)=>c.owner.username !== "Invader");
-            if (enemies.length > 0) {
-                for (var rampart of Game.rooms[roomName].ramparts) rampart.setPublic(false);
-            }
-        }
+        //if (Game.rooms[roomName].enemies.length > 0){
+        //    var enemies = _.filter(Game.rooms[roomName].enemies,(e)=>utils.analyseCreep(e,false,true) !== "harmless");
+        //    enemies = _.filter(enemies,(c)=>c.owner.username !== "Invader");
+        //    if (enemies.length > 0) {
+        //        for (var rampart of Game.rooms[roomName].ramparts) rampart.setPublic(false);
+        //    }
+        //}
         if (Game.rooms[roomName].observer) {
             if (!global.observerCur) global.observerCur = {}
             if (!global.observerCur[roomName]) global.observerCur[roomName] = 0
@@ -41,9 +43,15 @@ module.exports = function () {
                 for (var tower of Game.rooms[roomName].towers) tower.run();
             }else{
                 if (Game.rooms[roomName].enemies.length <= 2){
-                    var enemies = _.shuffle(_.filter(Game.rooms[roomName].enemies,(e)=>utils.analyseCreep(e,false,true) !== "harmless"));
+                    var _enemies = _.shuffle(_.filter(Game.rooms[roomName].enemies,(e)=>utils.analyseCreep(e,false,true) !== "harmless"));
+                    var enemies = _.filter(_enemies,(e) =>!enemies_appear_time[e.id] || enemies_appear_time[e.id] === Game.time - 1);
+                    enemies = _.filter(enemies,(e) => !enemies_last_hits[e.id] || enemies_last_hits[e.id] - e.hits > 0 || e.owner.username === "Invader");
+                    for (const enemy of _enemies) enemies_appear_time[enemy.id] = Game.time;
+                    for (const enemy of _enemies) enemies_last_hits[enemy.id] = enemy.hits;
                     for (var i = 0; i < Game.rooms[roomName].towers.length; i++) Game.rooms[roomName].towers[i].attack(enemies[(i % enemies.length)])
+                    if (enemies.length === 0) for (var tower of Game.rooms[roomName].towers) tower.run();
                 }else{
+                    if ((roomName === "W18N22" || roomName === "W19N22") && _.filter(Game.rooms[roomName].enemies,e => e.owner.username !== "Invader").length > 1) Game.rooms[roomName].controller.activateSafeMode();
                     var roles = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c,false,true));
                     if (roles.indexOf("attacker") >= 0){
                         var avgDistances = utils.getCreepsRange(Game.rooms[roomName].enemies)
@@ -86,9 +94,9 @@ module.exports = function () {
                 if (configSend[roomName] && Game.time % configTerminal.terminalSendInterval === 0){
                     for (var sendInfo of configSend[roomName]){
                         if (Game.rooms[roomName].terminal.cooldown > 0) break
-                        if (!Game.rooms[sendInfo.targetRoom].terminal) continue
-                        if (Game.rooms[sendInfo.targetRoom].terminal.store.getUsedCapacity() >= sendInfo.targetStopCapacity) continue
-                        if (Game.rooms[sendInfo.targetRoom].terminal.store[sendInfo.resourceType] >= sendInfo.targetStopAmount) continue
+                        if (Game.rooms[sendInfo.targetRoom] && !Game.rooms[sendInfo.targetRoom].terminal) continue
+                        if (Game.rooms[sendInfo.targetRoom] && Game.rooms[sendInfo.targetRoom].terminal.store.getUsedCapacity() >= sendInfo.targetStopCapacity) continue
+                        if (Game.rooms[sendInfo.targetRoom] && Game.rooms[sendInfo.targetRoom].terminal.store[sendInfo.resourceType] >= sendInfo.targetStopAmount) continue
                         if (Game.rooms[roomName].terminal.store[sendInfo.resourceType] < sendInfo.baseAmount + sendInfo.sendAmount) continue
                         Game.rooms[roomName].terminal.send(sendInfo.resourceType,sendInfo.sendAmount,sendInfo.targetRoom,`Send the aid items ${sendInfo.resourceType} from ${roomName}`);
                     }
@@ -134,7 +142,7 @@ module.exports = function () {
                             }else{
                                 var existingAmount = Game.rooms[roomName].terminal.store["energy"]
                                 if (existingAmount > beginBuyingAmount) continue;
-                                Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,RESOURCE_ENERGY,endBuyingAmount - existingAmount);
+                                Game.rooms[roomName].terminal.dealOptimisticResources(ORDER_SELL,RESOURCE_ENERGY,endBuyingAmount - existingAmount,{onlyDeal:false});
                             }
                         }
                     }

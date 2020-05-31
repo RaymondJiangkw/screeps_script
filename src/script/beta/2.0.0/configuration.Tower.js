@@ -9,9 +9,9 @@ const towerConfiguration = {
         "3":0,
         "4":0.01,
         "5":0.01,
-        "6":0.01,
+        "6":0.05,
         "7":0.01,
-        "8":0.004
+        "8":0.01
     },
     "wall":{
         "0":0,
@@ -20,11 +20,11 @@ const towerConfiguration = {
         "3":0,
         "4":0.0001,
         "5":0.0001,
-        "6":0.0001,
-        "7":0.0001,
-        "8":0.00004
+        "6":0.01,
+        "7":0.01,
+        "8":0.01
     },
-    fullyRepair:[],
+    fullyRepair:["W21N24"],
     defense:{
         priorityRole:{
             harmless:3,

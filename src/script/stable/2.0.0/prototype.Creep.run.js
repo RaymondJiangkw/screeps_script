@@ -29,7 +29,7 @@ const creepsExtensions = {
     Withdraw(target,targetPos,resourceType,amount){
         if (targetPos && this.adjMove(targetPos) === ERR_NOT_IN_RANGE) return OK;
         if (amount === "full" || amount === "exhaust") amount = undefined;
-        let amount = Math.min(amount || Infinity,this.store.getFreeCapacity(),target.store[resourceType] || Infinity);
+        amount = Math.min(amount || Infinity,this.store.getFreeCapacity(),target.store[resourceType] || Infinity);
         if (resourceType) return this.withdraw(target,resourceType,amount);
         else for (const carry in target.store) return this.withdraw(target,carry,amount);
         return ERR_NOT_ENOUGH_RESOURCES;
@@ -40,87 +40,60 @@ const creepsExtensions = {
      * Notice that creep will try to get energy at where it is.
      * @param {String}           identity       Identity for taskType.
      * @param {String}           subIdentity    Sub-Identity for subTaskType.
+     * @param {String}           roomName       The name of room.
      * @param {Number|undefined} amount         Amount, allowing for undefined, indicating "all".
      * @returns {Number} OK | ERR_NOT_FOUND | ERR_FULL
      */
-    _getEnergy(identity,subIdentity,amount) {
+    _getEnergy(identity,subIdentity,roomName,amount) {
         // Try to get Target for energy.
-        if (!this.memory.getTargetId || !this.memory.getTargetPos) {
-            // Position Compare Function, in order to get closet target for energy.
-            const posCmp = (a,b) => a.pos.getRangeTo(this) - b.pos.getRangeTo(this);
-            /** This function is used for check whether the [structure] has more than [amount] energy, return [structure] or undefined, otherwise.*/
-            const hasEnergy = (structure,amount = 0) => {
-                if (!structure || structure.store[RESOURCE_ENERGY] <= amount) return undefined;
-                return structure;
-            }
-            // These check can be time-consuming and useless, because there are priority among them.
-            // And if one which enjoys higher priority exists, those, having lower priority, do not need to be computed.
-            // But in order to keep the code tidy, I place all these check before choose.
-            let   chosenObject                =   undefined;
-            // Check for containers.
-            const hasEnergyContainers         = _.filter(this.room.containers, c => c.store[RESOURCE_ENERGY] > 0).sort(posCmp);
-            // Check for "good" containers, which have enough energy.
-            const hasEnoughEnergyContainers   = _.filter(hasEnergyContainers,c => c.store[RESOURCE_ENERGY] >= (amount || this.store.getFreeCapacity())).sort(posCmp);
-            // Dropped energys.
-            const droppedEnergys              = this.room.droppedEnergys.sort(posCmp);
-            // Ruins containing energy.
-            const ruins                       = _.filter(this.room.ruins,r => r.store[RESOURCE_ENERGY] > 0).sort(posCmp);
-            // Sources for harvesting.
-            const sources                     = _.filter(this.room.energys,e => e.energy > 0).sort(posCmp);
-            // Special case of 'upgrading', "lock" to link if possible (Emitting "from" and "to" links both exist).
-            if (identity === "upgradeController" && global.info.links[this.memory.home].resources.length > 0) chosenObject = Game.getObjectById(global.info.links[this.memory.home].upgrade[0]);
-            // Special case of 'build' and 'repair'.
-            if (identity === "build" || identity === "repair") {
-                // Good container is the first choice.
-                chosenObject = hasEnoughEnergyContainers[0];
-                // Utilize the "storage" and "terminal" if they have more energy than that should be reserved.
-                if (identity === "build") chosenObject = chosenObject || hasEnergy(this.room.storage,buildConfig.baseReservedEnergy) || hasEnergy(this.room.terminal,terminalConfig.baseReservedEnergy);
-                // Consider the case of remote "build" or "repair".
-                if (this.room.name !== this.memory.home) chosenObject = chosenObject || droppedEnergys[0] || ruins[0] || sources[0];
-            }
-            if (identity === "transfer") {
-                // "core" Task has the privilege of utilizing "storage", "terminal" or "factory", if the energy situation is bad.
-                if (subIdentity === "core") {
-                    if (this.room.energyAvailable / this.room.energyCapacityAvailable <= ROOM_ENERGY_DANGER_RATIO) chosenObject = hasEnergy(this.room.terminal) || hasEnergy(this.room.storage) || hasEnergy(this.room.factory);
-                }
-                // "defense" Task has the privilege of utilizing "storage", "terminal" or "factory".
-                if (subIdentity === "defense") {
-                    chosenObject = hasEnergy(this.room.storage) || hasEnergy(this.room.terminal) || hasEnergy(this.room.factory);
-                }
-                chosenObject = chosenObject || _.filter(hasEnoughEnergyContainers,c=>c.pos.getRangeTo(this) <= ENERGY_CONTAINER_MAX_RANGE)[0];
-            }
-            // Common check for energy-getting target.
-            if (!chosenObject) chosenObject = hasEnoughEnergyContainers[0] || hasEnergyContainers[0] || hasEnergy(this.room.storage) || hasEnergy(this.room.terminal);
-            if (chosenObject) [this.memory.getTargetId,this.memory.getTargetPos] = [chosenObject.id,utils.getPos(chosenObject.pos)];
-            else return ERR_NOT_FOUND;
+        // Position Compare Function, in order to get closet target for energy.
+        const posCmp = (a,b) => a.pos.getRangeTo(this) - b.pos.getRangeTo(this);
+        /** This function is used for check whether the [structure] has more than [amount] energy, return [structure] or undefined, otherwise.*/
+        const hasEnergy = (structure,amount = 0) => {
+            if (!structure || structure.store[RESOURCE_ENERGY] <= amount) return undefined;
+            return structure;
         }
-        if (this.memory.getTargetId && this.memory.getTargetPos) {
-            if (this.adjMove(this.memory.getTargetPos) === ERR_NOT_IN_RANGE) return OK;
-            const target = Game.getObjectById(this.memory.getTargetId);
-            // Ensure Validity.
-            if (!target) {
-                [this.memory.getTargetId,this.memory.getTargetPos] = [undefined,undefined];
-                return OK;
-            }
-            let feedback = OK;
-            // Case of structure which is withdrawable.
-            if (target.store) feedback = this.Withdraw(target,null,RESOURCE_ENERGY,amount);
-            // Case of dropped Energy.
-            else if (target.amount) feedback = this.pickup(target) | ERR_NOT_ENOUGH_RESOURCES;
-            // Case of source.
-            else feedback = this.Harvest(target);
-            // Reset the getTarget.
-            switch (feedback) {
-                case OK:
-                    return OK;
-                case ERR_FULL:
-                    return ERR_FULL;
-                case ERR_NOT_ENOUGH_RESOURCES:
-                    [this.memory.getTargetId,this.memory.getTargetPos] = [undefined,undefined];
-                default:
-                    return OK;
-            }
+        const room = Game.rooms[roomName];
+        // These check can be time-consuming and useless, because there are priority among them.
+        // And if one which enjoys higher priority exists, those, having lower priority, do not need to be computed.
+        // But in order to keep the code tidy, I place all these check before choose.
+        let   chosenObject                =   undefined;
+        // Check for containers.
+        const hasEnergyContainers         = _.filter(room.containers, c => c.store[RESOURCE_ENERGY] > 0).sort(posCmp);
+        // Check for "good" containers, which have enough energy.
+        const hasEnoughEnergyContainers   = _.filter(hasEnergyContainers,c => c.store[RESOURCE_ENERGY] >= (amount || this.store.getFreeCapacity())).sort(posCmp);
+        // Dropped energys.
+        const droppedEnergys              = room.droppedEnergys.sort(posCmp);
+        // Ruins containing energy.
+        const ruins                       = _.filter(room.ruins,r => r.store[RESOURCE_ENERGY] > 0).sort(posCmp);
+        // Sources for harvesting.
+        const sources                     = _.filter(room.energys,e => e.energy > 0).sort(posCmp);
+        // Special case of 'upgrading', "lock" to link if possible (Emitting "from" and "to" links both exist).
+        if (identity === "upgradeController" && global.links[this.memory.home].resources.length > 0) chosenObject = Game.getObjectById(global.links[this.memory.home].upgrade[0]);
+        // Special case of 'build' and 'repair'.
+        if (identity === "build" || identity === "repair") {
+            // Good container is the first choice.
+            chosenObject = hasEnoughEnergyContainers[0];
+            // Utilize the "storage" and "terminal" if they have more energy than that should be reserved.
+            if (identity === "build") chosenObject = chosenObject || hasEnergy(room.storage,buildConfig.baseReservedEnergy) || hasEnergy(room.terminal,terminalConfig.baseReservedEnergy);
+            // Consider the case of remote "build" or "repair".
+            if (room.name !== this.memory.home) chosenObject = chosenObject || droppedEnergys[0] || ruins[0] || sources[0];
         }
+        if (identity === "transfer") {
+            // "core" Task has the privilege of utilizing "storage", "terminal" or "factory", if the energy situation is bad.
+            if (subIdentity === "core") {
+                if (room.energyAvailable / room.energyCapacityAvailable <= ROOM_ENERGY_DANGER_RATIO) chosenObject = hasEnergy(room.terminal) || hasEnergy(room.storage) || hasEnergy(room.factory);
+            }
+            // "defense" Task has the privilege of utilizing "storage", "terminal" or "factory".
+            if (subIdentity === "defense") {
+                chosenObject = hasEnergy(room.storage) || hasEnergy(room.terminal) || hasEnergy(room.factory);
+            }
+            chosenObject = chosenObject || _.filter(hasEnoughEnergyContainers,c=>c.pos.getRangeTo(this) <= ENERGY_CONTAINER_MAX_RANGE)[0];
+        }
+        // Common check for energy-getting target.
+        if (!chosenObject) chosenObject = hasEnoughEnergyContainers[0] || hasEnergyContainers[0] || hasEnergy(room.storage) || hasEnergy(room.terminal);
+        if (chosenObject) return [chosenObject.id,utils.getPos(chosenObject.pos)];
+        else return ERR_NOT_FOUND;
     },
     /**
      * Get the Resource.
@@ -128,74 +101,32 @@ const creepsExtensions = {
      * Notice that creep will try to get resources at its home.
      * @param {String}           identity       Identity for taskType.
      * @param {String}           subIdentity    Sub-Identity for subTaskType.
+     * @param {String}           roomName       The name of room.
      * @param {String}           resourceType   One of RESOURCE_*.
      * @param {Number|undefined} amount         Amount, allowing for undefined, indicating "all".
      * @returns {Number} OK | ERR_NOT_FOUND | ERR_FULL
      */
-    _getResources(identity,subIdentity,resourceType,amount) {
-        if (!global.info.resources[this.memory.home][resourceType]) return ERR_NOT_FOUND;
-        if (!this.memory.getTargetId || !this.memory.getTargetPos) {
-            const structure = Game.rooms[this.memory.home].getStructure4Withdraw(resourceType,amount);
-            if (structure) {
-                [this.memory.getTargetId,this.memory.getTargetPos] = [structure.id,utils.getPos(structure.pos)];
-            }else return ERR_NOT_FOUND;
-        }
-        if (this.memory.getTargetId && this.memory.getTargetPos) {
-            if (this.adjMove(this.memory.getTargetPos) === ERR_NOT_IN_RANGE) return OK;
-            const target = Game.getObjectById(this.memory.getTargetId);
-            // Lazy Check
-            if (!target) {
-                [this.memory.getTargetId,this.memory.getTargetPos] = [undefined,undefined];
-                return OK;
-            }
-            switch (this.Withdraw(target,null,resourceType,amount)) {
-                case OK:
-                    return OK;
-                case ERR_FULL:
-                    return ERR_FULL;
-                case ERR_NOT_ENOUGH_RESOURCES:
-                    [this.memory.getTargetId,this.memory.getTargetPos] = [undefined,undefined];
-                default:
-                    return OK;
-            }
-        }
+    _getResources(identity,subIdentity,roomName,resourceType,amount) {
+        if (!global.resources[roomName][resourceType]) return ERR_NOT_FOUND;
+        const structure = Game.rooms[roomName].getStructure4Withdraw(resourceType,amount);
+        if (structure) return [structure.id,utils.getPos(structure.pos)];
+        else return ERR_NOT_FOUND;
     },
     /**
      * Move to a position until adjacent.
      * @param   {Object} targetPos Target Position, expect to have x,y,roomName.
+     * @param   {Boolean} settings.travel Whether use travelTo.
      * @returns {Number} OK, or error code.
      */
-    adjMove(targetPos) {
+    adjMove(targetPos,settings = {travel : false}) {
+        _.defaults(settings,{travel:false});
         const pos = new RoomPosition(targetPos.x,targetPos.y,targetPos.roomName);
-        if (this.pos.roomName !== targetPos || !this.pos.inRangeTo(pos.x,pos.y,1)) {
-            this.travelTo(pos);
+        if (this.pos.roomName !== targetPos.roomName || !this.pos.inRangeTo(pos.x,pos.y,1)) {
+            if (settings.travel) this.travelTo(pos);
+            else this.moveTo(pos);
             return ERR_NOT_IN_RANGE;
         }
         return OK;
-    },
-    /**
-     * Get the expected resources with specific amount.
-     * Notice this function will not automatically reset the get, since the changing of the "working" state should not be done here.
-     * Remember to call resetGet().
-     * @param {String}                      identity     Calling Task Type Identification.
-     * @param {String}                      subIdentity  Calling Task subType Identification.
-     * @param {String}                      resourceType One of RESOURCE_*.
-     * @param {Number|String|undefined}     amount       get Number, allowing for "full" or undefined, indicating getting as much as possible.
-     * @returns {Number} OK | ERR_NOT_FOUND | ERR_FULL
-     */
-    getResource(identity,subIdentity,resourceType,amount) {
-        // Ensure the creep is carrying one and only one allowed resourceType.
-        if (this.store.getUsedCapacity() > (this.store[resourceType] || 0)) return ERR_FULL;
-        if (amount === "full") amount = undefined;
-        if (resourceType === RESOURCE_ENERGY) return this._getEnergy(identity,subIdentity,amount);
-        else return this._getResources(identity,subIdentity,resourceType,amount);
-    },
-    /**
-     * Reset the getTarget{Id,Pos} in memory.
-     */
-    resetGet() {
-        this.memory.getTargetId  = undefined;
-        this.memory.getTargetPos = undefined;
     },
     /**
      * Boost the creep by the compounds in creep.room.
@@ -411,7 +342,36 @@ const creepsExtensions = {
             }
         }
         return OK;
-    }
+    },
+    /**
+     * Get ... from target.
+     * @param {Object} target Target
+     * @param {String} resourceType resourceType
+     * @param {Number|String|undefined} amount Amount
+     * @returns {Number} OK | ERR_NOT_ENOUGH_RESOURCES | ERR_FULL
+     */
+    Get(target,resourceType,amount) {
+        if (this.store.getFreeCapacity() === 0) return ERR_FULL;
+        // Check the target type.
+        // Something can be withdrawn.
+        if (target.store) return this.Withdraw(target,target.pos,resourceType,amount);
+        // Something can be picked up.
+        if (target.amount) return this.pickup(target);
+    },
+    /**
+     * Reset the "get" state in the memory.
+     */
+    resetGet() {
+        [this.memory.getTargetId,this.memory.getTargetPos] = [undefined,undefined];
+        return OK;
+    },
+    /**
+     * Check whether creep is at margin of the room.
+     * @returns {Boolean} true | false
+     */
+    Margin(){
+        return this.pos.x === 0 || this.pos.x === 1 || this.pos.x === 48 || this.pos.x === 49 || this.pos.y === 0 || this.pos.y === 1 || this.pos.y === 48 || this.pos.y === 49;
+    },
 }
 
 _.assign(Creep.prototype,creepsExtensions);

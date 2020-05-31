@@ -3,6 +3,7 @@ const utils = require('utils')
 const hitsCompare = function(objectAId,objectBId) {
     var objectA = Game.getObjectById(objectAId)
     var objectB = Game.getObjectById(objectBId)
+    if (!objectA || !objectB) return 0;
     return objectA.hits/objectA.hitsMax - objectB.hits/objectB.hitsMax
 }
 const towerExtension = {
@@ -27,15 +28,6 @@ const towerExtension = {
             }
         }
     },
-    _attack(){
-        if (Game.rooms[this.room.name].enemies.length > 0) {
-            var target = _.shuffle(_.filter(Game.rooms[this.room.name].enemies,(e)=>utils.analyseCreep(e,false,true) != "harmless"))[0]
-            if (!target) target = _.shuffle(Game.rooms[this.room.name].enemies)[0]
-            this.attack(target)
-            return true
-        }
-        return false;
-    },
     _heal(){
         global.healTargets[this.room.name] = _.filter(global.healTargets[this.room.name],(c)=>c.hits < c.hitsMax);
         if (global.healTargets[this.room.name].length > 0) {
@@ -46,7 +38,7 @@ const towerExtension = {
         return false;
     },
     run(){
-        if (!this._attack()) if (!this._heal()) this._repair();
+        if (!this._heal()) this._repair();
     }
 }
 _.assign(StructureTower.prototype,towerExtension)

@@ -1,6 +1,7 @@
 const powerCreepConfiguration = {
     taskList:{
         "default":["rS","rM","oS","oE","_"],
+        "raymond":["oE","oF","_"],
     },
     idlePosition:{
         "raymond":[35,28,"W22N25"],

@@ -24,10 +24,12 @@ module.exports = function(){
         // Transfer Task
         const pureTransferer = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "pureTransfer")
         const remoteTransferer = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "remoteTransfer")
+        const weakTransferer = creepsCollection["weak_transferer"];
         var transferTaskLength = Game.rooms[roomName].countTask("_transfer",["core","defense","advanced","limit"]);
         var aidTaskLength = Game.rooms[roomName].countTask("_transfer",["aid"]);
         if (pureTransferer.length === 0 || pureTransferer.length < Math.floor(Math.log(transferTaskLength))) generateSpawnTask(roomName,"pureTransfer");
         if (remoteTransferer.length < aidTaskLength) generateSpawnTask(roomName,"remoteTransfer");
+        if (Game.rooms[roomName].controller.level >= 7 && weakTransferer.length === 0) generateSpawnTask(roomName,"centralTransfer");
 
         // Harvest Task
         const localHarvester = _.filter(creepsCollection["harvester"],(c)=>c.memory.group.type === "localHarvest")
@@ -55,8 +57,9 @@ module.exports = function(){
         
         // Build Task
         const Worker = creepsCollection["worker"]
-        const workTaskLength = Game.rooms[roomName].countTask("_build",["all"]);
-        if (Worker.length < workTaskLength) generateSpawnTask(roomName,"pureWorker");
+        const workTaskLength = Game.rooms[roomName].countTask("_build",["local"]);
+        const workRemoteTaskLength = Game.rooms[roomName].countTask("_build",["remote"]);
+        if (Worker.length < workTaskLength + workRemoteTaskLength) generateSpawnTask(roomName,"pureWorker");
         
         // Repair Task
         var remoteRepairCnt = Game.rooms[roomName].countTask("_repair",["remote"])
@@ -75,6 +78,7 @@ module.exports = function(){
         var attackTaskLength = Game.rooms[roomName].countTask("_attack",["attack"])
         var harvestTaskLength = Game.rooms[roomName].countTask("_attack",["harvest"])
         var claimTasks = Game.rooms[roomName].searchTask("attack",["claim"])
+        const invadeTaskLength = Game.rooms[roomName].countTask("_attack",["invade"]);
         var claimTaskLength = 0;
         for (var claimTask of claimTasks){
             var taskInfo = Game.rooms[roomName].taskInfo(claimTask);
@@ -83,19 +87,19 @@ module.exports = function(){
 
         var attackerAttack = _.filter(creepsCollection["attacker"],(c)=>c.memory.group.type === "Attack");
         var attackerHarvest = _.filter(creepsCollection["attacker"],(c)=>c.memory.group.type === "powerHarvest");
+        var attackerInvader = _.filter(creepsCollection["attacker_invader_low"],(c)=>c.memory.group.type === "AttackInvaderLow");
 
         if (attackerAttack.length < attackTaskLength) generateSpawnTask(roomName,"Attack")
         if (attackerHarvest.length < harvestTaskLength) generateSpawnTask(roomName,"powerHarvest")
+        if (attackerInvader.length < invadeTaskLength) generateSpawnTask(roomName,"AttackInvaderLow");
         if (claimTaskLength > creepsCollection["claimer"].length) generateSpawnTask(roomName,"Claim")
 
         // PickUp Task
         const remotePickUper = _.filter(creepsCollection["transferer"],(c)=>c.memory.group.type === "remotePickUper")
-        var remotePickUpTasks = Game.rooms[roomName].searchTask("transfer",["remote"]);
-        var remotePickUpLength = 0;
-        for (var remotePickUptask of remotePickUpTasks){
-            var taskInfo = Game.rooms[roomName].taskInfo(remotePickUptask);
-            remotePickUpLength += taskInfo.settings.allGroupsNum;
-        }
-        if (remotePickUper.length < remotePickUpLength) generateSpawnTask(roomName,"remotePickUper");
+        var remoteTransferTaskFingerprints = Game.rooms[roomName].searchTask("transfer",["remote"]);
+        var remoteTransferTasks = 0;
+        for (var f of remoteTransferTaskFingerprints) remoteTransferTasks += Game.rooms[roomName].taskInfo(f).settings.allGroupsNum;
+        var remotePickUpTasks = Game.rooms[roomName].countTask("pickup",["remote"]);
+        if (remotePickUper.length < Math.min(remotePickUpTasks,1) + remoteTransferTasks) generateSpawnTask(roomName,"remotePickUper");
     }
 }

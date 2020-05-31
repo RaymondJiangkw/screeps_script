@@ -1,5 +1,8 @@
 const taskPriorityConfiguration = {
     "spawn":{
+        "weak_transferer":{
+            "centralTransfer":2,
+        },
         "transferer":{
             "pureTransfer":0,   // Primary
             "remoteHarvest":106,
@@ -43,6 +46,9 @@ const taskPriorityConfiguration = {
         },
         "traveler":{            // Primary
             "Travel":8,
+        },
+        "attacker_invader_low":{
+            "AttackInvaderLow":5,
         }
     }
 }

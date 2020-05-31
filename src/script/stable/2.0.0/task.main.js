@@ -19,6 +19,9 @@
 
 const utils         = require('utils');
 const towerConfig   = require('configuration.Tower');
+const defendTasks   = require('task.Defend');
+
+const HARVEST_CONTAINER_CHECK = {};
 /**
  * Check for info.storeTarget{Id,Pos} validity.
  * @returns OK | ERR_DELETE
@@ -93,233 +96,108 @@ module.exports = {
     _transfer(creeps,home,fingerprint) {
         const info = Intel.task.taskInfo(home,fingerprint);
         const creepRun = (creep) => {
+            // Check for storing
+            if (!creep.memory.working && info.data.resourceType && creep.store[info.data.resourceType] !== creep.store.getUsedCapacity()) return OK & (creep.memory.storing = true);
+            // Check for working ?
+            // Condition: full | reach maximum amount
+            if (!creep.memory.working && (creep.store.getFreeCapacity() === 0 || creep.store.getUsedCapacity(info.data.resourceType) >= info.data.amount)) {
+                creep.memory.working = true;
+                // Reset the state of getTarget.
+                [creep.memory.getTargetId,creep.memory.getTargetPos] = [undefined,undefined];
+            }
+            // Check for not working ?
+            if (creep.memory.working && creep.store.getUsedCapacity() === 0) {
+                creep.memory.working = false;
+                // Reset the state of info.
+                [info.targetId,info.targetPos] = [undefined,undefined];
+                // Do not check "exhaust" or "full" here.
+                if (info.data.amount <= 0) return ERR_DELETE;
+                if (info.settings.changeable) return ERR_RENEW;
+                else return OK;
+            }
             if (!creep.memory.working) {
-                switch (info.data.from.target) {
-                    // Getting Energy, or resource (specifically fill up the lab).
-                    case "resource":{
-                        if (creep.store.getFreeCapacity() === 0 && creep.store[info.data.resourceType] > 0) {
-                            creep.memory.working = true;
-                            creep.resetGet();
-                        }else{
-                            const feedback = creep.getResource("transfer",info.subTaskType,info.data.resourceType,info.data.amount);
-                            switch (feedback) {
-                                // Consider the case of exhausting resource.
-                                case ERR_NOT_FOUND:
-                                    if (creep.store[info.data.resourceType] > 0) {
-                                        creep.memory.working = true;
-                                        creep.resetGet();
-                                    }else return ERR_DELETE;
-                                    break;
-                                // Consider the case of storing other resourceType.
-                                case ERR_FULL:
-                                    creep.memory.storing = true;
-                                    return ERR_RENEW;
-                                default:
-                                    return OK;
+                if (!creep.memory.getTargetId || !creep.memory.getTargetPos) {
+                    // Ensure Visibility.
+                    if (!Game.rooms[info.data.from.roomName]) return OK & creep.adjMove({x:25,y:25,roomName:info.data.from.roomName});
+                    // get Target.
+                    const getRet = Game.rooms[info.data.from.roomName].getFromStructure(info.data.from.target,{creep,identity:info.taskType,subIdentity:info.subTaskType,resourceType:info.data.resourceType,amount:info.data.amount});
+                    // Decide whether found.
+                    switch (getRet) {
+                        case ERR_NOT_FOUND:
+                            if (!info.data.resourceType && creep.store.getUsedCapacity() > 0) creep.memory.working = true;
+                            else if (info.data.resourceType && creep.store[info.data.resourceType] > 0) creep.memory.working = true;
+                            else return ERR_DELETE;
+                            break;
+                        case ERR_WAITING:
+                            if (creep.Margin()) creep.adjMove({x:25,y:25,roomName:info.data.from.roomName});
+                            return OK;
+                        case ERR_RECYCLE:
+                            creep.memory.recycle = true;
+                            return ERR_DELETE;
+                        default:
+                            if (info.subTaskType === "aid") {
+                                const target = Game.getObjectById(getRet[0]);
+                                if (target.store.getUsedCapacity(info.data.resourceType) <= info.data.complements.stopAmount) return ERR_DELETE;
                             }
-                        }
-                        break;
+                            [creep.memory.getTargetId,creep.memory.getTargetPos] = getRet;
+                            break;
                     }
-                    case "power":{
-                        if (!creep.memory.getTargetId || !creep.memory.getTargetPos) {
-                            // Check for the visibility of targetRoom.
-                            if (Game.rooms[info.data.from.roomName]) {
-                                // Check for potential ruins and dropped resources, containing power.
-                                const ruins        =   Game.rooms[info.data.from.roomName].find(FIND_RUINS,{filter:r => r.store[RESOURCE_POWER] > 0});
-                                const droppedPowers =   Game.rooms[info.data.from.roomName].find(FIND_DROPPED_RESOURCES,{filter:{resourceType:RESOURCE_POWER}});
-                                if (ruins.length + droppedPowers.length === 0) {
-                                    // Check whether having stored something.
-                                    if (creep.store[RESOURCE_POWER] > 0) creep.memory.working = true;
-                                    else{
-                                        // Check whether at this state, the powerBank still exists.
-                                        const powerBanks = Game.rooms[info.data.from.roomName].find(FIND_STRUCTURES,{filter:{structureType:STRUCTURE_POWER_BANK}});
-                                        if (powerBanks.length === 0) {
-                                            creep.memory.recycle = true;
-                                            return ERR_DELETE;
-                                        }
-                                        // Ensure creep is at the room and not at the edge when the powerBank is still under attacking.
-                                        if (creep.room.name !== info.data.from.roomName || creep.pos.x === 0 || creep.pos.x === 49 || creep.pos.y === 0 || creep.pos.y === 49) return OK & creep.adjMove({x:25,y:25,roomName:info.data.from.roomName});
-                                    }
-                                }else {
-                                    const target = ruins[0] || droppedPowers[0];
-                                    [creep.memory.getTargetId,creep.memory.getTargetPos] = [target.id,utils.getPos(utils.pos)];
-                                }
-                            }else return creep.adjMove({x:25,y:25,roomName:info.data.from.roomName}) & OK;
-                        }
-                        if (creep.memory.getTargetId && creep.memory.getTargetPos) {
-                            if (creep.adjMove(creep.memory.getTargetPos) === ERR_NOT_IN_RANGE) return OK;
-                            const target = Game.getObjectById(creep.memory.getTargetId);
-                            // Lazy Check.
-                            if (!target || (target.store && target.store[RESOURCE_POWER] === 0)) {
-                                [creep.memory.getTargetId,creep.memory.getTargetPos] = [undefined,undefined];
-                                return OK;
-                            }
-                            // Check whether it is dropped resources.
-                            if (target.amount) creep.pickup(target);
-                            // Ruin.
-                            else creep.withdraw(target,RESOURCE_POWER);
-                            creep.memory.working = true;
+                }
+                if (creep.memory.getTargetId && creep.memory.getTargetPos) {
+                    if (creep.adjMove(creep.memory.getTargetPos) === ERR_NOT_IN_RANGE) return OK;
+                    // Lazy check.
+                    const target = Game.getObjectById(creep.memory.getTargetId);
+                    if (!target) {
+                        [creep.memory.getTargetId,creep.memory.getTargetPos] = [undefined,undefined];
+                        return OK;
+                    }
+                    const feedback = creep.Get(target,info.data.resourceType,info.data.amount);
+                    switch (feedback) {
+                        case OK:
+                            return OK;
+                        case ERR_NOT_ENOUGH_RESOURCES:
                             [creep.memory.getTargetId,creep.memory.getTargetPos] = [undefined,undefined];
-                        }
-                        break;
-                    }
-                    default:{
-                        if (!creep.memory.getTargetId || !creep.memory.getTargetPos) {
-                            switch (info.data.from.target){
-                                // Get from ruins.
-                                case "ruins":{
-                                    // Consider the visibility, usually in the case of destroying InvaderCore.
-                                    if (Game.rooms[info.data.from.roomName]) {
-                                        // Avoid the delay of Room.ruins.
-                                        const ruins = Game.rooms[info.data.from.roomName].find(FIND_RUINS,{filter:r => r.store.getUsedCapacity() > 0});
-                                        if (ruins.length === 0){
-                                            // Check whether having stored something.
-                                            if (creep.store.getUsedCapacity() === 0) return ERR_DELETE;
-                                            else creep.memory.working = true;
-                                        }else [creep.memory.getTargetId,creep.memory.getTargetPos] = [ruins[0].id,ruins[0].pos];
-                                    }else return OK & creep.adjMove({x:25,y:25,roomName:info.data.from.roomName});
-                                    break;
-                                }
-                                case "labs":{
-                                    // Possible remote.
-                                    const room = info.data.from.roomName || creep.memory.home;
-                                    // Ensure there are labs, avoiding "core" labs.
-                                    if (global.info.labs[room] && global.info.labs[room][info.data.resourceType]) {
-                                        const target = global.info.labs[room][info.data.resourceType][0];
-                                        [creep.memory.getTargetId,creep.memory.getTargetPos] = [target.id,target.pos];
-                                    }else {
-                                        // Check whether having stored something.
-                                        if (creep.store.getUsedCapacity() === 0) return ERR_DELETE;
-                                        else creep.memory.working = true;
-                                    }
-                                    break;
-                                }
-                                case "terminal":
-                                case "storage":
-                                case "factory":{
-                                    // Consider remote case.
-                                    const room = info.data.from.roomName || creep.memory.home;
-                                    const target = Game.rooms[room][info.data.from.target];
-                                    // Check for validity.
-                                    if (target) {
-                                        [creep.memory.getTargetId,creep.memory.getTargetPos] = [target.id,utils.getPos(utils.pos)];
-                                    }else {
-                                        // Check whether having stored something.
-                                        if (creep.store.getUsedCapacity() === 0) return ERR_DELETE;
-                                        else creep.memory.working = true;
-                                    }
-                                    break;
-                                }
-                                default:{
-                                    const target = Game.getObjectById(info.data.from.target);
-                                    // Consider the case of remote getting.
-                                    if (!target && (!info.data.from.roomName || Game.rooms[info.data.from.roomName])) {
-                                        // Check whether having stored something.
-                                        if (creep.store.getUsedCapacity() === 0) return ERR_DELETE;
-                                        else creep.memory.working = true;
-                                    }
-                                    if (target) [creep.memory.getTargetId,creep.memory.getTargetPos] = [target.id,utils.getPos(target.pos)];
-                                    // Create fake position for placeholder.
-                                    else [creep.memory.getTargetId,creep.memory.getTargetPos] = [info.data.from.target,{x:25,y:25,roomName:info.data.from.roomName,fake:true}];
-                                }
-                            }
-                        }
-                        if (creep.memory.getTargetId && creep.memory.getTargetPos) {
-                            // Primary check for working.
-                            if (creep.store.getFreeCapacity() === 0) creep.memory.working = true;
-                            else {
-                                // Deal with the case of temporary fake position.
-                                if (creep.memory.getTargetPos.fake && creep.room.name === creep.memory.getTargetPos.roomName) {
-                                    const target = Game.getObjectById(creep.memory.getTargetId);
-                                    if (!target || target.store.getUsedCapacity() === 0 || (info.data.resourceType && target.store[info.data.resourceType] === 0)) {
-                                        // Do not check for storing something here, turning to "get" target part.
-                                        [creep.memory.getTargetId,creep.memory.getTargetPos] = [undefined,undefined];
-                                        return OK;
-                                    }else creep.memory.getTargetPos = utils.getPos(target.pos);
-                                }
-                                if (creep.adjMove(creep.memory.getTargetPos) === ERR_NOT_IN_RANGE) return OK;
-                                const target = Game.getObjectById(creep.memory.getTargetId);
-                                // Lazy check.
-                                if (!target || target.store.getUsedCapacity() === 0 || (info.data.resourceType && target.store[info.data.resourceType] === 0)) {
-                                    [creep.memory.getTargetId,creep.memory.getTargetPos] = [undefined,undefined];
-                                    return OK;
-                                }
-                                // Only Withdraw.
-                                if (info.data.resourceType) return creep.Withdraw(tarrget,null,info.data.resourceType,info.data.amount);
-                                else for (const carry in target.store) return creep.Withdraw(target,null,carry,info.data.amount);
-                            }
-                        }
-                        break;
+                            return OK;
+                        case ERR_FULL:
+                            creep.memory.storing = true;
+                            [creep.memory.getTargetId,creep.memory.getTargetPos] = [undefined,undefined];
+                            return OK;
                     }
                 }
             }
             if (creep.memory.working) {
-                // Primary Check for working.
-                if (info.data.resourceType && creep.store[info.data.resourceType] === 0) creep.memory.working = false;
-                if (!info.data.resourceType && creep.store.getUsedCapacity() === 0) creep.memory.working = false;
-                if (!creep.memory.working) return OK;
                 // Try to get "to" target.
                 if (!info.targetId || !info.targetPos) {
-                    // Consider the case of remote.
-                    const room = info.data.to.roomName || creep.memory.home;
-                    // Deal with the case of injecting energy into labs (should be avoided in this special case).
-                    if (info.data.to.target === "labs" && info.data.resourceType !== RESOURCE_ENERGY) {
-                        // Make Sure there is still room for transfering.
-                        if (global.labs[room] && global.labs[room][info.data.resourceType] && _.filter(global.labs[room][info.data.resourceType],l => l.store.getFreeCapacity(info.data.resourceType) > 0).length > 0) {
-                            // Since labs in it are in descending order by its amount inside.
-                            const labPos = global.labs[room][info.data.resourceType].length - 1;
-                            [info.targetId,info.targetPos] = [global.labs[room][info.data.resourceType][labPos].id,utils.getPos(global.labs[room][info.data.resourceType][labPos].pos)];
-                        // Allocate to the vacant labs.
-                        }else if (global.labs[room] && global.labs[room]["vacant"] && global.labs[room]["vacant"].length > 0){
-                            [info.targetId,info.targetPos] = [global.labs[room]["vacant"][0].id,utils.getPos(global.labs[room]["vacant"][0].pos)];
-                        }else return ERR_DELETE;
-                    // Deal with the case of transfering towers, since they takes on the responsibility of repairing, so checking here should be set a limit.
-                    }else if (info.data.to.target === "towers") {
-                        const towers = _.filter(Game.rooms[room].towers,t => t.store.getUsedCapacity(RESOURCE_ENERGY) <= towerConfig.reservedEnergy);
-                        // Get closest One.
-                        towers.sort((a,b)=>a.pos.getRangeTo(creep) - b.pos.getRangeTo(creep));
-                        if (towers.length > 0) [info.targetId,info.targetPos] = [towers[0].id,utils.getPos(towers[0].pos)];
-                        else return ERR_DELETE;
-                    // Acceptable symbols for structures.
-                    }else if (!Game.getObjectById(info.data.to.target)) {
-                        let targets = [];
-                        // Multiple Structures.
-                        if (info.data.to.target.charAt(info.data.to.target.length - 1) === "s") {
-                            // Ensure those having the least amount be transfered first.
-                            const minAmount = Math.min.apply(Math,Game.rooms[room][info.data.to.target].map(s => s.store.getUsedCapacity(info.data.resourceType)));
-                            targets = _.filter(Game.rooms[room][info.data.to.target],s => s.store.getUsedCapacity(info.data.resourceType) === minAmount);
-                            targets.sort((a,b)=>a.pos.getRangeTo(creep) - b.pos.getRangeTo(creep));
-                        // Single.
-                        }else targets = [Game.rooms[room][info.data.to.target]];
-                        // Ensure Free Space.
-                        targets = _.filter(targets,t => t.store.getFreeCapacity(info.data.resourceType) > 0);
-                        if (targets.length > 0) [info.targetId,info.targetPos] = [targets[0].id,utils.getPos(targets[0].pos)];
-                        else return ERR_DELETE;
-                    }else {
-                        const target = Game.getObjectById(info.data.to.target);
-                        // Ensure Free Space.
-                        if (target.store.getFreeCapacity() === 0) return ERR_DELETE;
-                        [info.targetId,info.targetPos] = [target.id,utils.getPos(target)];
+                    if (!Game.rooms[info.data.to.roomName]) return OK & creep.adjMove({x:25,y:25,roomName:info.data.to.roomName});
+                    // get Target.
+                    const getRet = Game.rooms[info.data.to.roomName].getToStructure(info.data.to.target,{creep,identity:info.taskType,subIdentity:info.subTaskType,resourceType:info.data.resourceType});
+                    // Decide whether found.
+                    switch (getRet) {
+                        case ERR_NOT_FOUND:
+                            return ERR_DELETE;
+                        default:
+                            if (info.subTaskType === "aid") {
+                                const target = Game.getObjectById(getRet[0]);
+                                if (target.store.getUsedCapacity(info.data.resourceType) >= info.data.complements.toStopAmount) return ERR_DELETE;
+                            }
+                            [info.targetId,info.targetPos] = getRet;
+                            break;
                     }
                 }
                 if (info.targetId && info.targetPos) {
                     if (creep.adjMove(info.targetPos) === ERR_NOT_IN_RANGE) return OK;
                     const target = Game.getObjectById(info.targetId);
                     // Lazy Check.
-                    if (!target || target.store.getFreeCapacity() === 0) {
+                    if (!target || (target.store.getFreeCapacity() || target.store.getFreeCapacity(RESOURCE_ENERGY)) === 0) {
                         [info.targetId,info.targetPos] = [undefined,undefined];
                         return OK;
                     }
-                    // Special case of "aid", which sets the limit of amount and capacity.
-                    if (info.subTaskType === "aid") {
-                        if (target.store[info.data.resourceType] >= info.data.complements.toStopAmount || target.store.getUsedCapacity() >= info.data.complements.toStopCapacity) return ERR_DELETE;
-                    }
-                    // Record the amount of transfering.
+                    // Calculate transfer amount.
                     let transferAmount = 0;
                     // Preset the transferAmount.
                     if (typeof(info.data.amount) === "number") transferAmount = info.data.amount;
                     if (info.data.resourceType) {
-                        transferAmount = Math.min(target.store.getFreeCapacity(),creep.store[info.data.resourceType]);
+                        transferAmount = Math.min(target.store.getFreeCapacity() || target.store.getFreeCapacity(RESOURCE_ENERGY),creep.store[info.data.resourceType]);
                         creep.transfer(target,info.data.resourceType,transferAmount);
                     }else{
                         for (const carry in creep.store) {
@@ -330,13 +208,6 @@ module.exports = {
                     }
                     // Modify the amount.
                     if (typeof(info.data.amount) === "number") info.data.amount -= transferAmount;
-                    // Stop Condition.
-                    if (info.data.amount <= 0 || transferAmount === 0) {
-                        creep.memory.working = false;
-                        [info.targetId,info.targetPos] = [undefined,undefined];
-                        if (info.settings.changeable) return ERR_RENEW;
-                        else return OK;
-                    }
                 }
             }
             return OK;
@@ -360,6 +231,8 @@ module.exports = {
          * @returns OK | ERR_DELETE
          */
         const cachedContainerCheck = () => {
+            if (!HARVEST_CONTAINER_CHECK[fingerprint] || HARVEST_CONTAINER_CHECK[fingerprint] <= Game.time) HARVEST_CONTAINER_CHECK[fingerprint] = Game.time + utils.getCacheExpiration();
+            else return OK;
             // Check for cachedContainer.
             if (info.data.cachedContainerId && info.data.cachedContainerPos) {
                 if (!utils.checkTargetValidity(info.data.cachedContainerId,info.data.cachedContainerPos)) [info.data.cachedContainerId,info.data.cachedContainerPos] = [undefined,undefined];
@@ -439,8 +312,9 @@ module.exports = {
         // Single Creep Logic.
         const creepRun = (creep,action) => {
             // Check for the working state.
-            if (creep.memory.working && creep.store[RESOURCE_ENERGY] === 0) {
+            if (creep.memory.working && creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
                 creep.memory.working = false;
+                [info.targetId,info.targetPos] = [undefined,undefined];
                 if (info.settings.changeable) return ERR_RENEW;
             }
             if (!creep.memory.working && creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
@@ -449,11 +323,24 @@ module.exports = {
             }
             // Get the energy and consider the edge case: not enough energy, but stores some. In this case, it will going to work.
             if (!creep.memory.working) {
-                const feedback = creep.getResource(action,"default",RESOURCE_ENERGY);
-                if (feedback === ERR_NOT_FOUND && creep.store[RESOURCE_ENERGY] > 0) creep.memory.working = true;
-                else if (feedback === ERR_FULL) {
-                    creep.memory.storing = true;
-                    return ERR_RENEW;
+                if (!creep.memory.getTargetId || !creep.memory.getTargetPos) {
+                    const feedback = creep._getEnergy(action,"default",creep.memory.home);
+                    switch (feedback) {
+                        case ERR_NOT_FOUND:
+                            return OK;
+                        case ERR_FULL:
+                            return ERR_REPEAT;
+                        default:
+                            [creep.memory.getTargetId,creep.memory.getTargetPos] = [feedback[0],feedback[1]];
+                    }
+                }
+                if (creep.memory.getTargetId && creep.memory.getTargetPos) {
+                    if (creep.adjMove(creep.memory.getTargetPos) === ERR_NOT_IN_RANGE) return OK;
+                    const target = Game.getObjectById(creep.memory.getTargetId);
+                    if (!target || creep.Get(target) !== OK) {
+                        creep.resetGet();
+                        return ERR_REPEAT;
+                    }
                 }
             }
             if (creep.memory.working) {
@@ -548,7 +435,7 @@ module.exports = {
                 }
             }
             if (info.targetPos) {
-                creep.adjMove(info.targetPos);
+                creep.adjMove(info.targetPos,{travel:true});
                 if (creep.room.name === info.targetPos.roomName) info.targetPos = undefined;
             }
             return OK;

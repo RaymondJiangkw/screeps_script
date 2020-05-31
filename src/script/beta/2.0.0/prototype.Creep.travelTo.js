@@ -214,6 +214,7 @@ class Traveler {
             ignoreCreeps: true,
             maxOps: DEFAULT_MAXOPS,
             range: 1,
+            obstacles:[{x:13,y:24,roomName:"W20N20"}]
         });
         if (options.movingTarget) {
             options.range = 0;
@@ -261,10 +262,10 @@ class Traveler {
                 if (options.obstacles) {
                     matrix = matrix.clone();
                     for (let obstacle of options.obstacles) {
-                        if (obstacle.pos.roomName !== roomName) {
+                        if (obstacle.roomName !== roomName) {
                             continue;
                         }
-                        matrix.set(obstacle.pos.x, obstacle.pos.y, 0xff);
+                        matrix.set(obstacle.x, obstacle.y, 0xff);
                     }
                 }
             }
@@ -462,6 +463,7 @@ class Traveler {
      */
     static addCreepsToMatrix(room, matrix) {
         room.find(FIND_CREEPS).forEach((creep) => matrix.set(creep.pos.x, creep.pos.y, 0xff));
+        room.find(FIND_POWER_CREEPS).forEach((powerCreep) => matrix.set(powerCreep.pos.x, powerCreep.pos.y, 0xff));
         return matrix;
     }
     /**

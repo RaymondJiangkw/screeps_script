@@ -16,9 +16,9 @@ module.exports = {
             if (!Game.rooms[roomName].memory.taskExpiration || Game.rooms[roomName].memory.taskExpiration <= Game.time){
                 Game.rooms[roomName].memory.taskExpiration = Game.time + utils.getCacheExpiration(1500)
                 Game.rooms[roomName].refreshTask()
-                taskUpgrade();
             }
         }
+        taskUpgrade();
         taskHarvest();
         taskBuild();
         taskRepair();

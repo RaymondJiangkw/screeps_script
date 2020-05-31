@@ -156,12 +156,26 @@ const roomTaskExtension = {
         }
         return fingerprint
     },
-    AddTransferTask(subTaskType,from,to,resourceType = undefined,amount = "full",fromRoom = undefined,toRoom = undefined,groupsNum = 1,changeable = true,silence = false,getRepeat = false){
-        var toTarget = Game.getObjectById(to)
-        if (toTarget && toTarget.store.getFreeCapacity() == 0) return undefined
-        if (typeof(amount) === "number" && !Number.isFinite(amount)) amount = "exhaust"
-        const data = {from,fromRoom,to,toRoom,resourceType,amount}
-        return this.AddTask("transfer",subTaskType,data,groupsNum,changeable,silence,getRepeat)
+    /**
+     * Add the Transfer Task.
+     * @param   {String}            subTaskType         sub-taskType of "transfer" task.
+     * @param   {Object}            from                Object describes the fromTarget.
+     * @param   {String}            from.target         The Id of the target, or can be one of the recognizable structureType, such as "storage".
+     * @param   {String|undefined}  from.roomName       The room where the target lies. undefined will be interpreted as the home of the working creep.
+     * @param   {Object}            to                  Object describes the toTarget.
+     * @param   {String}            to.target           The Id of the target, or can be one of the recognizable structureType, such as "storage".
+     * @param   {String|undefined}  to.roomName         The room where the target lies. undefined will be interpreted as the home of the working creep.
+     * @param   {String}            resourceType        One of the RESOURCE_* Constants. 
+     * @param   {Number|String}     amount              describes the transfer amount, can be "full" or "exhaust", indicating fill in the toTarget or exhaust the fromTarget.
+     * @param   {Object}            complements         Other potential useful information.
+     * @param   {Object}            settings            The settings of the task.
+     * @param   {Number}            settings.groupsNum  The expected running-groups number, default is 1.
+     * @param   {Boolean}           settings.changeable Whether this task is changeable, default is true.
+     * @returns {Number}    OK, indicating successful or error code.
+     */
+    AddTransferTask(subTaskType,from,to,resourceType,amount = "full",settings = {groupsNum:1,changeable:true,silence:false,getRepeat:false},complements = {}){
+        _.defaults(settings,{groupsNum:1,changeable:true,silence:false,getRepeat:false});
+        return this.AddTask("transfer",subTaskType,{from,to,resourceType,amount,complements},settings.groupsNum,settings.changeable,settings.silence,settings.getRepeat);
     },
     AddHarvestTask(subTaskType,targetID,targetPos = undefined,groupsNum = 1,changeable = false,silence = false,getRepeat = false){
         const data = {targetID,targetPos}

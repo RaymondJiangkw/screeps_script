@@ -30,7 +30,7 @@ const terminalExtensions = {
             if (maximumDealAmount === 0) return ERR_NO_AVAILABLE_DEAL
             if (existingOrder) {
                 var order = Game.market.getOrderById(existingOrder)
-                if (order.remainingAmount >= amount - maximumDealAmount) Game.market.cancelOrder(existingOrder)
+                // if (order.remainingAmount >= amount - maximumDealAmount) Game.market.cancelOrder(existingOrder)
             }
             var _feedback = Game.market.deal(optimisticDeal.id,maximumDealAmount,this.room.name)
             if (_feedback === 0) console.log(this.room.name,"Deal",resourceType,orderType,maximumDealAmount);

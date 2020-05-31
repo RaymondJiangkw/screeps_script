@@ -20,9 +20,9 @@ function getCacheExpiration(CACHE_TIMEOUT = 50,CACHE_OFFSET = 4) {
 Room.prototype._checkRoomResourceCache = function _checkRoomResourceCache(){
     if (!roomResourcesExpiration[this.name] || !roomResources[this.name] || roomResourcesExpiration[this.name] < Game.time){
         roomResourcesExpiration[this.name] = Game.time + getCacheExpiration();
-        const sources = this.find(FIND_SOURCES_ACTIVE)
-        const minerals = this.find(FIND_MINERALS)
-        const deposits = this.find(FIND_DEPOSITS)
+        const sources = this.find(FIND_SOURCES);
+        const minerals = this.find(FIND_MINERALS);
+        const deposits = this.find(FIND_DEPOSITS);
         var resources = [].concat(sources,minerals,deposits)
         roomResources[this.name] = _.groupBy(resources,s=>{
             if (s.mineralType) return s.mineralType

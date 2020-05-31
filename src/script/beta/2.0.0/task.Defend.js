@@ -6,7 +6,7 @@ module.exports = function(){
         if (_.filter(Game.rooms[roomName].enemies,(c)=>constants.enemies.indexOf(c.owner.username) >= 0).length > 0) {
             var home = utils.getClosetSuitableRoom(roomName,8,true);
             if (!home) continue;
-            //Game.rooms[home].AddDefendTask("observed",roomName);
+            Game.rooms[home].AddDefendTask("observed",roomName);
         }
     }
     for (var roomName of global.rooms.reserved){

@@ -4,6 +4,7 @@ const USE_POWER = 100
 const NOT_USE_POWER = 101
 const INVALID_TASK = 102
 const PLACE_HOLDER = "_"
+const ADVANCED_BUCKET_LIMIT = 5000;
 const reachBoundary = function(x){
     return x < 1 || x > 48
 }
@@ -113,6 +114,9 @@ const runExtension = {
         return this["_tUP"](PWR_OPERATE_TOWER,"towers")
     },
     oF(){
+        if (this.store[RESOURCE_OPS] < POWER_INFO[PWR_OPERATE_FACTORY].ops + 50) return [INVALID_TASK,NOT_USE_POWER];
+        if (!this.room.factory || this.room.factory.cooldown > 0) return [INVALID_TASK,NOT_USE_POWER];
+        if (Game.cpu.bucket <= ADVANCED_BUCKET_LIMIT) return [INVALID_TASK,NOT_USE_POWER];
         return this["_tUP"](PWR_OPERATE_FACTORY,"factory")
     },
     oO(){

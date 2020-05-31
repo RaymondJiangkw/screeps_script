@@ -1,7 +1,3 @@
-const FINISH = "finish"
-const ERR_RENEW = "renew"
-const ERR_DELETE = "delete"
-const ERR_REPEAT = "repeat"
 const MAX_CALL_TIME = 2
 const creepConfig = require('configuration.Creep')
 const utils = require('utils')
@@ -32,11 +28,23 @@ module.exports = function(){
             if (primaryCreep.dying()){
                 primaryCreep.memory.dying = true;
                 primaryCreep.toDeath(true);
+                const recycleRoleList = ["transferer"];
+                const recycleGroupTypes = ["remotePickUper"];
+                if (recycleGroupTypes.indexOf(primaryCreep.memory.group.type) >= 0 && recycleRoleList.indexOf(primaryCreep.memory.role) >= 0) {
+                    if (primaryCreep.store.getUsedCapacity() > 0) primaryCreep["__store"]();
+                    else primaryCreep.__recycle();
+                }
                 continue;
             }
             if (primaryCreep.memory.recycle === true) {
                 if (!primaryCreep.isIdle()) primaryCreep.deleteTask();
-                primaryCreep.__recycle();
+                if (primaryCreep.store.getUsedCapacity() > 0) primaryCreep["__store"]();
+                else primaryCreep.__recycle();
+                continue;
+            }
+            if (primaryCreep.memory.storing === true) {
+                if (primaryCreep.store.getUsedCapacity() > 0) primaryCreep["__store"]();
+                else primaryCreep.memory.storing = false;
                 continue;
             }
             if (primaryCreep.isIdle()) {
@@ -61,8 +69,10 @@ module.exports = function(){
             }else {
                 const recycleRoleList = ["transferer"];
                 const recycleGroupTypes = ["remotePickUper"];
-                if (recycleGroupTypes.indexOf(primaryCreep.memory.group.type) >= 0 && recycleRoleList.indexOf(primaryCreep.memory.role) >= 0) primaryCreep.__recycle();
-                else primaryCreep.Invisible();
+                if (recycleGroupTypes.indexOf(primaryCreep.memory.group.type) >= 0 && recycleRoleList.indexOf(primaryCreep.memory.role) >= 0) {
+                    if (primaryCreep.store.getUsedCapacity() > 0) primaryCreep["__store"]();
+                    else primaryCreep.__recycle();
+                }else primaryCreep.Invisible();
             }
         }
 
@@ -89,6 +99,11 @@ module.exports = function(){
             if (creep.memory.recycle === true) {
                 if (!creep.isIdle()) creep.deleteTask();
                 creep.__recycle();
+                continue;
+            }
+            if (creep.memory.storing === true) {
+                if (creep.store.getUsedCapacity() > 0) creep.__store();
+                else creep.memory.storing = false;
                 continue;
             }
             if (!randomPrimaryCreep && reSpawn) {
@@ -120,8 +135,8 @@ module.exports = function(){
                         if (groupType === "remoteHarvest") from = "creep"
 
                         if (from === "creep") fromRoom = primaryTaskInfo.data.targetPos["roomName"]
-                            
-                        var fingerprint = Game.rooms[creep.memory.home].AddTransferTask(subTask,from,Game.rooms[creep.memory.home].storage.id,undefined,"full",fromRoom,creep.memory.home,1,false,true,true)
+                        var fingerprint = Game.rooms[creep.memory.home].AddTransferTask(subTask,{target:from,roomName:fromRoom},{target:Game.rooms[creep.memory.home].storage.id,roomName:creep.memory.home},undefined,"full",{changeable:false,getRepeat:true,silence:true});
+
                         if (fingerprint) creep.memory.taskFingerprint = fingerprint
                     }
                 }
@@ -130,7 +145,7 @@ module.exports = function(){
             if (!creep.isIdle()){
                 var signals = {}
                 signals["creep"] = randomPrimaryCreep.id;
-                if (randomPrimaryCreep.isIdle()) signals["finish"] = true;
+                if (randomPrimaryCreep.isIdle() && !randomPrimaryCreep.dying()) signals["finish"] = true;
                 var feedback = creep.run(signals)
                 var cnt = 1
                 while (cnt <= MAX_CALL_TIME && feedback === ERR_REPEAT) {feedback = creep.run(signals);cnt++;}

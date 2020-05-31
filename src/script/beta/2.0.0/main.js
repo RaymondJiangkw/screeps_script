@@ -1,4 +1,5 @@
 const profiler = require('tool.profiler')
+const marketCalculator = require('tool.marketCalculator')
 const death = require('main.Death')
 const mount = require('mount')
 const mountMarket = require('prototype.Market.run')
@@ -39,13 +40,21 @@ const Wrap = function (func,_name) {
 module.exports.loop = function() {
     profiler.wrap(function(){
         mount();
+        for (const roomName in Game.rooms) {
+            if (Game.rooms[roomName].controller && Game.rooms[roomName].controller.my) Game.rooms[roomName].clearTask();
+        }
 //      mountMarket.mount();
         death();
+        console.log("before Init",Game.cpu.getUsed())
         init();
-        task.init();
+        console.log("after init",Game.cpu.getUsed())
+        if (Game.time % 2 === 0) task.init();
+        console.log("after task",Game.cpu.getUsed())
         structureRun();
+        console.log("after structure",Game.cpu.getUsed())
         Wrap(powerCreepRun,"powerCreepRun");
         creepRun();
+        console.log("after Creep",Game.cpu.getUsed())
         Wrap(task.spawn,"task.spawn");
         spawnRun();
         stateScanner();

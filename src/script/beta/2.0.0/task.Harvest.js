@@ -1,6 +1,7 @@
 const utils = require('utils')
 const remoteEnergyRooms = require('configuration.Observer').utilsEnergy
 const remoteCentralRooms = require('configuration.Observer').coreDominance
+const constants = require('constants')
 module.exports = function() {
     for (var roomName of global.rooms.my) {
         var cachedResources = Object.keys(global.containers[roomName].map)
@@ -23,9 +24,9 @@ module.exports = function() {
     }
     for (var roomName of global.rooms.observed) {
         const deposits = ["mists","biomasss","metals","silicons"]
-        if (Game.rooms[roomName].enemies.length > 0) continue;
+        if (_.filter(Game.rooms[roomName].enemies,c => constants.enemies.indexOf(c.owner.username) >= 0).length > 0) continue;
         for (var depositType of deposits){
-            var home = utils.getClosetSuitableRoom(roomName,6,true)
+            var home = utils.getClosetSuitableRoom(roomName,6,true,false,["W21N24"])
             if (!home) break
             for (var deposit of Game.rooms[roomName][depositType]){
                 if (!deposit) continue;
@@ -35,7 +36,7 @@ module.exports = function() {
         }
         for (var powerBank of Game.rooms[roomName]["powerBanks"]){
             if (!powerBank) continue;
-            if (powerBank.power < 4000 || powerBank.ticksToDecay < 4500) continue;
+            if (powerBank.power < 3000 || powerBank.ticksToDecay < 4500) continue;
             var home = utils.getClosetSuitableRoom(roomName,8,true)
             if (!home || Game.rooms[home].energyAvailable !== Game.rooms[home].energyCapacityAvailable || Game.cpu.bucket < 9000) break;
             if (Game.map.getRoomLinearDistance(home,roomName) > 3) break;
