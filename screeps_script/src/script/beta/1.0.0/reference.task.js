@@ -1,0 +1,84 @@
+// Work as a template
+// All passive motivated
+const referenceTask = {
+    Mine:{
+        "deposit":{
+            trigger:{
+                "Spawn":[["rHarvester",1],["rTransferer",2]]
+            },
+            condition:null,
+            parentID:undefined,
+            id:undefined
+        },
+/*        "power":{
+            trigger:{
+                "Spawn":[["rAttacker",1],["rTransferer",2]]
+            },
+            condition:null,
+            parentID:undefined,
+            id:undefined
+        },
+        "mineral":{
+            trigger:{
+                "Spawn":[["rAttacker",1],["rHarvester",1],["rTransferer",1]]
+            },
+            condition:null,
+            parentID:undefined,
+            id:undefined
+        },
+        "energy":{
+            trigger:{
+                "Spawn":[["rAttacker",1],["rHarvester",1],["rTransferer",1]]
+            },
+            condition:null,
+            parentID:undefined,
+            id:undefined
+        }
+*/
+    },
+    Spawn:{
+        "rHarvester":{
+            id:undefined,
+            params:{
+                role:"rHarvester",
+                components:{work:5,carry:1,move:12},
+                "_memory":{
+                    acceptedTask:["mine"],
+                    group:{
+                        type:undefined,
+                        ID:undefined
+                    }
+                }
+            }
+        },
+        "rTransferer":{
+            id:undefined,
+            params:{
+                role:"rTransferer",
+                components:{carry:5,move:10},
+                "_memory":{
+                    acceptedTask:["mine"],
+                    group:{
+                        type:undefined,
+                        ID:undefined
+                    }
+                }
+            }
+        },
+        "rAttacker":{
+            id:undefined,
+            params:{
+                role:"rAttacker",
+                components:{attack:20,heal:15,move:15}, // needed to be Improved
+                "_memory":{
+                    acceptedTask:["mine"],
+                    group:{
+                        type:undefined,
+                        ID:undefined
+                    }
+                }
+            }
+        }
+    }
+}
+module.exports = referenceTask
