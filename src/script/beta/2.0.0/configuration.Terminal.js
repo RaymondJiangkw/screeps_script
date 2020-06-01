@@ -20,8 +20,8 @@ const terminalConfiguration = {
     },
     sellingGoods:{
         //[(resourceType),(reservedAmount),(minSellAmount)]
-        "W22N25":[[RESOURCE_SWITCH,0,25],[RESOURCE_COMPOSITE,0,100]],
-        "W23N25":[],
+        "W22N25":[[RESOURCE_SWITCH,0,5],[RESOURCE_COMPOSITE,0,100]],
+        "W23N25":[[RESOURCE_TRANSISTOR,0,5]],
         "W21N24":[],
         "W19N22":[],
         "W18N22":[]

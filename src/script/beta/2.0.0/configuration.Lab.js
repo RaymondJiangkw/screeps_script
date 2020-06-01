@@ -19,9 +19,9 @@ const labConfiguration = {
     },
     "W23N25":{
         mode:"default",
-        allowedCompounds:["KH","XGH2O"],
+        allowedCompounds:["LH2O","XLH2O","KH2O","XKH2O","XLHO2","XZHO2","XUH2O","XKHO2","XGHO2"],
         reverse:["GO"],
-        default:["KO","OH","KHO2","ZK","UL","G","GH","GH2O","XKHO2","XGH2O"],
+        default:["KO","OH","KHO2","ZK","UL","G","GH","GH2O","XKHO2"],
         focus:undefined,
         clear:undefined
     },
