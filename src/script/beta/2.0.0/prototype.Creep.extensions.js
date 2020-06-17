@@ -13,6 +13,7 @@ const [COMPOUND_UNIT,ENERGY_UNIT]   =   [30,20];
 const RENEW_TO_TICKSTOLIVE          =   1490;
 const ROOM_ENERGY_DANGER_RATIO      =   0.6;
 const ENERGY_CONTAINER_MAX_RANGE    =   11;
+const CENTRAL_UPGRADE_UNIT_POSSESSED=   ["W18N29"];
 
 /**
  * @memberof Creep
@@ -29,9 +30,9 @@ const creepsExtensions = {
     Withdraw(target,targetPos,resourceType,amount){
         if (targetPos && this.adjMove(targetPos) === ERR_NOT_IN_RANGE) return OK;
         if (amount === "full" || amount === "exhaust") amount = undefined;
-        amount = Math.min(amount || Infinity,this.store.getFreeCapacity(),target.store[resourceType] || Infinity);
+        amount = Math.min(amount || Infinity,this.store.getFreeCapacity(),target.store[resourceType] || target.store.getUsedCapacity() || Infinity);
         if (resourceType) return this.withdraw(target,resourceType,amount);
-        else for (const carry in target.store) return this.withdraw(target,carry,amount);
+        else for (const carry in target.store) return this.withdraw(target,carry,Math.min(amount,target.store[carry]));
         return ERR_NOT_ENOUGH_RESOURCES;
     },
     /**
@@ -69,7 +70,13 @@ const creepsExtensions = {
         // Sources for harvesting.
         const sources                     = _.filter(room.energys,e => e.energy > 0).sort(posCmp);
         // Special case of 'upgrading', "lock" to link if possible (Emitting "from" and "to" links both exist).
-        if (identity === "upgradeController" && global.links[this.memory.home].resources.length > 0) chosenObject = global.links[this.memory.home].upgrade[0];
+        if (identity === "upgradeController") {
+            if (global.links[this.memory.home].upgrade.length > 0 && global.links[this.memory.home].resources.length > 0) {
+                if (global.links[this.memory.home].upgrade[0].store.getUsedCapacity(RESOURCE_ENERGY) > 0 || CENTRAL_UPGRADE_UNIT_POSSESSED.indexOf(this.memory.home) < 0) {
+                    chosenObject = global.links[this.memory.home].upgrade[0];
+                }
+            }else chosenObject = hasEnergy(room.storage) || hasEnergy(room.terminal);
+        }
         // Special case of 'build' and 'repair'.
         if (identity === "build" || identity === "repair") {
             // Good container is the first choice.
@@ -176,14 +183,16 @@ const creepsExtensions = {
         if (this.adjMove(pos) === ERR_NOT_IN_RANGE) return OK;
         // Check for potential container, tombStone, dropped resources.
         for (let i = 0; i < dx.length; i++) {
-            const possibleContainers = _.filter(this.room.lookForAt(LOOK_STRUCTURES,pos.x + dx[i],pos.y + dy[i]),s => s.structureType === STRUCTURE_CONTAINER && s.store.getUsedCapacity() > 0);
-            const possibleTombStones = _.filter(this.room.lookForAt(LOOK_TOMBSTONES,pos.x + dx[i],pos.y + dy[i]),t => t.store.getUsedCapacity() > 0);
-            const possibleResources  = this.room.lookForAt(LOOK_RESOURCES,pos.x + dx[i],pos.y + dy[i]);
-            for (const structure of [...possibleContainers,...possibleTombStones]) {
-                for (const carry in structure.store) this.withdraw(structure,carry);
-                break;
-            }
-            for (const resource of possibleResources) this.pickup(resource);
+            try{
+                const possibleContainers = _.filter(this.room.lookForAt(LOOK_STRUCTURES,pos.x + dx[i],pos.y + dy[i]),s => s.structureType === STRUCTURE_CONTAINER && s.store.getUsedCapacity() > 0);
+                const possibleTombStones = _.filter(this.room.lookForAt(LOOK_TOMBSTONES,pos.x + dx[i],pos.y + dy[i]),t => t.store.getUsedCapacity() > 0);
+                const possibleResources  = this.room.lookForAt(LOOK_RESOURCES,pos.x + dx[i],pos.y + dy[i]);
+                for (const structure of [...possibleContainers,...possibleTombStones]) {
+                    for (const carry in structure.store) this.withdraw(structure,carry);
+                    break;
+                }
+                for (const resource of possibleResources) this.pickup(resource);
+            }catch(error){}
         }
         return OK;
     },

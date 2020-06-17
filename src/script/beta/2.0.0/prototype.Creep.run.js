@@ -71,7 +71,7 @@ const creepRunExtensions = {
     },
     _Move(targetPos, accAdj = false,avoidBarrior = false){
         if (this.pos.x != targetPos.x || this.pos.y != targetPos.y || this.pos.roomName != targetPos.roomName){
-            var feedback = this.travelTo(new RoomPosition(targetPos.x,targetPos.y,targetPos.roomName))
+            var feedback = this.moveTo(new RoomPosition(targetPos.x,targetPos.y,targetPos.roomName))
             if (accAdj && utils.adjacentPos(this.pos,targetPos)) {
                 if (!avoidBarrior) return OK
                 var vacantDirection = getVacantPlace(this.pos,targetPos)
@@ -242,7 +242,7 @@ const creepRunExtensions = {
         if (!this.memory.working) {
             if (info.data.from.target === "creep") {
                 const creep = Game.getObjectById(signals["creep"]);
-                const pos = creep.pos;
+                const pos = utils.getPos(creep.pos);
                 if (pos.roomName !== creep.memory.home) return this.Collect(pos);
             }
             if (!this.memory.getTargetId || !this.memory.getTargetPos) {
@@ -276,11 +276,12 @@ const creepRunExtensions = {
                 if (this.adjMove(this.memory.getTargetPos) === ERR_NOT_IN_RANGE) return OK;
                 // Lazy check.
                 const target = Game.getObjectById(this.memory.getTargetId);
-                if (!target) {
+                if (!target || (target.store && (target.store.getUsedCapacity(info.data.resourceType) === 0 || target.store.getUsedCapacity() === 0)) || target.amount === 0) {
                     this.resetGet();
                     return ERR_REPEAT;
                 }
                 const feedback = this.Get(target,info.data.resourceType,info.data.amount);
+                this.say(feedback)
                 switch (feedback) {
                     case OK:
                         return OK;
@@ -303,6 +304,8 @@ const creepRunExtensions = {
                 // Decide whether found.
                 switch (getRet) {
                     case ERR_NOT_FOUND:
+                        this.memory.working = false;
+                        this.resetGet();
                         return ERR_DELETE;
                     default:
                         if (subTaskType === "aid") {
@@ -317,7 +320,7 @@ const creepRunExtensions = {
                 if (this.adjMove(info.targetPos) === ERR_NOT_IN_RANGE) return OK;
                 const target = Game.getObjectById(info.targetId);
                 // Lazy Check.
-                if (!target || (target.store.getFreeCapacity() || target.store.getFreeCapacity(RESOURCE_ENERGY)) === 0) {
+                if (!target || target.store.getFreeCapacity() === 0 || target.store.getFreeCapacity(info.data.resourceType) === 0) {
                     [info.targetId,info.targetPos] = [undefined,undefined];
                     return ERR_REPEAT;
                 }
@@ -325,15 +328,14 @@ const creepRunExtensions = {
                 let transferAmount = 0;
                 // Preset the transferAmount.
                 if (typeof(info.data.amount) === "number") transferAmount = info.data.amount;
-                if (info.data.resourceType) {
-                    transferAmount = Math.min(target.store.getFreeCapacity() || target.store.getFreeCapacity(RESOURCE_ENERGY),this.store[info.data.resourceType]);
-                    this.transfer(target,info.data.resourceType,transferAmount);
-                }else{
-                    for (const carry in this.store) {
-                        transferAmount = Math.min(target.store.getFreeCapacity(),this.store[carry]);
-                        this.transfer(target,carry,transferAmount);
-                        break;
+                for (const carry in this.store) {
+                    if (info.data.resourceType && carry === info.data.resourceType) transferAmount = Math.min(target.store.getFreeCapacity(info.data.resourceType),this.store[carry]);
+                    if (this.transfer(target,carry,transferAmount || undefined) === ERR_FULL){
+                        this.memory.working = false;
+                        this.resetGet();
+                        return ERR_DELETE;
                     }
+                    // break;
                 }
                 // Modify the amount.
                 if (typeof(info.data.amount) === "number") info.data.amount -= transferAmount;
@@ -370,7 +372,7 @@ const creepRunExtensions = {
             if (this.memory.getTargetId && this.memory.getTargetPos) {
                 if (this.adjMove(this.memory.getTargetPos) === ERR_NOT_IN_RANGE) return OK;
                 const target = Game.getObjectById(this.memory.getTargetId);
-                if (!target || this.Get(target) !== OK) {
+                if (!target || this.Get(target,RESOURCE_ENERGY) !== OK) {
                     this.resetGet();
                     return ERR_REPEAT;
                 }
@@ -387,7 +389,7 @@ const creepRunExtensions = {
                 return ERR_REPEAT;
             }
             const feedback = this[action](target);
-            if (feedback === ERR_NOT_IN_RANGE) this.adjMove(target.pos);
+            if (feedback === ERR_NOT_IN_RANGE) this.adjMove(target.pos,{travel:true});
             return OK;
         }
     },
@@ -645,7 +647,7 @@ const creepRunExtensions = {
             if (taskInfo.data.routes[0] === this.room.name) taskInfo.data.routes[0].shift();
             if (taskInfo.data.routes[0]){
                 this.adjMove(new RoomPosition(25,25,taskInfo.data.targetRoom));
-            }else this._adjMove(new RoomPosition(25,25,taskInfo.data.targetRoom));
+            }else this.adjMove(new RoomPosition(25,25,taskInfo.data.targetRoom));
             return OK;
         }
         if (subTaskType === "invade"){
@@ -703,7 +705,7 @@ const creepRunExtensions = {
             }
             if (!taskInfo.targetPos) taskInfo.targetPos = target.pos;
 
-            if (this._adjMove(taskInfo.targetPos) === ERR_NOT_IN_RANGE) return OK;
+            if (this.adjMove(taskInfo.targetPos,{travel:true}) === ERR_NOT_IN_RANGE) return OK;
             
             if (target.hits <= 150000 && !this.memory.hasIssued){
                 this.memory.hasIssued = true;
@@ -723,9 +725,11 @@ const creepRunExtensions = {
             }
         }else if (subTaskType === "heal"){
             if (signals["finish"]) this.memory.recycle = true;
-            if (!Game.getObjectById(taskInfo.targetID)) taskInfo.targetID = signals["creep"]
-            var target = Game.getObjectById(taskInfo.targetID)
-            this.moveTo(target)
+            if (!Game.getObjectById(taskInfo.targetID)) taskInfo.targetID = signals["creep"];
+            var target = Game.getObjectById(taskInfo.targetID);
+            if (!target) return ERR_DELETE;
+            if (!target.pos) return OK;
+            if (!utils.adjacentPos(target.pos,this.pos)) this.travelTo(target);
 
             if (target.hits < target.hitsMax) this.heal(target);
             else if (this.hits < this.hitsMax) this.heal(this);
@@ -735,7 +739,7 @@ const creepRunExtensions = {
             const reservedText = "Reserved by @BoosterKevin."
             if (controller.my) {if (controller.sign.text !== "") this.signController(controller,"");return ERR_DELETE;}
             
-            if (this._adjMove(controller.pos) === ERR_NOT_IN_RANGE) return OK
+            if (this.adjMove(controller.pos,{travel:true}) === ERR_NOT_IN_RANGE) return OK
             
             if (utils.ownRoom(taskInfo.data.targetRoom) === false){
                 this.attackController(controller)

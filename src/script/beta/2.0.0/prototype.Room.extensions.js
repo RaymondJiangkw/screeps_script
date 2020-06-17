@@ -16,6 +16,7 @@ const roomExtensions = {
      * @returns {Object|undefined} storage | terminal | factory | container | undefined.
      */
     getStructure4Store(minFreeCapacity = 0) {
+        if (typeof(minFreeCapacity) !== "number") minFreeCapacity = 0;
         for (const structureName of SINGLE_CHECK_LIST) if (this[structureName] && this[structureName].store.getFreeCapacity() > minFreeCapacity) return this[structureName];
         for (const structuresName of MULTI_CHECK_LIST) for (const structure of this[structuresName]) if (structure.store.getFreeCapacity() > minFreeCapacity) return structure;
         return undefined;
@@ -30,8 +31,9 @@ const roomExtensions = {
     getStructure4Withdraw(resourceType,minAmount = 0,...blackLists) {
         blackLists = blackLists || [];
         minAmount = minAmount || 0;
+        if (typeof(minAmount) !== "number") minAmount = 0;
         for (const structureName of SINGLE_CHECK_LIST) if (blackLists.indexOf(structureName) < 0 && this[structureName] && this[structureName].store[resourceType] > minAmount) return this[structureName];
-        for (const structuresName of MULTI_CHECK_LIST) if (blackLists.indexOf(structuresName) < 0) for (const structure of this[structuresName]) if (structure.store[resourceType] > minAmount) return structure;
+        // for (const structuresName of MULTI_CHECK_LIST) if (blackLists.indexOf(structuresName) < 0) for (const structure of this[structuresName]) if (structure.store[resourceType] > minAmount) return structure;
         return undefined;
     },
     /**
@@ -48,7 +50,7 @@ const roomExtensions = {
         // Check for pure Id.
         const target = Game.getObjectById(structure);
         if (target) {
-            if (utils.checkForStore(target,settings.resourceType,settings.amount)) return [target.id,utils.getPos(target.pos)];
+            if (utils.checkForStore(target,settings.resourceType,0)) return [target.id,utils.getPos(target.pos)];
             else return ERR_NOT_FOUND;
         }
         switch (structure) {
@@ -66,7 +68,7 @@ const roomExtensions = {
                     else return ERR_WAITING;
                 }else {
                     const target = ruins[0] || droppedPowers[0];
-                    return [target.id,utils.getPos(utils.pos)];
+                    return [target.id,utils.getPos(target.pos)];
                 }
             }
             case "ruins":{
@@ -102,19 +104,19 @@ const roomExtensions = {
         // Check for pure Id.
         const target = Game.getObjectById(structure);
         if (target) {
-            if ((target.store.getFreeCapacity() || target.store.getFreeCapacity(RESOURCE_ENERGY)) > 0) return [target.id,utils.getPos(target.pos)];
+            if ((target.store.getFreeCapacity() || target.store.getFreeCapacity(settings.resourceType)) > 0) return [target.id,utils.getPos(target.pos)];
             else return ERR_NOT_FOUND;
         }
         switch (structure) {
             case "labs":{
                 if (settings.resourceType !== RESOURCE_ENERGY) {
-                    if (global.labs[this.room.name]) {
-                        if (global.labs[this.room.name][settings.resourceType] && _.filter(global.labs[this.room.name][settings.resourceType], l => l.store.getFreeCapacity(settings.resourceType) > 0)) {
-                            const labPos = global.labs[this.room.name][settings.resourceType].length - 1;
-                            const target = global.labs[this.room.name][settings.resourceType][labPos];
+                    if (global.labs[this.name]) {
+                        if (global.labs[this.name][settings.resourceType] && _.filter(global.labs[this.name][settings.resourceType], l => l.store.getFreeCapacity(settings.resourceType) > 0)) {
+                            const labPos = global.labs[this.name][settings.resourceType].length - 1;
+                            const target = global.labs[this.name][settings.resourceType][labPos];
                             return [target.id,utils.getPos(target.pos)];
-                        }else if (global.labs[this.room.name]["vacant"]) {
-                            const target = global.labs[this.room.name]["vacant"][0];
+                        }else if (global.labs[this.name]["vacant"]) {
+                            const target = global.labs[this.name]["vacant"][0];
                             return [target.id,utils.getPos(target.pos)];
                         }else return ERR_NOT_FOUND;
                     }else return ERR_NOT_FOUND;
@@ -137,7 +139,7 @@ const roomExtensions = {
                     const targets = _.filter(this[structure],s => s.store.getFreeCapacity(settings.resourceType) > 0);
                     targets.sort((a,b)=>a.pos.getRangeTo(settings.creep) - b.pos.getRangeTo(settings.creep));
                     target = targets[0];
-                }else if ((this[structure].store.getFreeCapacity() || this[structure].store.getFreeCapacity(RESOURCE_ENERGY)) > 0) target = this[structure];
+                }else if ((this[structure].store.getFreeCapacity() || this[structure].store.getFreeCapacity(settings.resourceType)) > 0) target = this[structure];
                 if (!target) return ERR_NOT_FOUND;
                 return [target.id,utils.getPos(target.pos)];
             }

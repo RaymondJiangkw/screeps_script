@@ -51,7 +51,7 @@ module.exports = function () {
                     for (var i = 0; i < Game.rooms[roomName].towers.length; i++) Game.rooms[roomName].towers[i].attack(enemies[(i % enemies.length)])
                     if (enemies.length === 0) for (var tower of Game.rooms[roomName].towers) tower.run();
                 }else{
-                    if ((roomName === "W18N22" || roomName === "W19N22") && _.filter(Game.rooms[roomName].enemies,e => e.owner.username !== "Invader").length > 1) Game.rooms[roomName].controller.activateSafeMode();
+                    if ((roomName === "W18N22" || roomName === "W19N22") && _.filter(Game.rooms[roomName].enemies,e => utils.analyseCreep(e,false,true) !== "harmless" &&  e.owner.username !== "Invader").length > 1) Game.rooms[roomName].controller.activateSafeMode();
                     var roles = _.map(Game.rooms[roomName].enemies,(c)=>utils.analyseCreep(c,false,true));
                     if (roles.indexOf("attacker") >= 0){
                         var avgDistances = utils.getCreepsRange(Game.rooms[roomName].enemies)

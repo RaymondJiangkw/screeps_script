@@ -2,9 +2,11 @@ const powerCreepConfiguration = {
     taskList:{
         "default":["rS","rM","oS","oE","_"],
         "raymond":["oE","oF","_"],
+        "julie":["oE","oF","_"],
     },
     idlePosition:{
-        "raymond":[35,28,"W22N25"],
+        "julie":[35,28,"W22N25"],
+        "raymond":[29,24,"W23N25"],
     },
     getTaskInterval:5,
     renewRemainingTicks:100,

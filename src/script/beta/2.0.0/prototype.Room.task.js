@@ -24,7 +24,11 @@ const roomTaskExtension = {
             this.memory.task[taskType] = afterList;
         }
         for (var taskFingerprint in this.memory.task["info"]) this.refreshSingleTask(taskFingerprint)
-        for (var creep of Game.rooms[this.name].creeps) creep.memory.taskFingerprint = null
+        for (var creep of Game.rooms[this.name].creeps) {
+            creep.memory.taskFingerprint = null;
+            creep.resetGet();
+            creep.memory.working = false;
+        }
     //    for (var spawn of Game.rooms[this.name].spawns) spawn.memory.taskFingerPrint = null
     },
     clearTaskType(_taskType){

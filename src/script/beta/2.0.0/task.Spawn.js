@@ -29,7 +29,7 @@ module.exports = function(){
         var aidTaskLength = Game.rooms[roomName].countTask("_transfer",["aid"]);
         if (pureTransferer.length === 0 || pureTransferer.length < Math.floor(Math.log(transferTaskLength))) generateSpawnTask(roomName,"pureTransfer");
         if (remoteTransferer.length < aidTaskLength) generateSpawnTask(roomName,"remoteTransfer");
-        if (Game.rooms[roomName].controller.level >= 7 && weakTransferer.length === 0) generateSpawnTask(roomName,"centralTransfer");
+        if (Game.rooms[roomName].controller.level >= 5 && weakTransferer.length === 0) generateSpawnTask(roomName,"centralTransfer");
 
         // Harvest Task
         const localHarvester = _.filter(creepsCollection["harvester"],(c)=>c.memory.group.type === "localHarvest")

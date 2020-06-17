@@ -1,6 +1,6 @@
 const observerConfiguration = {
-    "dominance":["W22N24","W21N23"], // Reserve these rooms
-    "utilsEnergy":["W21N23"],   // Use the energy in these neutral rooms
+    "dominance":[], // Reserve these rooms
+    "utilsEnergy":[],   // Use the energy in these neutral rooms
     "coreDominance":{
         // "example":["resourceID"],
     },  // Utilize the core room

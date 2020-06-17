@@ -25,13 +25,12 @@ module.exports = function() {
         }
         var link
         for (link of Game.rooms[roomName]["links"]){
-            if (link.id === "5e8b089ba010772f292eff39") continue;
             var adjacentEnergy = utils.Adjacent(link,Game.rooms[roomName]["energys"], 2)
             var strongAdjacentController = utils.adjacent(link,Game.rooms[roomName].controller,1);
-            var adjacentSpawn = utils.Adjacent(link,Game.rooms[roomName]["spawns"], 2)
+            var adjacentStorage = utils.adjacent(link,Game.rooms[roomName].storage, 1)
             if (strongAdjacentController) global.links[roomName].upgrade.push(link);
             else if (adjacentEnergy) {global.links[roomName].resources.push(link);global.links[roomName].map[adjacentEnergy.id] = link.id;}
-            else if (adjacentSpawn) {global.links[roomName].charges.push(link);global.links[roomName].map[adjacentSpawn.id] = link.id;}
+            else if (adjacentStorage && Game.rooms[roomName].controller.level === 8) {global.links[roomName].charges.push(link);global.links[roomName].map[Game.rooms[roomName].storage.id] = link.id;}
             else global.links[roomName].upgrade.push(link)
         }
         const usedEnergyCompare = (linkA,linkB)=>linkB.store.getUsedCapacity(RESOURCE_ENERGY) - linkA.store.getUsedCapacity(RESOURCE_ENERGY)

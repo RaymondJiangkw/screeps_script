@@ -59,6 +59,7 @@
      * @returns {Number} The expected price of commodity.
      */
     function _getPrice(commodity) {
+        // if (commodity == RESOURCE_MICROCHIP) return 21558.388;
         const priceHistory = Game.market.getHistory(commodity);
         if (!priceHistory || Object.keys(priceHistory).length === 0) return ERR_NO_DATA;
         return priceHistory[priceHistory.length - 1]["avgPrice"];

@@ -20,8 +20,8 @@ const terminalConfiguration = {
     },
     sellingGoods:{
         //[(resourceType),(reservedAmount),(minSellAmount)]
-        "W22N25":[[RESOURCE_SWITCH,0,5],[RESOURCE_COMPOSITE,0,100]],
-        "W23N25":[[RESOURCE_TRANSISTOR,0,5]],
+        "W22N25":[[RESOURCE_SWITCH,0,1],[RESOURCE_COMPOSITE,0,100]],
+        "W23N25":[[RESOURCE_TRANSISTOR,0,1],[RESOURCE_CRYSTAL,0,100]],
         "W21N24":[],
         "W19N22":[],
         "W18N22":[]
@@ -37,7 +37,7 @@ const terminalConfiguration = {
     mostDesiredGoods:{ // Buy as much as it can
         interval:10,
         [RESOURCE_POWER]:{
-            maxPrice:4.5,  // Will buy these goods under this line
+            maxPrice:2,  // Will buy these goods under this line
             minCredits:10000,
         }
     },

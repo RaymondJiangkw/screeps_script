@@ -138,9 +138,16 @@ const utilsCollection = {
         const nearCentral = ["W23N25"]
         if (role === "harvester" && groupType === "remoteHarvest"){
             if (nearCentral.indexOf(roomName) < 0){
-                _componentsObj["work"] += 10
-                _componentsObj["carry"] += 1
-                _componentsObj["move"] += 5
+                _componentsObj["work"] += 10;
+                _componentsObj["carry"] += 2;
+                _componentsObj["move"] += 5;
+            }
+        }
+        if (role === "harvester" && groupType === "localHarvest"){
+            if (Game.rooms[roomName].controller.level === 8) {
+                _componentsObj["work"] += 10;
+                _componentsObj["carry"] += 2;
+                _componentsObj["move"] += 5;
             }
         }
         if (role === "transferer" && groupType === "remoteHarvest"){
@@ -426,7 +433,9 @@ const utilsCollection = {
      * @returns {Boolean} true | false
      */
     checkForStore(target,resourceType,amount) {
-        const storingAmount = resourceType? target.store.getUsedCapacity(resourceType) : (target.store.getUsedCapacity() || target.store.getUsedCapacity(RESOURCE_ENERGY));
+        let storingAmount = 0;
+        if (resourceType) storingAmount = target.store[resourceType] || 0;
+        else storingAmount = target.store.getUsedCapacity() || target.store.getUsedCapacity(RESOURCE_ENERGY);
         if (typeof(amount) !== "number") amount = 0;
         return storingAmount > amount;
     },

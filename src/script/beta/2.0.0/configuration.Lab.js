@@ -21,7 +21,7 @@ const labConfiguration = {
         mode:"default",
         allowedCompounds:["LH2O","XLH2O","KH2O","XKH2O","XLHO2","XZHO2","XUH2O","XKHO2","XGHO2"],
         reverse:["GO"],
-        default:["KO","OH","KHO2","ZK","UL","G","GH","GH2O","XKHO2"],
+        default:["KO","OH","KHO2","ZK","UL","G","GO","GH","GH2O","XKHO2"],
         focus:undefined,
         clear:undefined
     },
@@ -48,7 +48,7 @@ const labConfiguration = {
         mode:"default",
         allowedCompounds:[],
         reverse:["GO","ZH","UH","KO"],
-        default:["LO","LHO2","XLHO2"],
+        default:["LO","OH","LHO2","XLHO2"],
         focus:undefined,
         clear:undefined
     },

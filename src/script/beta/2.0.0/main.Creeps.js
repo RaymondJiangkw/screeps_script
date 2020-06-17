@@ -1,4 +1,4 @@
-const MAX_CALL_TIME = 2
+const MAX_CALL_TIME = 1
 const creepConfig = require('configuration.Creep')
 const utils = require('utils')
 const randomElement = function(array){
@@ -15,7 +15,7 @@ module.exports = function(){
         if (Game.cpu.bucket < 100) break;
     for (var groupType in creepConfig.groupAcceptedTask){
         if (Game.cpu.bucket < 1000) {
-            var allowedGroups = ["pureTransfer","pureWorker","pureRepairer","pureUpgrader","localHarvest","Defend","Claim","powerHarvest","Defend_observed"]
+            var allowedGroups = ["pureTransfer","pureWorker","pureRepairer","pureUpgrader","localHarvest","Defend","Claim","powerHarvest","Defend_observed","centralTransfer"]
             if (allowedGroups.indexOf(groupType) < 0) continue;
         }
     for (var groupName in Game.rooms[roomName][groupType]){
@@ -48,7 +48,7 @@ module.exports = function(){
                 continue;
             }
             if (primaryCreep.isIdle()) {
-                if (primaryCreep.store.getUsedCapacity() > 0 && primaryCreep.memory.role === "transferer") primaryCreep["__store"]();
+                if (primaryCreep.store.getUsedCapacity() > 0 && (primaryCreep.memory.role === "transferer" || primaryCreep.memory.role === "weak_transferer")) primaryCreep["__store"]();
                 else primaryCreep.getTask();
             }
             if (primaryCreep._boost() === OK) continue;
@@ -113,6 +113,7 @@ module.exports = function(){
                 continue;
             }
             if (!randomPrimaryCreep && !reSpawn) {
+                creep.deleteTask();
                 if (creep.store.getUsedCapacity() > 0) creep["__store"]();
                 else if (creep["__recycle"]() !== OK) creep.suicide();
                 continue;

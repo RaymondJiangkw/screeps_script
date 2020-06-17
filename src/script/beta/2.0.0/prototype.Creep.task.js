@@ -5,6 +5,8 @@ const creepTaskExtension = {
         if (!this.memory.taskFingerprint) return true
         if (!Game.rooms[this.memory.home].checkTaskExistence(this.memory.taskFingerprint)){
             this.deleteTask()
+            this.resetGet();
+            this.memory.working = false;
             return true
         }
         return false

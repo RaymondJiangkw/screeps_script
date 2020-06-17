@@ -1246,7 +1246,7 @@ function betterMoveTo(firstArg, secondArg, opts) {
             posArray = path.posArray;
             if (isEqual(toPos, creepCache.dst) || inRange(posArray[posArray.length - 1], toPos, ops.range)) {   // 正向走，目的地没变
                 if (isEqual(this.pos, posArray[idx])) {    // 正常
-                    if ('storage' in this.room && inRange(this.room.storage.pos, this.pos, coreLayoutRange) && ops.ignoreCreeps) {
+                    if (this.room.storage && inRange(this.room.storage.pos, this.pos, coreLayoutRange) && ops.ignoreCreeps) {
                         testNearStorageCheck++;
                         if (trySwap(this, posArray[idx + 1], false, true) == OK) {
                             testNearStorageSwap++;

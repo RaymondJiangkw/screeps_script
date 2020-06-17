@@ -39,10 +39,8 @@ const Wrap = function (func,_name) {
 }
 module.exports.loop = function() {
     profiler.wrap(function(){
+        // return;
         mount();
-        for (const roomName in Game.rooms) {
-            if (Game.rooms[roomName].controller && Game.rooms[roomName].controller.my) Game.rooms[roomName].clearTask();
-        }
 //      mountMarket.mount();
         death();
         console.log("before Init",Game.cpu.getUsed())

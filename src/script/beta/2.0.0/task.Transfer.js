@@ -26,12 +26,17 @@ module.exports = function() {
         if (Game.rooms[roomName].powerSpawn) {
             const powerSpawn = Game.rooms[roomName].powerSpawn;
             if (powerSpawn.store.getUsedCapacity(RESOURCE_ENERGY) <= powerSpawnConfig.startChargeEnergy) {
-                const structure = Game.rooms[roomName].getStructure4Withdraw(RESOURCE_ENERGY,0);
+                const structure = Game.rooms[roomName].getStructure4Withdraw(RESOURCE_ENERGY,50000,STRUCTURE_CONTAINER);
                 if (structure) Game.rooms[roomName].AddTransferTask("basic",{target:structure.id,roomName},{target:"powerSpawn",roomName},RESOURCE_ENERGY,"full");
             }
             if (powerSpawn.store.getUsedCapacity(RESOURCE_POWER) < 50) {
                 const structure = Game.rooms[roomName].getStructure4Withdraw(RESOURCE_POWER,0);
                 if (structure) Game.rooms[roomName].AddTransferTask("basic",{target:structure.id,roomName},{target:"powerSpawn",roomName},RESOURCE_POWER,"full");
+            }
+        }
+        if (global.links[roomName].charges.length > 0 && Game.rooms[roomName].storage.store.getFreeCapacity() > 0 && Game.rooms[roomName].controller.level === 8) {
+            for (const link of global.links[roomName].charges) {
+                if (link.store.getUsedCapacity(RESOURCE_ENERGY) > 0) Game.rooms[roomName].AddTransferTask("bbasic",{target:link.id,roomName},{target:"storage",roomName},RESOURCE_ENERGY,"exhaust");
             }
         }
         
@@ -42,6 +47,20 @@ module.exports = function() {
                 if (structure) Game.rooms[roomName].AddTransferTask("core",{target:mineralContainer.id,roomName},{target:structure.id,roomName},Game.rooms[roomName].mineral.mineralType,"exhaust");
             }
         }
+        
+        if (labConfig[roomName] && labConfig[roomName].allocate) {
+            for (const labId in labConfig[roomName].allocate) {
+                const lab = Game.getObjectById(labId);
+                if (!lab) continue;
+                const _resourceType = labConfig[roomName].allocate[labId];
+                if (!global.resources[roomName][_resourceType] || global.resources[roomName][_resourceType]["utils"] <= 5) continue;
+                const structureStore = Game.rooms[roomName].getStructure4Store();
+                const structureWithdraw = Game.rooms[roomName].getStructure4Withdraw(_resourceType,5);
+                if (lab.mineralType && lab.mineralType !== _resourceType && structureStore) Game.rooms[roomName].AddTransferTask("defense",{target:labId,roomName},{target:structureStore.id,roomName},lab.mineralType,"exhaust");
+                else if ((!lab.mineralType || lab.store.getFreeCapacity(_resourceType) > 0) && structureWithdraw) Game.rooms[roomName].AddTransferTask("defense",{target:structureWithdraw.id,roomName},{target:labId,roomName},_resourceType,"full");
+                if (lab.store.getFreeCapacity(RESOURCE_ENERGY) > 0) Game.rooms[roomName].AddTransferTask("defense",{target:"resource",roomName},{target:labId,roomName},RESOURCE_ENERGY,"full");
+            }
+        }
 
         if (!global.task.transfer[roomName]) global.task.transfer[roomName] = {}
         if ((!global.task.transfer[roomName].cachedExpirationTime || global.task.transfer[roomName].cachedExpirationTime <= Game.time) && Game.cpu.bucket >= ADVANCED_BUCKET_LIMIT){
@@ -49,9 +68,9 @@ module.exports = function() {
             // Transfer Energy to labs / factory
             const labs = _.filter(Game.rooms[roomName].labs,needEnergy)
             if (labs.length > 0) Game.rooms[roomName].AddTransferTask("advanced",{target:"resource",roomName},{target:"labs",roomName},RESOURCE_ENERGY,"full");
-            const factory_energy_structure = Game.rooms[roomName].getStructure4Withdraw(RESOURCE_ENERGY,0,STRUCTURE_FACTORY);
+            const factory_energy_structure = Game.rooms[roomName].getStructure4Withdraw(RESOURCE_ENERGY,0,STRUCTURE_FACTORY,STRUCTURE_CONTAINER);
             const factory = Game.rooms[roomName].factory;
-            if (factory && factory.store.getUsedCapacity(RESOURCE_ENERGY) <= factoryConfig.reservedEnergy && factory_energy_structure) Game.rooms[roomName].AddTransferTask("basic",{target:factory_energy_structure.id,roomName},{target:"factory",roomName},RESOURCE_ENERGY,factoryConfig.reservedEnergy-factory.store.getUsedCapacity(RESOURCE_ENERGY));
+            if (factory && factory.store.getUsedCapacity(RESOURCE_ENERGY) < factoryConfig.reservedEnergy && factory_energy_structure) Game.rooms[roomName].AddTransferTask("basic",{target:factory_energy_structure.id,roomName},{target:"factory",roomName},RESOURCE_ENERGY,factoryConfig.reservedEnergy-factory.store.getUsedCapacity(RESOURCE_ENERGY));
             
             // Transfer Terminal
             if (Game.rooms[roomName].terminal){
@@ -59,7 +78,7 @@ module.exports = function() {
                 if (terminalConfig["sellingEnergy"][roomName]) terminalEnergy += terminalConfig["sellingEnergy"][roomName]
                 terminalEnergy -= Game.rooms[roomName].terminal.store[RESOURCE_ENERGY];
                 const terminal_energy_structure = Game.rooms[roomName].getStructure4Withdraw(RESOURCE_ENERGY,0,STRUCTURE_TERMINAL);
-                if (terminal_energy_structure && terminalEnergy > 0) Game.rooms[roomName].AddTransferTask("advanced",{target:terminal_energy_structure.id,roomName},{target:"terminal",roomName},RESOURCE_ENERGY,terminalEnergy);
+                if (terminal_energy_structure && terminalEnergy > 0) Game.rooms[roomName].AddTransferTask("advanced",{target:terminal_energy_structure.id,roomName},{target:"terminal",roomName},RESOURCE_ENERGY,Math.min(terminalEnergy,terminal_energy_structure.store[RESOURCE_ENERGY]));
 
                 var thisMineralType = Game.rooms[roomName].mineral.mineralType
                 if (global.resources[roomName][thisMineralType]){
@@ -81,20 +100,6 @@ module.exports = function() {
 
             // Transfer Lab
             if (Game.rooms[roomName].labs.length > 0 && labConfig[roomName]){
-                if (labConfig[roomName].allocate) {
-                    for (const labId in labConfig[roomName].allocate) {
-                        const lab = Game.getObjectById(labId);
-                        if (!lab) continue;
-                        const _resourceType = labConfig[roomName].allocate[labId];
-                        if (!global.resources[roomName][_resourceType] || global.resources[roomName][_resourceType]["utils"] <= 5) continue;
-                        const structureStore = Game.rooms[roomName].getStructure4Store();
-                        const structureWithdraw = Game.rooms[roomName].getStructure4Withdraw(_resourceType,5);
-                        if (lab.mineralType && lab.mineralType !== _resourceType && structureStore) Game.rooms[roomName].AddTransferTask("defense",{target:labId,roomName},{target:structureStore.id,roomName},lab.mineralType,"exhaust");
-                        else if ((!lab.mineralType || lab.store.getFreeCapacity(_resourceType) > 0) && structureWithdraw) Game.rooms[roomName].AddTransferTask("defense",{target:structureWithdraw.id,roomName},{target:labId,roomName},_resourceType,"full");
-                        if (lab.store.getFreeCapacity(RESOURCE_ENERGY) > 0) Game.rooms[roomName].AddTransferTask("defense",{target:"resource",roomName},{target:labId,roomName},RESOURCE_ENERGY,"full");
-                    }
-                }
-                
                 const mode = labConfig[roomName]["mode"];
                 if ((mode === "focus" || mode === "default") && global.labStructures[roomName].core.length === 2){
                     const resourceType = utils.getLabTarget(roomName,mode);
@@ -111,11 +116,10 @@ module.exports = function() {
                         for (var i = 0; i < 2; i++){
                             var coreLab = coreLabs[i]
                             if (coreLab.mineralType !== _components[i] || coreLab.store[_components[i]] <= labConfig.leastRefillAmount) {
-                                if (!global.resources[roomName][_components[i]] || global.resources[roomName][_components[i]]["utils"] <= 5) lackRefills[i] = true;
+                                if (!global.resources[roomName][_components[i]] || global.resources[roomName][_components[i]]["total"] <= 5) lackRefills[i] = true;
                             }
                         }
                         if (mode === "default") skip = lackRefills[0] || lackRefills[1];
-
                         if (skip) {
                             var allowable = labConfig[roomName].allowedCompounds.indexOf(resourceType) >= 0;
                             var necessary1 = (!global.labs[roomName][resourceType] || global.labs[roomName][resourceType].length === 0) && (global.labs[roomName]["vacant"] && global.labs[roomName]["vacant"].length > 0);
@@ -131,7 +135,8 @@ module.exports = function() {
                             for (var i = 0; i < coreLabs.length;i++){
                                 var coreLab = coreLabs[i]
                                 if (!coreLab.mineralType || (coreLab.mineralType === _components[i] && coreLab.store[_components[i]] <= labConfig.leastRefillAmount)){
-                                    Game.rooms[roomName].AddTransferTask("advanced",{target:"resource",roomName},{target:coreLab.id,roomName},_components[i],"full");
+                                    const structure = Game.rooms[roomName].getStructure4Withdraw(_components[i]);
+                                    if (structure) Game.rooms[roomName].AddTransferTask("advanced",{target:structure.id,roomName},{target:coreLab.id,roomName},_components[i],"full");
                                 }else if (coreLab.mineralType !== _components[i]){
                                     const structure = Game.rooms[roomName].getStructure4Store();
                                     if (structure) Game.rooms[roomName].AddTransferTask("advanced",{target:coreLab.id,roomName},{target:structure.id,roomName},coreLab.mineralType,"exhaust");
@@ -212,7 +217,8 @@ module.exports = function() {
                             for (var labId of groupLabs){
                                 var lab = Game.getObjectById(labId);
                                 if (!lab.mineralType || (lab.mineralType === resourceType && lab.store[lab.mineralType] <= labConfig.leastRefillAmount)){
-                                    Game.rooms[roomName].AddTransferTask("advanced",{target:"resource",roomName},{target:lab.id,roomName},resourceType,"full");
+                                    const structure = Game.rooms[roomName].getStructure4Withdraw(resourceType);
+                                    if (structure) Game.rooms[roomName].AddTransferTask("advanced",{target:structure.id,roomName},{target:lab.id,roomName},resourceType,"full");
                                 }else if (lab.mineralType !== resourceType && (labConfig[roomName].allowedCompounds.indexOf(lab.mineralType) < 0 || lab.store[lab.mineralType] < 30 || global.labs[roomName][lab.mineralType].indexOf(lab) > 0)){
                                     const structure = Game.rooms[roomName].getStructure4Store();
                                     if (structure) Game.rooms[roomName].AddTransferTask("advanced",{target:lab.id,roomName},{target:structure.id,roomName},lab.mineralType,"exhaust");
@@ -254,7 +260,7 @@ module.exports = function() {
                         for (var component in COMMODITIES[production].components){
                             var _diffAmount = COMMODITIES[production].components[component] * (diffAmount / COMMODITIES[production].amount)  - Game.rooms[roomName].factory.store[component];
                             if (_diffAmount > 0 && global.resources[roomName][component]){
-                                const structure = Game.rooms[roomName].getStructure4Withdraw(component,0,STRUCTURE_FACTORY);
+                                const structure = Game.rooms[roomName].getStructure4Withdraw(component,0,STRUCTURE_FACTORY,STRUCTURE_CONTAINER);
                                 if (structure) {
                                     const amount = Math.min(_diffAmount,structure.store[component]);
                                     if (amount >= COMMODITIES[production].components[component]) Game.rooms[roomName].AddTransferTask("basic",{target:structure.id,roomName},{target:"factory",roomName},component,amount);
@@ -274,7 +280,7 @@ module.exports = function() {
                     if (global.resources[roomName][resourceType]["total"] <= reservedAmount) continue
 
                     var sellingAmount = global.resources[roomName][resourceType]["total"] - reservedAmount;
-                    const structure = Game.rooms[roomName].getStructure4Withdraw(resourceType,0,STRUCTURE_TERMINAL);
+                    const structure = Game.rooms[roomName].getStructure4Withdraw(resourceType,0,STRUCTURE_TERMINAL,STRUCTURE_CONTAINER);
                     if (structure) {
                         const amount = Math.min(sellingAmount,structure.store[resourceType]);
                         Game.rooms[roomName].AddTransferTask("basic",{target:structure.id,roomName},{target:"terminal",roomName},resourceType,amount);
@@ -288,7 +294,7 @@ module.exports = function() {
             var tombStones = Game.rooms[roomName].find(FIND_TOMBSTONES,{filter:(t)=>Object.keys(t.store).length > 0});
             for (var tombStone of tombStones) Game.rooms[roomName].AddTransferTask("defense",{target:tombStone.id,roomName},{target:"storage",roomName},undefined,"exhaust");
             Game.rooms[roomName].ruins.sort((a,b)=>b.store.getUsedCapacity() - a.store.getUsedCapacity())
-            for (var ruin of Game.rooms[roomName].ruins) Game.rooms[roomName].AddTransferTask("defense",{target:ruin.id,roomName},{target:"storage",roomName},undefined,"exhaust")
+            for (var ruin of Game.rooms[roomName].ruins) if (ruin.store.getUsedCapacity() > 0) Game.rooms[roomName].AddTransferTask("defense",{target:ruin.id,roomName},{target:"storage",roomName},undefined,"exhaust")
         }
     }
  
@@ -314,8 +320,8 @@ module.exports = function() {
             var transferAmount = sendInfo.baseAmount + sendInfo.sendAmount - Game.rooms[hostRoom].terminal.store[sendInfo.resourceType]
             if (transferAmount <= 0) continue
             if (Game.rooms[sendInfo.targetRoom] && (Game.rooms[sendInfo.targetRoom].terminal.store[sendInfo.resourceType] >= sendInfo.targetStopAmount || Game.rooms[sendInfo.targetRoom].terminal.store.getUsedCapacity() >= sendInfo.targetStopCapacity)) continue
-            const structure = Game.rooms[hostRoom].getStructure4Withdraw(sendInfo.resourceType,0,STRUCTURE_TERMINAL);
-            if (structure) Game.rooms[hostRoom].AddTransferTask("basic",{target:structure.id,roomName:hostRoom},{target:"terminal",roomName:hostRoom},resourceType,transferAmount);
+            const structure = Game.rooms[hostRoom].getStructure4Withdraw(sendInfo.resourceType,0,STRUCTURE_TERMINAL,STRUCTURE_CONTAINER);
+            if (structure) Game.rooms[hostRoom].AddTransferTask("basic",{target:structure.id,roomName:hostRoom},{target:"terminal",roomName:hostRoom},sendInfo.resourceType,transferAmount);
         }
     }
 }

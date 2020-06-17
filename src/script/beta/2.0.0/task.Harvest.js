@@ -38,7 +38,7 @@ module.exports = function() {
             if (!powerBank) continue;
             if (powerBank.power < 3000 || powerBank.ticksToDecay < 4500) continue;
             var home = utils.getClosetSuitableRoom(roomName,8,true)
-            if (!home || Game.rooms[home].energyAvailable !== Game.rooms[home].energyCapacityAvailable || Game.cpu.bucket < 9000) break;
+            if (!home || Game.rooms[home].energyAvailable !== Game.rooms[home].energyCapacityAvailable || Game.cpu.bucket < 6000) break;
             if (Game.map.getRoomLinearDistance(home,roomName) > 3) break;
             var harvestTaskLength = Game.rooms[home].countTask("_attack",["harvest"]);
             if (harvestTaskLength > 0) break;
